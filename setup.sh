@@ -2,11 +2,6 @@
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-if !command -v nix &> /dev/null; then
-  echo "Nix could not be found, exiting."
-  exit 1
-fi
-
 function askBeforeRunning() {
   SCRIPT=$1
 
@@ -16,6 +11,7 @@ function askBeforeRunning() {
   fi
 }
 
+HAS_NIX=$(command -v nix &> /dev/null && echo true || echo false)
 DOTFILE_DIR="$(pwd)/dotfiles"
 HOSTNAME="$(hostname)"
 
@@ -32,7 +28,6 @@ ln -si $DOTFILE_DIR/zsh ~/.zsh
 ln -si $DOTFILE_DIR/zshrc ~/.zshrc
 
 ln -si $(pwd)/scripts ~/.bin
-ln -si $DOTFILE_DIR/home-manager ~/.config/home-manager
 
 if [[ $HOSTNAME == "Orchid" ]]; then
   ln -si $DOTFILE_DIR/hammerspoon ~/.hammerspoon
@@ -42,13 +37,20 @@ if [[ $HOSTNAME == "Orchid" ]]; then
   askBeforeRunning ./terminfos/generate-terminfos.sh
 fi
 
-read -p "$(tput setaf 3)Do you want to set up home-manager?$(tput sgr0) (y/n) " RESP
-cd ~/.config/home-manager/
-nix flake update
+if $HAS_NIX; then
+  read -p "$(tput setaf 3)Do you want to set up home-manager?$(tput sgr0) (y/n) " RESP
 
-if [[ $HOSTNAME == "Orchid" ]]; then
-  home-manager switch --flake .#szymon@orchid
-else
-  echo "No home-manager configuration found for this machine!"
+  if [ "$RESP" == "y" ]; then
+    ln -si $DOTFILE_DIR/home-manager ~/.config/home-manager
+    cd ~/.config/home-manager
+
+    nix flake update
+
+    if [[ $HOSTNAME == "Orchid" ]]; then
+      home-manager switch --flake .#szymon@orchid
+    else
+      echo "No home-manager configuration found for this machine!"
+    fi
+  fi
 fi
 

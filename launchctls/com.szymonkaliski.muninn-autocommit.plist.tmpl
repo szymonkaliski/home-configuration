@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC -//Apple Computer//DTD PLIST 1.0//EN http://www.apple.com/DTDs/PropertyList-1.0.dtd>
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>com.szymonkaliski.muninn-autocommit</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>/bin/bash</string>
+            <string>LAUNCHCTL_SCRIPTS_PATH/muninn-autocommit.sh</string>
+        </array>
+        <key>WatchPaths</key>
+        <array>
+            <string>/Users/Szymon/Documents/Dropbox/Wiki/</string>
+        </array>
+        <key>OnDemand</key>
+        <true/>
+        <key>RunAtLoad</key>
+        <true/>
+        <key>ThrottleInterval</key>
+        <integer>3600</integer>
+        <key>StandardErrorPath</key>
+        <string>/tmp/muninn-autocommit.err</string>
+        <key>StandardOutPath</key>
+        <string>/tmp/muninn-autocommit.out</string>
+    </dict>
+</plist>

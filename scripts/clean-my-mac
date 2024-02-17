@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# simple interactive mac cleanup script
+
+read -p "$(tput setaf 3)Clean packager caches?$(tput sgr0) (y/n) " RESP
+if [ "$RESP" == "y" ]; then
+  if hash yarn > /dev/null; then
+    yarn cache clean
+  fi
+
+  if hash npm > /dev/null; then
+    npm cache clean --force
+  fi
+
+  if hash pod > /dev/null; then
+    pod cache clean --all
+  fi
+
+  if hash pnpm > /dev/null; then
+    pnpm store prune
+  fi
+
+  if hash brew > /dev/null; then
+    brew cleanup -s
+  fi
+fi
+
+read -p "$(tput setaf 3)Clean docker caches?$(tput sgr0) (y/n) " RESP
+if [ "$RESP" == "y" ]; then
+  docker system prune --all --force --volumes
+fi
+
+read -p "$(tput setaf 3)Clean nix garbage?$(tput sgr0) (y/n) " RESP
+if [ "$RESP" == "y" ]; then
+  nix-collect-garbage -d
+fi
+
+read -p "$(tput setaf 3)Clean xcode caches?$(tput sgr0) (y/n) " RESP
+if [ "$RESP" == "y" ]; then
+  xcrun simctl delete unavailable
+fi
+
+read -p "$(tput setaf 3)Run periodic scripts?$(tput sgr0) (y/n) " RESP
+if [ "$RESP" == "y" ]; then
+  sudo periodic daily weekly monthly
+fi
+
+read -p "$(tput setaf 3)Rebuild Spotlight?$(tput sgr0) (y/n) " RESP
+if [ "$RESP" == "y" ]; then
+  sudo mdutil -E /
+fi
+
+echo -e "\n$(tput setaf 1)Clean done, restart your computer!$(tput sgr0)"

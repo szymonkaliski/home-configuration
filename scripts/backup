@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+source ~/.backuprc
+
+case $1 in
+  hekko)
+    lftp -c "\
+      open ftp://$FTP; \
+      cd /domains/treesmovethemost.com/public_html/; \
+      mirror -e -c --verbose ./ /media/NAS/Backup/Hekko/treesmovethemost; \
+      cd /domains/datamotion.co/public_html/; \
+      mirror -e -c --verbose ./ /media/NAS/Backup/Hekko/datamotion; \
+      cd /domains/lowertone.net/public_html/; \
+      mirror -e -c --verbose ./ /media/NAS/Backup/Hekko/lowertone; \
+      cd /domains/microton.es/public_html/; \
+      mirror -e -c --verbose ./ /media/NAS/Backup/Hekko/microtones; \
+      cd /domains/szymonkaliski.com/public_html/; \
+      mirror -e -c --verbose ./ /media/NAS/Backup/Hekko/szymonkaliski; \
+      cd /domains/flow-control.io/public_html/; \
+      mirror -e -c --verbose ./ /media/NAS/Backup/Hekko/flow-control; \
+      "
+    ;;
+esac

@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+if !command -v nix &> /dev/null; then
+  echo "Nix could not be found, exiting."
+  exit 1
+fi
+
+function askBeforeRunning() {
+  SCRIPT=$1
+
+  read -p "$(tput setaf 3)Do you want to execute $SCRIPT?$(tput sgr0) (y/n) " RESP
+  if [ "$RESP" == "y" ]; then
+    ./$SCRIPT
+  fi
+}
+
+DOTFILE_DIR="$(pwd)/dotfiles"
+HOSTNAME="$(hostname)"
+
+ln -si $DOTFILE_DIR/dircolors ~/.dircolors
+ln -si $DOTFILE_DIR/gitconfig ~/.gitconfig
+ln -si $DOTFILE_DIR/gitignore_global ~/.gitignore_global
+ln -si $DOTFILE_DIR/ignore ~/.ignore
+ln -si $DOTFILE_DIR/tmux.conf ~/.tmux.conf
+ln -si $DOTFILE_DIR/vale.ini ~/.vale.ini
+ln -si $DOTFILE_DIR/vim ~/.vim
+ln -si $DOTFILE_DIR/vimrc ~/.vimrc
+ln -si $DOTFILE_DIR/zprofile ~/.zprofile
+ln -si $DOTFILE_DIR/zsh ~/.zsh
+ln -si $DOTFILE_DIR/zshrc ~/.zshrc
+
+ln -si $(pwd)/scripts ~/.bin
+ln -si $DOTFILE_DIR/home-manager ~/.config/home-manager
+
+if [[ $HOSTNAME == "Orchid" ]]; then
+  ln -si $DOTFILE_DIR/hammerspoon ~/.hammerspoon
+  ln -si $DOTFILE_DIR/ghostty ~/.config/ghostty
+
+  askBeforeRunning ./launchctls/reinstall-launchctls.sh
+  askBeforeRunning ./terminfos/generate-terminfos.sh
+fi
+
+read -p "$(tput setaf 3)Do you want to set up home-manager?$(tput sgr0) (y/n) " RESP
+cd ~/.config/home-manager/
+nix flake update
+
+if [[ $HOSTNAME == "Orchid" ]]; then
+  home-manager switch --flake .#szymon@orchid
+else
+  echo "No home-manager configuration found for this machine!"
+fi
+

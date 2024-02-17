@@ -1,0 +1,23 @@
+{
+  "suggest.noselect": true,
+  "suggest.autoTrigger": "none",
+
+  "codeLens.enable": false,
+  "diagnostic.enable": true,
+  "diagnostic.enableSign": false,
+  "diagnostic.displayByAle": false,
+
+  "diagnostic.virtualText": false,
+  "diagnostic.virtualTextCurrentLineOnly": false,
+
+  "rust-analyzer.updates.prompt": false,
+  "rust-analyzer.lens.enable": false,
+  "rust-analyzer.disableProgressNotifications": true,
+
+  "languageserver": {
+    "clojure": {
+      "command": "clojure-lsp",
+      "filetypes": ["clojure", "clojurescript"]
+    }
+  }
+}

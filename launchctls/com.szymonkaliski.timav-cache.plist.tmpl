@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC -//Apple Computer//DTD PLIST 1.0//EN http://www.apple.com/DTDs/PropertyList-1.0.dtd>
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>com.szymonkaliski.timav-cache</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>/bin/bash</string>
+            <string>LAUNCHCTL_SCRIPTS_PATH/timav-cache.sh</string>
+        </array>
+        <key>RunAtLoad</key>
+        <true/>
+        <key>StartInterval</key>
+        <integer>3600</integer>
+        <key>StandardErrorPath</key>
+        <string>/tmp/timav-cache.err</string>
+        <key>StandardOutPath</key>
+        <string>/tmp/timav-cache.out</string>
+    </dict>
+</plist>

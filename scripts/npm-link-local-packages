@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+PACKAGES=(
+  "alfred-infinite-clipboard"
+  "archivist/archivist-browser"
+  "archivist/archivist-cli"
+  "logger-search"
+  "muninn-get-asset"
+  "muninn-make-month"
+  "muninn-simple"
+  "timav"
+  "timav-dashboard"
+  "wsync"
+)
+
+for dir in "${PACKAGES[@]}"; do
+  pushd "$HOME/Documents/Projects/$dir" || exit
+  npm install
+  npm link
+  popd || exit
+done

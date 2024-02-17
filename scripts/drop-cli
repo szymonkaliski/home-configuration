@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+DROP=$HOME/Documents/Projects/drop-cli/bin/drop-cli
+
+if [[ -f "$DROP" && -x "$DROP" ]]; then
+  "$DROP" "$@"
+else
+  echo "Error: $DROP does not exist or is not executable."
+  exit 1
+fi

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+HOSTNAME="$(hostname)"
+
+if [[ $HOSTNAME == "berry" ]]; then
+  SHELL=/usr/bin/bash tmux -u new-session -d -s "friday"
+  tmux send-keys "cd ~/friday" "C-m"
+  tmux send-keys "nvm use && npm start" "C-m"
+fi

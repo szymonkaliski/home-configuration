@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+TINYOCR=$HOME/Documents/Projects/tinyocr/.build/release/tinyocr
+
+if [[ -f "$TINYOCR" && -x "$TINYOCR" ]]; then
+  "$TINYOCR" "$@"
+else
+  echo "Error: $TINYOCR does not exist or is not executable."
+  exit 1
+fi

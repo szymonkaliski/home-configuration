@@ -1,0 +1,31 @@
+# https://github.com/mitchellh/ghostty/blob/main/src/config/Config.zig
+
+term = xterm-256color
+
+font-family             = JetBrains Mono
+font-family-bold        = JetBrains Mono Bold
+font-family-italic      = JetBrains Mono Italic
+font-family-bold-italic = JetBrains Mono Bold Italic
+
+font-size    = 13
+font-thicken = false
+
+adjust-cell-height            = 4
+adjust-font-baseline          = 0
+adjust-strikethrough-position = 2
+
+window-padding-x       = 12
+window-padding-y       = 12
+window-padding-balance = true
+
+mouse-hide-while-typing = false
+window-theme            = auto
+window-colorspace       = display-p3
+confirm-close-surface   = false
+shell-integration       = none
+mouse-scroll-multiplier = 2.0
+macos-titlebar-tabs     = false
+
+background = #1d1f21
+foreground = #c5c8c6
+

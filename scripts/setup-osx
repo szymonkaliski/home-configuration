@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+# mostly stolen from: https://github.com/mathiasbynens/dotfiles/blob/master/.macos
+
+# disable new window animation
+defaults write NSGlobalDomain NSAutomaticWindowAnimationsEnabled -bool false
+
+# disable Finder animations
+defaults write com.apple.finder DisableAllAnimations -bool true
+
+# disable focus ring animation
+defaults write NSGlobalDomain NSUseAnimatedFocusRing -bool false
+
+# increase window resize speed
+defaults write NSGlobalDomain NSWindowResizeTime -float 0.001
+
+# open the app first, not the weird new file picker
+defaults write -g NSShowAppCentricOpenPanelInsteadOfUntitledFile -bool false
+
+# set the icon size of Dock items
+defaults write com.apple.dock tilesize -int 48
+
+# lock Dock size
+defaults write com.apple.dock size-immutable -bool true
+
+# show/hide Dock without delay
+defaults write com.apple.dock autohide-delay -float 0
+
+# expand save panel by default
+defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode -bool true
+defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode2 -bool true
+
+# expand print panel by default
+defaults write NSGlobalDomain PMPrintingExpandedStateForPrint -bool true
+defaults write NSGlobalDomain PMPrintingExpandedStateForPrint2 -bool true
+
+# save to disk (not to iCloud) by default
+defaults write NSGlobalDomain NSDocumentSaveNewDocumentsToCloud -bool false
+
+# save screenshots to Dropbox
+defaults write com.apple.screencapture location ~/Documents/Dropbox/Screenshots/
+
+# name screenshots as Screenshot...
+defaults write com.apple.screencapture name "Screenshot"
+
+# force dark mode for apps
+# defaults write com.ableton.live   NSRequiresAquaSystemAppearance 0
+# defaults write cc.arduino.Arduino NSRequiresAquaSystemAppearance 0
+
+echo "$(tput setaf 1)done, note that some of these changes require app restart or logout to take effect...$(tput sgr0)"

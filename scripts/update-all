@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+function gitUpdate {
+  if [ -d "$*" ]; then
+    pushd "$*" > /dev/null || return
+
+    if [ -e .git ]; then
+      echo -e "$(tput setaf 2)Checking $(basename "$*")...$(tput sgr0)"
+      git pull
+      echo
+    fi
+
+    popd > /dev/null || return
+  fi
+}
+
+if [ "$(uname)" = "Darwin" ]; then
+  echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"
+  pushd ~/.config/home-manager > /dev/null || return
+  nix flake update
+  home-manager switch --flake .#szymon@orchid
+  echo
+  popd > /dev/null || return
+fi
+
+if [ -d ~/.zsh/plugins ]; then
+  for i in ~/.zsh/plugins/*; do
+    gitUpdate "$i"
+  done
+fi
+
+if [ -d ~/.tmux/plugins ]; then
+  for i in ~/.tmux/plugins/*; do
+    gitUpdate "$i"
+  done
+fi
+
+if hash ncu 2> /dev/null; then
+  echo -e "$(tput setaf 2)Checking NPM...$(tput sgr0)"
+
+  # actually install
+  npm i -g $(ncu -g --format lines)
+
+  echo
+fi
+

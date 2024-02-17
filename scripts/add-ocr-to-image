@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+# kMDItemTextContent would be a better fit, but doesn't seem to work everywhere (for example in Alfred)
+#
+# reference: https://gist.github.com/pnc/b7fb38d70f157cd40595d9e52bebc055
+
+set -e
+
+if [ -z "$*" ]; then
+  echo "pass image file as argument"
+  exit 1
+fi
+
+FORCE=0
+
+while (( "$#" )); do
+  case "$1" in
+    --force)
+      FORCE=1
+      shift 1
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+echo "adding OCR data to: $1"
+
+if [[ $FORCE -eq 0 ]] && xattr "$1" | grep -q "kMDItemFinderComment"; then
+  echo "file $1 alredy has kMDItemFinderComment, exiting"
+  exit 0
+fi
+
+TINYOCR="$HOME/.bin/tinyocr"
+XML="$HOME/.nix-profile/bin/xml"
+
+CONTENTS=$("$TINYOCR" "$1" | $XML esc)
+
+HEX=$((cat << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<string>$CONTENTS</string>
+</plist>
+EOF
+) | plutil -convert binary1 - -o - | xxd -p | tr -d '\n')
+
+xattr -w -x com.apple.metadata:kMDItemFinderComment "$HEX" "$1"
+
+mdimport "$1"
+

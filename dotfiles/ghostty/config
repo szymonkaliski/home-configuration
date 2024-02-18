@@ -14,8 +14,8 @@ adjust-cell-height            = 4
 adjust-font-baseline          = 0
 adjust-strikethrough-position = 2
 
-window-padding-x       = 12
-window-padding-y       = 12
+window-padding-x       = 7
+window-padding-y       = 7
 window-padding-balance = true
 
 mouse-hide-while-typing = false
@@ -24,8 +24,9 @@ window-colorspace       = display-p3
 confirm-close-surface   = false
 shell-integration       = none
 mouse-scroll-multiplier = 2.0
-macos-titlebar-tabs     = false
+macos-titlebar-tabs     = true
 
+# these are set from zsh base16 color setting so they match when switching terminal colors
 background = #1d1f21
 foreground = #c5c8c6
 

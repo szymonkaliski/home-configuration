@@ -9,17 +9,12 @@
 [system]
   untrackedCache = true
 [diff]
-  color = auto
-  algorithm = patience
-  compactionHeuristic = true
+  algorithm = histogram
   external = difft
-[pager]
-  color = true
 [status]
-  color = true
   showUntrackedFiles = all
 [merge]
-  conflictstyle = diff3
+  conflictstyle = zdiff3
 [alias]
   this = !git init && git add . && git commit -m \"initial commit\"
   amend = !git log -n 1 --pretty=tformat:%s%n%n%b | git commit -F - --amend
@@ -41,7 +36,7 @@
   followTags = true
 [pull]
   ff = only
-[rere]
+[rerere]
   enabled = true
 [filter "lfs"]
   smudge = git-lfs smudge -- %f
@@ -52,4 +47,8 @@
   defaultBranch = main
 [url "git@github.com:"]
   insteadOf = git://github.com/
-
+[fetch]
+	prune = true
+	pruneTags = true
+[log]
+	date = iso

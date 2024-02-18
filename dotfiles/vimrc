@@ -20,6 +20,7 @@ DeferPlug 'chaoren/vim-wordmotion'
 DeferPlug 'neoclide/coc.nvim',             { 'do': { -> coc#util#install() } }
 DeferPlug 'pbrisbin/vim-mkdir'
 DeferPlug 'tpope/vim-repeat'
+DeferPlug 'tpope/vim-speeddating'
 DeferPlug 'tpope/vim-surround'
 DeferPlug 'tpope/vim-unimpaired'
 DeferPlug 'vim-scripts/matchit.zip'

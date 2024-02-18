@@ -45,4 +45,8 @@ function! s:unimpaired_load()
   unmap ]<c-l>
   unmap [<c-q>
   unmap ]<c-q>
+  unmap =p
+  unmap =P
+  unmap =s<Esc>
+  unmap =s
 endfunction

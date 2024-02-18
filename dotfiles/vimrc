@@ -52,7 +52,7 @@ Plug 'cespare/vim-toml',                   { 'for': 'toml' }
 Plug 'digitaltoad/vim-pug',                { 'for': 'pug' }
 Plug 'elixir-editors/vim-elixir',          { 'for': 'elixir', }
 Plug 'elzr/vim-json',                      { 'for': 'json' }
-Plug 'eraserhd/parinfer-rust',             { 'for': 'clojure', 'do': 'cargo build --release'}
+Plug 'eraserhd/parinfer-rust',             { 'for': 'clojure', 'do': 'nix-shell --run \"cargo build --release\"'}
 Plug 'groenewege/vim-less',                { 'for': 'less' }
 Plug 'itchyny/vim-haskell-indent',         { 'for': 'haskell' }
 Plug 'jparise/vim-graphql',                { 'for': 'graphql' }

@@ -4,7 +4,7 @@ local log            = hs.logger.new("screenshot-with-meta", "debug")
 
 local module = {}
 
-local ADD_OCR_TO_IMAGE_PATH = os.getenv('HOME') .. '.bin/add-ocr-to-image'
+local ADD_OCR_TO_IMAGE_PATH = os.getenv('HOME') .. '/.bin/add-ocr-to-image'
 local SCREENSHOT_PATH       = os.getenv('HOME') .. '/Documents/Dropbox/Screenshots/'
 
 local SCREENCAPTURE_PATH    = '/usr/sbin/screencapture'

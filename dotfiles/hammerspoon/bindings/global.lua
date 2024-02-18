@@ -9,7 +9,7 @@ local module = { cache = cache }
 
 local dropCliLog = hs.logger.new('drop-cli', 'debug');
 
-local DROP_CLI_PATH = os.getenv('HOME') .. '.bin/drop-cli'
+local DROP_CLI_PATH = os.getenv('HOME') .. '/.bin/drop-cli'
 
 -- when cmd+v is broken
 local forcePaste = function()

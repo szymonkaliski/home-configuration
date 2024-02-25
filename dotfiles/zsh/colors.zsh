@@ -5,6 +5,7 @@ colors
 
 # grep
 export GREP_COLOR=34
+export GREP_COLORS="mt=34"
 
 # dircolors
 load_dircolors() {

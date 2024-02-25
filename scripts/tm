@@ -3,10 +3,6 @@
 setup_session() {
   local basedir=$1
   local title=$2
-
-  # if [ -d "$basedir"/Code ]; then
-  #   tmux send-keys -t "$title" " cd Code; clear" "C-m"
-  # fi
 }
 
 get_basedir() {

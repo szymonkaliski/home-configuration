@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# used with crontab:
+# ```
+# @reboot ./bin/tmux-daemon
+# ```
 
 HOSTNAME="$(hostname)"
 

@@ -6,3 +6,4 @@
 source ~/.pushoverrc
 
 curl -s -F "token=$TOKEN" -F "user=$USER" -F "message=$*" https://api.pushover.net/1/messages.json > /dev/null
+

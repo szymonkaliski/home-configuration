@@ -65,11 +65,11 @@ zsh_plugins_install() {
   mkdir -p ~/.zsh/plugins/
   pushd ~/.zsh/plugins/ > /dev/null
 
-  git clone -b zsh-flock git://github.com/mafredri/z
-  git clone git://github.com/chriskempson/base16-shell
-  git clone git://github.com/hlissner/zsh-autopair
-  git clone git://github.com/romkatv/gitstatus
-  git clone git://github.com/zdharma-continuum/fast-syntax-highlighting
+  git clone https://github.com/mafredri/z -b zsh-flock
+  git clone https://github.com/chriskempson/base16-shell
+  git clone https://github.com/hlissner/zsh-autopair
+  git clone https://github.com/romkatv/gitstatus
+  git clone https://github.com/zdharma-continuum/fast-syntax-highlighting
   git clone https://github.com/romkatv/zsh-defer
 
   popd > /dev/null

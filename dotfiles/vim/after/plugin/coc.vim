@@ -17,6 +17,7 @@ function! s:coc_load()
         \ 'coc-json',
         \ 'coc-pairs',
         \ 'coc-prettier',
+        \ 'coc-pyright',
         \ 'coc-rust-analyzer',
         \ 'coc-sourcekit',
         \ 'coc-tsserver',

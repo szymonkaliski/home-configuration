@@ -23,6 +23,14 @@ if [[ $(hostname -s) == "Orchid" ]]; then
   popd > /dev/null || return
 fi
 
+if [[ $(hostname -s) == "szymon-vm" ]]; then
+  echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"
+  pushd ~/.config/home-manager > /dev/null || return
+  nix run home-manager -- switch --flake .#szymon@devvm
+  echo
+  popd > /dev/null || return
+fi
+
 if [ -d ~/.zsh/plugins ]; then
   for i in ~/.zsh/plugins/*; do
     gitUpdate "$i"

@@ -6,6 +6,11 @@ else
   echo
 fi
 
+# devvm handles PATH weirdly, one of these days I'll figure it out
+if [ -x /run/current-system/sw/bin/hostname -a "$(/run/current-system/sw/bin/hostname -s)" = "szymon-vm" ]; then
+  source ~/.zsh/devvm.zsh
+fi
+
 # load files
 files=(
   options
@@ -28,7 +33,9 @@ files=(
 
 if [ "$(uname)" = "Darwin" ]; then
   source ~/.zsh/darwin.zsh
-else
+fi
+
+if [ "$(uname)" = "Linux" ]; then
   source ~/.zsh/linux.zsh
 fi
 

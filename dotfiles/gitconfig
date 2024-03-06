@@ -48,7 +48,14 @@
 [url "git@github.com:"]
   insteadOf = git://github.com/
 [fetch]
-	prune = true
-	pruneTags = true
+  prune = true
+  pruneTags = true
 [log]
-	date = iso
+  date = iso
+[credential "https://github.com"]
+  helper =
+  helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+  helper =
+  helper = !/run/current-system/sw/bin/gh auth git-credential
+

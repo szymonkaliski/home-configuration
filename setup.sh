@@ -11,9 +11,8 @@ function askBeforeRunning() {
   fi
 }
 
-HAS_NIX=$(command -v nix &> /dev/null && echo true || echo false)
 DOTFILE_DIR="$(pwd)/dotfiles"
-HOSTNAME="$(hostname)"
+HOSTNAME="$(hostname -s)"
 
 ln -si $DOTFILE_DIR/dircolors ~/.dircolors
 ln -si $DOTFILE_DIR/gitconfig ~/.gitconfig
@@ -22,6 +21,7 @@ ln -si $DOTFILE_DIR/ignore ~/.ignore
 ln -si $DOTFILE_DIR/tmux.conf ~/.tmux.conf
 ln -si $DOTFILE_DIR/vale.ini ~/.vale.ini
 ln -si $DOTFILE_DIR/vim ~/.vim
+ln -si $DOTFILE_DIR/vim ~/.config/nvim
 ln -si $DOTFILE_DIR/vimrc ~/.vimrc
 ln -si $DOTFILE_DIR/zprofile ~/.zprofile
 ln -si $DOTFILE_DIR/zsh ~/.zsh
@@ -57,21 +57,24 @@ if [ -d ~/.zsh/ ]; then
   popd > /dev/null
 fi
 
-if $HAS_NIX; then
+if hash nix 2 > /dev/null; then
   read -p "$(tput setaf 3)Do you want to set up home-manager?$(tput sgr0) (y/n) " RESP
 
   if [ "$RESP" == "y" ]; then
     ln -si $DOTFILE_DIR/home-manager ~/.config/home-manager
-    cd ~/.config/home-manager
-
-    nix flake update
+    pushd ~/.config/home-manager
 
     if [[ $HOSTNAME == "Orchid" ]]; then
+      nix flake update
       home-manager switch --flake .#szymon@orchid
+    elif [[ $HOSTNAME == "szymon-vm" ]]; then
+      nix run home-manager -- switch --flake .#szymon@devvm
     else
       echo
       echo "No home-manager configuration found for this machine!"
     fi
+
+    popd
   fi
 fi
 

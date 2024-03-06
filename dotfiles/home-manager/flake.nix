@@ -27,8 +27,17 @@
       "szymon@orchid" = home-manager.lib.homeManagerConfiguration {
         pkgs = nixpkgs.legacyPackages.x86_64-darwin;
 
-        modules = [ 
-          ./home.nix 
+        modules = [
+          ./home.nix
+          nix-index-database.hmModules.nix-index
+        ];
+      };
+
+      "szymon@devvm" = home-manager.lib.homeManagerConfiguration {
+        pkgs = nixpkgs.legacyPackages.x86_64-linux;
+
+        modules = [
+          ./devvm.nix
           nix-index-database.hmModules.nix-index
         ];
       };

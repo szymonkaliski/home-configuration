@@ -8,7 +8,7 @@ PACKAGES=(
   "muninn-get-asset"
   "muninn-make-month"
   "muninn-simple"
-  "timav"
+  "timav-cli"
   "timav-dashboard"
   "wsync"
 )

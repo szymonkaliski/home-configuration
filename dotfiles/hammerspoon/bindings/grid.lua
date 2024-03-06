@@ -73,6 +73,22 @@ local fourthSplit = function(win)
   return split(win, 1 / 4)
 end
 
+-- grow in height but keep the width as is
+local fullHeight = function(win)
+  local screen = win:screen()
+  local screenGrid = hs.grid.getGrid(screen)
+  local currentWindowGrid = hs.grid.get(win)
+
+  local geom = hs.geometry(
+    currentWindowGrid.x,
+    currentWindowGrid.y,
+    currentWindowGrid.w,
+    screenGrid.h
+  )
+
+  hs.grid.set(win, geom, screen)
+end
+
 module.start = function()
   local bind = function(key, fn)
     hs.hotkey.bind({ 'ctrl', 'shift' }, key, fn, nil, fn)
@@ -98,6 +114,7 @@ module.start = function()
 
     { key = 's', fn = halfSplit                    },
     { key = 't', fn = fourthSplit                  },
+    { key = 'v', fn = fullHeight                   },
   }, function(object)
     bind(object.key, doWin(object.fn))
   end)

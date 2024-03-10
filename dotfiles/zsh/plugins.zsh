@@ -60,33 +60,6 @@ load_gitstatus() {
   setup_git_prompt_status
 }
 
-# "plugin manager"
-zsh_plugins_install() {
-  mkdir -p ~/.zsh/plugins/
-  pushd ~/.zsh/plugins/ > /dev/null
-
-  git clone https://github.com/mafredri/z -b zsh-flock
-  git clone https://github.com/chriskempson/base16-shell
-  git clone https://github.com/hlissner/zsh-autopair
-  git clone https://github.com/romkatv/gitstatus
-  git clone https://github.com/zdharma-continuum/fast-syntax-highlighting
-  git clone https://github.com/romkatv/zsh-defer
-
-  popd > /dev/null
-}
-
-zsh_plugins_update() {
-  pushd ~/.zsh/plugins/ > /dev/null
-
-  for d in *; do
-    pushd "$d" > /dev/null
-    git pull
-    popd > /dev/null
-  done
-
-  popd > /dev/null
-}
-
 load_z # I often want to jump somewhere immediately when opening a shell
 load_direnv # same for direnv
 

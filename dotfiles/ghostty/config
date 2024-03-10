@@ -23,7 +23,7 @@ window-theme            = auto
 window-colorspace       = display-p3
 confirm-close-surface   = false
 shell-integration       = none
-mouse-scroll-multiplier = 3.0
+mouse-scroll-multiplier = 2.0
 macos-titlebar-tabs     = true
 
 # these are set from zsh base16 color setting so they match when switching terminal colors

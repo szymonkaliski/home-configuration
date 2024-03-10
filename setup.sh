@@ -65,7 +65,6 @@ if hash nix 2 > /dev/null; then
     pushd ~/.config/home-manager
 
     if [[ $HOSTNAME == "Orchid" ]]; then
-      nix flake update
       home-manager switch --flake .#szymon@orchid
     elif [[ $HOSTNAME == "szymon-vm" ]]; then
       nix run home-manager -- switch --flake .#szymon@devvm

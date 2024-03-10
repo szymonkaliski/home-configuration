@@ -28,7 +28,7 @@
         pkgs = nixpkgs.legacyPackages.x86_64-darwin;
 
         modules = [
-          ./home.nix
+          ./orchid.nix
           nix-index-database.hmModules.nix-index
         ];
       };

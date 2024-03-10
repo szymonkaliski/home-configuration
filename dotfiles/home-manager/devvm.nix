@@ -8,7 +8,7 @@
     pkgs.difftastic
     pkgs.fd
     pkgs.fzf
-    pkgs.grc
+    pkgs.killall
     pkgs.lefthook
     pkgs.nnn
     pkgs.ripgrep

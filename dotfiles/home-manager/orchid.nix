@@ -19,6 +19,7 @@
     pkgs.fd
     pkgs.ffmpeg
     pkgs.fzf
+    pkgs.gh
     pkgs.git
     pkgs.go
     pkgs.grc

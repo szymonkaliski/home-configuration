@@ -41,3 +41,8 @@ function fg-bg() {
 
 zle -N fg-bg
 bindkey '^z' fg-bg
+
+# vim-mode
+bindkey -v
+export KEYTIMEOUT=1
+

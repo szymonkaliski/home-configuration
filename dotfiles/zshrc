@@ -1,7 +1,7 @@
 if [ -f ~/.zsh/plugins/zsh-defer/zsh-defer.plugin.zsh ]; then
   source ~/.zsh/plugins/zsh-defer/zsh-defer.plugin.zsh
 else
-  echo "zsh-defer is missing! run \`zsh_plugin_install\`"
+  echo "zsh-defer is missing! run \`setup.sh\`"
   echo "you'll get some errors below..."
   echo
 fi
@@ -9,9 +9,7 @@ fi
 # load files
 files=(
   options
-  terminfo
   completion
-  vim
   locale
   muninn
   aliases
@@ -19,7 +17,6 @@ files=(
   history
   bindkeys
   terminal
-  reporttime
   fzf
   colors
   prompt
@@ -28,8 +25,6 @@ files=(
 
 if [ "$(uname)" = "Darwin" ]; then
   source ~/.zsh/darwin.zsh
-else
-  source ~/.zsh/linux.zsh
 fi
 
 for file in $files; do

@@ -214,7 +214,7 @@ n() {
 
   if [ -f $NNN_TMPFILE ]; then
     source $NNN_TMPFILE
-    /bin/rm $NNN_TMPFILE
+    rm -f $NNN_TMPFILE > /dev/null
   fi
 }
 

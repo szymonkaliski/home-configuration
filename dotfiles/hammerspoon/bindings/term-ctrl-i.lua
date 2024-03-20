@@ -22,7 +22,7 @@ local rebindCtrlI = function(appName, options)
 end
 
 module.start = function()
-  cache.filter = hs.window.filter.new({ 'iTerm', 'iTerm2', 'Terminal', 'kitty' })
+  cache.filter = hs.window.filter.new({ 'iTerm', 'iTerm2', 'Terminal', 'kitty', 'Ghostty' })
 
   cache.filter:subscribe({
     hs.window.filter.windowFocused,

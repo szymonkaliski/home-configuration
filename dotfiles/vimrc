@@ -476,9 +476,13 @@ cnoremap %% <c-r>=fnameescape(expand('%:~:h'))<cr>/
 " tab as %
 map <tab> %
 
-" HammerSpoon rebinds ctrl-i to F6, and here we bind it back,
-" because ctrl-i is tab in terminal
+" HammerSpoon rebinds ctrl-i to F6, and here we bind it back, because ctrl-i
+" is tab in terminal
 nnoremap <F6> <c-i>
+
+" 105;5u is from https://www.leonerd.org.uk/hacks/fixterms/ which Ghostty
+" implements, though this doesn't seem to work?
+" nnoremap <ESC>[105;5u <c-i>
 
 " so you can gf to non-existing (new) files
 " breaks gf for relative paths though

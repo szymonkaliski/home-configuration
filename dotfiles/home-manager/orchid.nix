@@ -25,6 +25,7 @@
     pkgs.grc
     pkgs.htop
     pkgs.lefthook
+    pkgs.llm
     pkgs.mosquitto
     pkgs.neovim
     pkgs.ngrok

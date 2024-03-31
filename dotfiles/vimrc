@@ -25,6 +25,7 @@ DeferPlug 'tpope/vim-surround'
 DeferPlug 'tpope/vim-unimpaired'
 DeferPlug 'vim-scripts/matchit.zip'
 DeferPlug 'yssl/QFEnter'
+DeferPlug 'madox2/vim-ai'
 " DeferPlug 'edluffy/hologram.nvim' -- image support in kitty, I couldn't get it to work quickly
 
 " on demand loading
@@ -445,9 +446,12 @@ if has('mac')
   let g:python_host_skip_check = 1
   let g:python_host_prog = '/usr/local/bin/python'
 
+  " enabled python3 for `vim-ai`, host_prog has to be figured out by `(n)vim`
+  " for proper `nix` paths
+  "
   " let g:loaded_python3_provider = 1 " disable python 3
-  let g:python3_host_skip_check = 1
-  let g:python3_host_prog = '/usr/bin/python3'
+  " let g:python3_host_skip_check = 1
+  " let g:python3_host_prog = '/usr/bin/python3'
 endif
 
 " disable ruby

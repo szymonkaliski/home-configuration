@@ -32,6 +32,7 @@
     pkgs.nnn
     pkgs.nodejs_20
     pkgs.parallel
+    pkgs.python312Packages.pynvim # dependency for `vim-ai`
     pkgs.ripgrep
     pkgs.rsync
     pkgs.tmux

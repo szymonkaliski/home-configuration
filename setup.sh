@@ -35,6 +35,7 @@ if [[ $HOSTNAME == "Orchid" ]]; then
 
   askBeforeRunning ./launchctls/reinstall-launchctls.sh
   askBeforeRunning ./terminfos/generate-terminfos.sh
+  askBeforeRunning ./scripts/setup-osx
 fi
 
 if [ -d ~/.vim/ ]; then

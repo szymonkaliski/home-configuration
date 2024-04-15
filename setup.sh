@@ -58,7 +58,7 @@ if [ -d ~/.zsh/ ]; then
   popd > /dev/null
 fi
 
-if hash nix 2 > /dev/null; then
+if command -v nix &> /dev/null; then
   read -p "$(tput setaf 3)Do you want to set up home-manager?$(tput sgr0) (y/n) " RESP
 
   if [ "$RESP" == "y" ]; then

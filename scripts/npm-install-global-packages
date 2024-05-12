@@ -6,7 +6,6 @@ PACKAGES=(
   prettier
   serve-http
   vim-node-rpc
-  vmd
 )
 
 npm install -g "${PACKAGES[@]}"

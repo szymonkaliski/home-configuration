@@ -2,7 +2,6 @@
 
 PACKAGES=(
   "alfred-infinite-clipboard"
-  "archivist/archivist-browser"
   "archivist/archivist-cli"
   "logger-search"
   "muninn-get-asset"
@@ -10,7 +9,6 @@ PACKAGES=(
   "muninn-simple"
   "timav-cli"
   "timav-dashboard"
-  "wsync"
 )
 
 for dir in "${PACKAGES[@]}"; do

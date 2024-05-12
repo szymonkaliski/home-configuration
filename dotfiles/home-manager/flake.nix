@@ -14,33 +14,24 @@
   };
 
   outputs = { nixpkgs, home-manager, nix-index-database, ... }:
-  let
-    systems = [
-      "aarch64-darwin"
-      "x86_64-linux"
-    ];
-    forAllSystems = nixpkgs.lib.genAttrs systems;
-  in {
-    formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.alejandra);
+    let
+      systems = [ "aarch64-darwin" "x86_64-linux" ];
+      forAllSystems = nixpkgs.lib.genAttrs systems;
+    in {
+      formatter = forAllSystems (system: nixpkgs.${system}.nixfmt);
 
-    homeConfigurations = {
-      "szymon@orchid" = home-manager.lib.homeManagerConfiguration {
-        pkgs = nixpkgs.legacyPackages.aarch64-darwin;
+      homeConfigurations = {
+        "szymon@orchid" = home-manager.lib.homeManagerConfiguration {
+          pkgs = nixpkgs.legacyPackages.aarch64-darwin;
 
-        modules = [
-          ./orchid.nix
-          nix-index-database.hmModules.nix-index
-        ];
-      };
+          modules = [ ./orchid.nix nix-index-database.hmModules.nix-index ];
+        };
 
-      "szymon@devvm" = home-manager.lib.homeManagerConfiguration {
-        pkgs = nixpkgs.legacyPackages.x86_64-linux;
+        "szymon@devvm" = home-manager.lib.homeManagerConfiguration {
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
 
-        modules = [
-          ./devvm.nix
-          nix-index-database.hmModules.nix-index
-        ];
+          modules = [ ./devvm.nix nix-index-database.hmModules.nix-index ];
+        };
       };
     };
-  };
 }

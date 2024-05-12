@@ -1,4 +1,4 @@
-{ config, pkgs, ... }: {
+{ pkgs, ... }: {
   home.username = "szymon";
   home.homeDirectory = "/Users/szymon";
   home.stateVersion = "23.11";
@@ -29,6 +29,8 @@
     pkgs.mosquitto
     pkgs.neovim
     pkgs.ngrok
+    pkgs.nil
+    pkgs.nixfmt
     pkgs.nnn
     pkgs.nodejs_20
     pkgs.parallel
@@ -37,6 +39,7 @@
     pkgs.rsync
     pkgs.tmux
     pkgs.tree
+    pkgs.unixtools.watch
     pkgs.vale
     pkgs.watchexec
     pkgs.wget

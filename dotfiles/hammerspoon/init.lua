@@ -5,9 +5,6 @@ local flatten = require('ext.table').flatten
 require('console').init()
 require('overrides').init()
 
--- ensure IPC is there
-hs.ipc.cliInstall()
-
 -- https://developer.apple.com/documentation/applicationservices/1459345-axuielementsetmessagingtimeout
 hs.window.timeout(0.5)
 
@@ -17,7 +14,7 @@ require('hs.hotkey').setLogLevel('warning')
 -- global config
 config = {
   apps = {
-    terms    = { 'Ghostty', 'kitty', 'Terminal' },
+    terms    = { 'Ghostty', 'Terminal' },
     browsers = { 'Safari', 'Google Chrome' }
   },
 
@@ -28,10 +25,6 @@ config = {
     -- tilingMethod = 'autogrid',
 
     defaultLayouts = { 'monocle', 'main-left' },
-    displayLayouts = {
-      ['Color LCD']    = { 'monocle', 'main-left' },
-      -- ['DELL U3818DW'] = { 'main-left', 'main-right', 'main-center', 'monocle' }
-    }
   },
 
   window = {
@@ -70,7 +63,7 @@ hs.hints.showTitleThresh    = 0
 watchers.enabled            = { 'theme', 'urlevent' }
 
 -- ui
-ui.enabled                  = { 'battery-menubar', 'caffeine-menubar' }
+ui.enabled                  = { 'caffeine-menubar' }
 
 -- bindings & modules
 local modules               = { bindings, logger, watchers, ui, watchables } -- watchables have to come last to refresh all the things that depend on them

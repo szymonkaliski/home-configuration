@@ -65,14 +65,6 @@ local halfSplit = function(win)
   return split(win, 1 / 2)
 end
 
-local thirdSplit = function(win)
-  return split(win, 1 / 3)
-end
-
-local fourthSplit = function(win)
-  return split(win, 1 / 4)
-end
-
 -- grow in height but keep the width as is
 local fullHeight = function(win)
   local screen = win:screen()
@@ -113,7 +105,6 @@ module.start = function()
     { key = 'c', fn = hs.grid.center               },
 
     { key = 's', fn = halfSplit                    },
-    { key = 't', fn = fourthSplit                  },
     { key = 'v', fn = fullHeight                   },
   }, function(object)
     bind(object.key, doWin(object.fn))

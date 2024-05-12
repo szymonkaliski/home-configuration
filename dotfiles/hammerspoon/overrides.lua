@@ -8,15 +8,11 @@ local isResizable = function(win)
 end
 
 module.init = function()
-  -- local gridMargin = (hhtwm and hhtwm.margin) or 12
   local gridMargin = 8
 
-  -- hs.grid.setGrid('16x10', '1680x1050') -- cell: 105 x 105
-  -- hs.grid.setGrid('16x9',  '1920x1080') -- cell: 120 x 120
-  -- hs.grid.setGrid('16x9',  '2560x1440') -- cell: 160 x 160
-  -- hs.grid.setGrid('9x16',  '1440x2560') -- cell: 160 x 160
-
   hs.grid.setGrid('18x32') -- default
+
+  hs.grid.setGrid('24x16', '37D8832A-2D66-02CA-B9F7-8F30A301B230') -- weird Macbook 14" screen (1512 x 944), cell: 63 x 59; have to bind by UUID because otherwise it's not found for some reason
 
   hs.grid.setGrid('24x15', '1680x1050') -- cell: 70 x 70
   hs.grid.setGrid('32x18', '1920x1080') -- cell: 60 x 60

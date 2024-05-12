@@ -15,7 +15,7 @@ end
 -- force application launch or focus
 module.forceLaunchOrFocus = function(appName)
   local appInstance  = hs.application.get(appName)
-  local isRunning    = appInstance and appInstance:isRunning()
+  local isRunning    = appInstance ~= nil and appInstance:isRunning()
   local focusTimeout = isRunning and 0.05 or 1.5
 
   -- first focus/launch with hammerspoon

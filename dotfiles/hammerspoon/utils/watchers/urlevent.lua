@@ -17,6 +17,7 @@ module.start = function()
     end)
 
     -- applications on current space
+    -- TODO: `hs.window.allWindows()` can be slow, rewrite to `hs.window.filter()`
     local spaceApps = hs.fnutils.map(hs.window.allWindows(), function(win)
       return win:application():name()
     end)

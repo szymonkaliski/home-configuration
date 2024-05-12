@@ -84,15 +84,8 @@ module.start = function()
     { key = '/', fn = system.toggleConsole      },
     { key = 'q', fn = system.displaySleep       },
     { key = 'r', fn = system.restartHammerspoon },
-
     { key = 'd', fn = forceDrop                 },
     { key = 'v', fn = forcePaste                },
-
-    -- system toggles, moved to Alfred
-    -- { key = 'b', fn = system.toggleBluetooth },
-    -- { key = 's', fn = system.toggleDND       }, -- [s]ilence
-    -- { key = 't', fn = system.toggleTheme     },
-    -- { key = 'w', fn = system.toggleWiFi      },
   }, function(object)
     hs.hotkey.bind(ultra, object.key, object.fn)
   end)

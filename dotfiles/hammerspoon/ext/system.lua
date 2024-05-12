@@ -1,5 +1,4 @@
 local activateFrontmost = require('ext.application').activateFrontmost
-local bluetooth         = require('hs._asm.undocumented.bluetooth')
 local capitalize        = require('ext.utils').capitalize
 local template          = require('ext.template')
 
@@ -13,57 +12,6 @@ module.toggleNotificationCenter = function()
       click menu bar item "Notification Center" of menu bar 2
     end tell
   ]])
-end
-
--- DND is not working on Big Sur anymore
-
--- module.isDNDEnabled = function()
---   local _, _, _, rc = hs.execute('do-not-disturb status | grep -q "on"', true)
---   return rc == 0
--- end
-
--- module.toggleDND = function()
---   local imagePath = os.getenv('HOME') .. '/.hammerspoon/assets/notification-center.png'
-
---   local isEnabled = module.isDNDEnabled()
---   local afterTime = isEnabled and 0.0 or 6.0
-
---   -- is not enabled, will be enabled
---   if not isEnabled then
---     hs.notify.new({
---       title        = 'Do Not Disturb',
---       subTitle     = 'Enabled',
---       contentImage = imagePath
---     }):send()
---   end
-
---   -- toggle, wait a bit if we've send notification
---   hs.timer.doAfter(afterTime, function()
---     hs.execute('do-not-disturb ' .. (isEnabled == true and 'off' or 'on'), true)
-
---     -- is enabled, was disabled
---     if isEnabled then
---       hs.notify.new({
---         title        = 'Do Not Disturb',
---         subTitle     = 'Disabled',
---         contentImage = imagePath
---       }):send()
---     end
---   end)
--- end
-
-module.toggleBluetooth = function()
-  local newStatus = not bluetooth.power()
-
-  bluetooth.power(newStatus)
-
-  local imagePath = os.getenv('HOME') .. '/.hammerspoon/assets/bluetooth.png'
-
-  hs.notify.new({
-    title        = 'Bluetooth',
-    subTitle     = 'Power: ' .. (newStatus and 'On' or 'Off'),
-    contentImage = imagePath
-  }):send()
 end
 
 module.toggleWiFi = function()
@@ -80,6 +28,7 @@ module.toggleWiFi = function()
   }):send()
 end
 
+-- TODO: this is slow, rewrite using `hs.openConsole()` and `:close()`
 module.toggleConsole = function()
   hs.toggleConsole()
   activateFrontmost()
@@ -129,7 +78,6 @@ module.toggleTheme = function()
 end
 
 module.restartHammerspoon = function()
-  -- hs.relaunch()
   hs.reload()
 end
 

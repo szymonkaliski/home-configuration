@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+/Applications/Hammerspoon.app/Contents/Frameworks/hs/hs "$@"

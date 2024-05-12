@@ -20,6 +20,14 @@
     "clojure": {
       "command": "clojure-lsp",
       "filetypes": ["clojure", "clojurescript"]
+    },
+    "nix": {
+      "command": "nil",
+      "filetypes": ["nix"],
+      "rootPatterns": ["flake.nix"],
+      "settings": {
+        "nil.formatting.command": ["nixfmt"]
+      }
     }
   }
 }

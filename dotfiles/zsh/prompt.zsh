@@ -23,7 +23,7 @@ ZSH_MAIN_PROMPT="$(prompt_arrow)"
 git_prompt_status() {
   gitstatus_query -d $PWD "GITSTATUS"
 
-  if [ -z $VCS_STATUS_LOCAL_BRANCH ]; then
+  if [ -z $VCS_STATUS_LOCAL_BRANCH ] && [ -z $VCS_STATUS_COMMIT ]; then
     PROMPT='$(prompt_pwd)$ZSH_MAIN_PROMPT'
     zle && zle reset-prompt
     return
@@ -35,9 +35,13 @@ git_prompt_status() {
     branch_color="%{$fg[red]%}"
   fi
 
-  git_branch=" $VCS_STATUS_LOCAL_BRANCH"
+  if [ -z $VCS_STATUS_LOCAL_BRANCH ]; then
+    git_branch_or_commit=" ${VCS_STATUS_COMMIT:0:10}"
+  else
+    git_branch_or_commit=" $VCS_STATUS_LOCAL_BRANCH"
+  fi
 
-  PROMPT='$(prompt_pwd)$branch_color$git_branch$ZSH_MAIN_PROMPT'
+  PROMPT='$(prompt_pwd)$branch_color$git_branch_or_commit$ZSH_MAIN_PROMPT'
   zle && zle reset-prompt
 }
 

@@ -14,6 +14,12 @@ function askBeforeRunning() {
 DOTFILE_DIR="$(pwd)/dotfiles"
 HOSTNAME="$(hostname -s)"
 
+if [ ! -d ~/.config ]; then
+  mkdir ~/.config
+fi
+
+touch ~/.hushlogin
+
 ln -si $DOTFILE_DIR/dircolors ~/.dircolors
 ln -si $DOTFILE_DIR/gitconfig ~/.gitconfig
 ln -si $DOTFILE_DIR/gitignore_global ~/.gitignore_global
@@ -66,7 +72,7 @@ if command -v nix &> /dev/null; then
     pushd ~/.config/home-manager
 
     if [[ $HOSTNAME == "Orchid" ]]; then
-      home-manager switch --flake .#szymon@orchid
+      nix run home-manager -- switch --flake .#szymon@orchid
     elif [[ $HOSTNAME == "szymon-vm" ]]; then
       nix run home-manager -- switch --flake .#szymon@devvm
     else

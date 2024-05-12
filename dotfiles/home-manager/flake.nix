@@ -16,7 +16,7 @@
   outputs = { nixpkgs, home-manager, nix-index-database, ... }:
   let
     systems = [
-      "x86_64-darwin"
+      "aarch64-darwin"
       "x86_64-linux"
     ];
     forAllSystems = nixpkgs.lib.genAttrs systems;
@@ -25,7 +25,7 @@
 
     homeConfigurations = {
       "szymon@orchid" = home-manager.lib.homeManagerConfiguration {
-        pkgs = nixpkgs.legacyPackages.x86_64-darwin;
+        pkgs = nixpkgs.legacyPackages.aarch64-darwin;
 
         modules = [
           ./orchid.nix

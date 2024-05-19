@@ -1,7 +1,7 @@
 let g:vim_ai_token_file_path = '~/.vim-openai-key'
 
-" https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo
-let s:chat_ai_model = "gpt-4-turbo-preview"
+" https://platform.openai.com/docs/models
+let s:chat_ai_model = "gpt-4o"
 let s:instruct_ai_model = "gpt-4-1106-preview"
 
 let g:vim_ai_chat = {

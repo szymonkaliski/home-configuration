@@ -16,12 +16,12 @@ if [ -d $HOME/.bin ]; then
   export PATH="$HOME/.bin:$PATH"
 fi
 
-# # go
-# if [ -d $HOME/Documents/Code/Go ]; then
-#   export GOPATH="$HOME/Documents/Code/Go"
-#   export GOBIN="$GOPATH/bin"
-#   export PATH="$GOBIN:$PATH"
-# fi
+# go
+if [ -d $HOME/Documents/Projects/go ]; then
+  export GOPATH="$HOME/Documents/Projects/go"
+  export GOBIN="$GOPATH/bin"
+  export PATH="$GOBIN:$PATH"
+fi
 
 # clean paths
 typeset -gU path

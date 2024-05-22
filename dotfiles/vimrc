@@ -150,11 +150,13 @@ function! Base16Customize()
   call g:Base16hi('Operator',                     g:base16_gui0D, '',             g:base16_cterm0D, '',               '',              '')
   call g:Base16hi('Repeat',                       g:base16_gui0D, '',             g:base16_cterm0D, '',               '',              '')
   call g:Base16hi('Search',                       g:base16_gui00, g:base16_gui09, g:base16_cterm00, g:base16_cterm09, 'none',          '')
+  call g:Base16hi('CurSearch',                    g:base16_gui00, g:base16_gui05, g:base16_cterm00, g:base16_cterm05, 'none',          '')
   call g:Base16hi('Special',                      g:base16_gui08, '',             g:base16_cterm08, '',               '',              '')
   call g:Base16hi('SpecialChar',                  g:base16_gui0C, '',             g:base16_cterm0C, '',               '',              '')
-  call g:Base16hi('Statement',                    g:base16_gui0D, '',             g:base16_cterm0D, '',               '',              '')
+  call g:Base16hi('Statement',                    g:base16_gui0D, '',             g:base16_cterm0D, '',               'none',          '')
   call g:Base16hi('StatusLine',                   g:base16_gui05, g:base16_gui01, g:base16_cterm05, g:base16_cterm01, 'none',          '')
   call g:Base16hi('StatusLineNC',                 g:base16_gui04, g:base16_gui01, g:base16_cterm04, g:base16_cterm01, '',              '')
+
   call g:Base16hi('StorageClass',                 g:base16_gui0D, '',             g:base16_cterm0D, '',               '',              '')
   call g:Base16hi('Structure',                    g:base16_gui0D, '',             g:base16_cterm0D, '',               '',              '')
   call g:Base16hi('Substitute',                   g:base16_gui00, g:base16_gui09, g:base16_cterm00, g:base16_cterm09, 'none',          '')
@@ -162,7 +164,9 @@ function! Base16Customize()
   call g:Base16hi('Type',                         g:base16_gui08, '',             g:base16_cterm08, '',               '',              '')
   call g:Base16hi('Typedef',                      g:base16_gui08, '',             g:base16_cterm08, '',               '',              '')
   call g:Base16hi('VertSplit',                    g:base16_gui01, g:base16_gui00, g:base16_cterm01, g:base16_cterm00, 'none',          '')
+  call g:Base16hi('WinSeparator',                 g:base16_gui01, g:base16_gui00, g:base16_cterm01, g:base16_cterm00, 'none',          '')
   call g:Base16hi('WildMenu',                     g:base16_gui00, g:base16_gui03, g:base16_cterm00, g:base16_cterm03, '',              '')
+  call g:Base16hi('QuickFixLine',                 'none',         g:base16_gui01, 'none',           g:base16_cterm01, '',              '')
 
   call g:Base16hi('SpellBad',                     g:base16_gui08, g:base16_gui00, g:base16_cterm08, g:base16_cterm00, 'reverse',       '')
   call g:Base16hi('SpellCap',                     g:base16_gui08, g:base16_gui00, g:base16_cterm08, g:base16_cterm00, 'reverse',       '')
@@ -254,7 +258,6 @@ function! Base16Customize()
   call g:Base16hi('mkdUrl',                       g:base16_gui03, '',             g:base16_cterm03, '',               '',              '')
   call g:Base16hi('htmlBold',                     g:base16_gui05, '',             g:base16_cterm05, '',               'bold',          '')
   call g:Base16hi('htmlItalic',                   g:base16_gui05, '',             g:base16_cterm05, '',               'italic',        '')
-  " call g:Base16hi('markdownStrikethrough',        g:base16_gui05, '',             g:base16_cterm05, '',               'strikethrough', '')
 
   call g:Base16hi('markdownChecked',              g:base16_gui02, '',             g:base16_cterm02, '',               '',              '')
   call g:Base16hi('markdownListItemDone',         g:base16_gui02, '',             g:base16_cterm02, '',               '',              '')
@@ -263,16 +266,18 @@ function! Base16Customize()
   call g:Base16hi('markdownTagReview',            g:base16_gui08, '',             g:base16_cterm08, '',               '',              '')
   call g:Base16hi('markdownUnchecked',            g:base16_gui0D, '',             g:base16_cterm0D, '',               '',              '')
 
-  " nvim fix for flickering on start
-  hi! Normal ctermbg=NONE
-
   " highlight concealed text like normal text
   hi! link Conceal Normal
 
   " fix cursorline underline in vim
   hi! CursorLine cterm=NONE term=NONE
 
-  hi! markdownStrikethrough term=strikethrough cterm=strikethrough
+  " nvim 0.10
+  hi! link NormalFloat Pmenu
+  hi! link FloatBorder Pmenu
+
+  " strikethrough styling
+  hi! markdownStrikethrough term=strikethrough cterm=strikethrough gui=strikethrough
 endfunction
 
 augroup base16_colorscheme

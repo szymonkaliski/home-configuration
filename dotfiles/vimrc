@@ -191,6 +191,9 @@ function! Base16Customize()
   call g:Base16hi('CocWarningFloat',              g:base16_gui0A, g:base16_gui00, g:base16_cterm0A, g:base16_cterm00, '',              '')
   call g:Base16hi('CocInfoFloat',                 g:base16_gui0A, g:base16_gui00, g:base16_cterm0A, g:base16_cterm00, '',              '')
 
+  call g:Base16hi('CocMarkdownLink',              g:base16_gui0D, '',             g:base16_cterm0D, '',               '',              '')
+  call g:Base16hi('CocMarkdownCode',              g:base16_gui03, '',             g:base16_cterm03, '',               '',              '')
+
   call g:Base16hi('CocPumSearch',                 g:base16_gui09, '',             g:base16_cterm09, '',               '',              '')
   call g:Base16hi('CocPumShortcut',               g:base16_gui02, '',             g:base16_cterm02, '',               '',              '')
   call g:Base16hi('CocMenuSel',                   g:base16_gui05, g:base16_gui02, g:base16_cterm05, g:base16_cterm02, '',              '')

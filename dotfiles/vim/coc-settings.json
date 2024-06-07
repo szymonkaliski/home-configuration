@@ -16,6 +16,11 @@
   "rust-analyzer.lens.enable": false,
   "rust-analyzer.disableProgressNotifications": true,
 
+  "python.formatting.provider": "black",
+  "pyright.inlayHints.variableTypes": false,
+  "pyright.inlayHints.functionReturnTypes": false,
+  "pyright.inlayHints.parameterTypes": false,
+
   "languageserver": {
     "clojure": {
       "command": "clojure-lsp",

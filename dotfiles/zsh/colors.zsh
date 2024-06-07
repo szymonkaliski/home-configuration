@@ -65,10 +65,12 @@ if [ -d ~/.zsh/plugins/base16-shell/ ]; then
       ln -s $BASE16_SHELL/scripts/$FILENAME ~/.base16_theme
       echo -e "colorscheme base16-$THEME" > ~/.vimrc_background
 
-      local BG_COLOR="#$(cat ~/.base16_theme | grep "color_background=" | cut -d '"' -f2 | tr -d '/')"
-      local FG_COLOR="#$(cat ~/.base16_theme | grep "color_foreground=" | cut -d '"' -f2 | tr -d '/')"
-      sed -i '' -e "s/^background = .*/background = $BG_COLOR/" ~/.config/ghostty/config
-      sed -i '' -e "s/^foreground = .*/foreground = $FG_COLOR/" ~/.config/ghostty/config
+      if [ -d ~/.config/ghostty ]; then
+        local BG_COLOR="#$(cat ~/.base16_theme | grep "color_background=" | cut -d '"' -f2 | tr -d '/')"
+        local FG_COLOR="#$(cat ~/.base16_theme | grep "color_foreground=" | cut -d '"' -f2 | tr -d '/')"
+        sed -i '' -e "s/^background = .*/background = $BG_COLOR/" ~/.config/ghostty/config
+        sed -i '' -e "s/^foreground = .*/foreground = $FG_COLOR/" ~/.config/ghostty/config
+      fi
     fi
 
     base16_load

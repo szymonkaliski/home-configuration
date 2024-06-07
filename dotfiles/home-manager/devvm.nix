@@ -5,11 +5,16 @@
 
   home.packages = [
     pkgs.bat
+    pkgs.black
     pkgs.difftastic
     pkgs.fd
     pkgs.fzf
     pkgs.killall
     pkgs.lefthook
+    pkgs.lsof
+    pkgs.neovim
+    pkgs.nil
+    pkgs.nixfmt
     pkgs.nnn
     pkgs.ripgrep
     pkgs.tree

@@ -194,6 +194,9 @@ function! Base16Customize()
   call g:Base16hi('CocInfoFloat',                 g:base16_gui0A, g:base16_gui00, g:base16_cterm0A, g:base16_cterm00, '',              '')
 
   call g:Base16hi('CocInlayHint',                 g:base16_gui03, '',             g:base16_cterm03, '',               '',              '')
+  call g:Base16hi('CocVirtualText',               g:base16_gui03, '',             g:base16_cterm03, '',               '',              '')
+  call g:Base16hi('CocSearch',                    g:base16_gui0D, '',             g:base16_cterm0D, '',               '',              '')
+  call g:Base16hi('CocNotificationProgress',      g:base16_gui0D, '',             g:base16_cterm0D, '',               '',              '')
 
   call g:Base16hi('CocMarkdownLink',              g:base16_gui0D, '',             g:base16_cterm0D, '',               '',              '')
   call g:Base16hi('CocMarkdownCode',              g:base16_gui03, '',             g:base16_cterm03, '',               '',              '')

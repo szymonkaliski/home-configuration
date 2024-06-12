@@ -24,7 +24,6 @@ window-colorspace       = display-p3
 confirm-close-surface   = false
 shell-integration       = none
 mouse-scroll-multiplier = 2.0
-macos-titlebar-tabs     = false
 
 # these are set from zsh base16 color setting so they match when switching terminal colors
 background = #1d1f21

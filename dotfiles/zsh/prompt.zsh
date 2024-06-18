@@ -35,10 +35,16 @@ git_prompt_status() {
     branch_color="%{$fg[red]%}"
   fi
 
+  truncate_length=20
+
   if [ -z $VCS_STATUS_LOCAL_BRANCH ]; then
-    git_branch_or_commit=" ${VCS_STATUS_COMMIT:0:10}"
+    git_branch_or_commit=" ${VCS_STATUS_COMMIT: -$truncate_length}"
   else
-    git_branch_or_commit=" $VCS_STATUS_LOCAL_BRANCH"
+    if [ ${#VCS_STATUS_LOCAL_BRANCH} -gt $truncate_length ]; then
+      git_branch_or_commit=" ...${VCS_STATUS_LOCAL_BRANCH: -$truncate_length}"
+    else
+      git_branch_or_commit=" $VCS_STATUS_LOCAL_BRANCH"
+    fi
   fi
 
   PROMPT='$(prompt_pwd)$branch_color$git_branch_or_commit$ZSH_MAIN_PROMPT'

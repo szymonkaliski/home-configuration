@@ -9,6 +9,7 @@ function! s:coc_load()
   hi DiagnosticUnderline term=none cterm=none gui=none
 
   let g:coc_global_extensions = [
+        \ '@yaegassy/coc-ruff',
         \ 'coc-css',
         \ 'coc-eslint',
         \ 'coc-go',

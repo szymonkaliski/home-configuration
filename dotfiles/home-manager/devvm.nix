@@ -5,7 +5,6 @@
 
   home.packages = [
     pkgs.bat
-    pkgs.black
     pkgs.difftastic
     pkgs.fd
     pkgs.fzf

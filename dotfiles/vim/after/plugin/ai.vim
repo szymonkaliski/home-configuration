@@ -18,6 +18,7 @@ END
 let g:vim_ai_chat = {
   \  'options': {
   \    'model': s:chat_ai_model,
+  \    'role_prefix': '#'
   \  },
   \  'ui': {
   \    'code_syntax_enabled': 1,
@@ -73,3 +74,9 @@ vnoremap <leader>ae :AIEdit
 nnoremap <leader>aa :call <sid>DoChat("n")<cr>
 vnoremap <leader>aa :<C-u>call <sid>DoChat("v")<cr>
 
+augroup ai_plugin
+  au!
+
+  au BufRead,BufNewFile *.aichat set filetype=aichat
+  au FileType aichat setlocal filetype=markdown
+augroup END

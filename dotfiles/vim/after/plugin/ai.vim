@@ -22,7 +22,7 @@ let g:vim_ai_chat = {
   \  },
   \  'ui': {
   \    'code_syntax_enabled': 1,
-  \    'open_chat_command': 'vnew | call vim_ai#MakeScratchWindow()"',
+  \    'open_chat_command': 'call vim_ai#MakeScratchWindow()"',
   \    'populate_options': 0,
   \    'scratch_buffer_keep_open': 1,
   \  },

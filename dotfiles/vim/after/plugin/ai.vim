@@ -38,6 +38,8 @@ let g:vim_ai_edit = {
   \  }
   \}
 
+let g:vim_ai_chat_scratch_buffer_name = '[AI Chat]'
+
 function! s:YankWithCodeBlock()
   let l:filetype = &filetype
   if l:filetype == ''

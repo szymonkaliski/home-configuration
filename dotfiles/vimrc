@@ -26,7 +26,6 @@ DeferPlug 'tpope/vim-unimpaired'
 DeferPlug 'vim-scripts/matchit.zip'
 DeferPlug 'yssl/QFEnter'
 
-DeferPlug 'szymonkaliski/vim-ai',          { 'branch': 'sk/role-prefix' }
 " DeferPlug 'madox2/vim-ai'
 " DeferPlug 'edluffy/hologram.nvim' -- image support in kitty, I couldn't get it to work quickly
 
@@ -86,9 +85,11 @@ if isdirectory(expand('~/Documents/Projects/coc-vale/'))
   let &runtimepath = &runtimepath . ',' . expand('~/Documents/Projects/coc-vale/')
 endif
 
-" if isdirectory(expand('~/Documents/Projects/vim-ai/'))
-"   Plug '~/Documents/Projects/vim-ai'
-" endif
+if isdirectory(expand('~/Documents/Projects/vim-ai/'))
+  Plug '~/Documents/Projects/vim-ai'
+else
+  Plug 'szymonkaliski/vim-ai', { 'branch': 'sk/role-prefix' }
+endif
 
 call plug#end()
 

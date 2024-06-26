@@ -22,7 +22,7 @@ let g:vim_ai_chat = {
   \  },
   \  'ui': {
   \    'code_syntax_enabled': 1,
-  \    'open_chat_command': 'call vim_ai#MakeScratchWindow()"',
+  \    'open_chat_command': 'vnew | call vim_ai#MakeScratchWindow()"',
   \    'populate_options': 0,
   \    'scratch_buffer_keep_open': 1,
   \  },
@@ -38,7 +38,8 @@ let g:vim_ai_edit = {
   \  }
   \}
 
-let g:vim_ai_chat_scratch_buffer_name = '[AI Chat]'
+" this is broken and setting it makes the AIChat just use current buffer
+" let g:vim_ai_chat_scratch_buffer_name = '[AI Chat]'
 
 function! s:YankWithCodeBlock()
   let l:filetype = &filetype
@@ -79,6 +80,6 @@ vnoremap <leader>aa :<C-u>call <sid>DoChat("v")<cr>
 augroup ai_plugin
   au!
 
-  au BufRead,BufNewFile *.aichat set filetype=aichat
+  au BufRead,BufNewFile *.aichat setlocal filetype=aichat
   au FileType aichat setlocal filetype=markdown
 augroup END

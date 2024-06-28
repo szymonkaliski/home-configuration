@@ -34,6 +34,10 @@ LINK          00;38;5;05  # symbolic link.
 MULTIHARDLINK 00          # regular file with more than one link
 EXEC          00;38;5;02  # executables
 
+# these appear on directories that are chmoded to 777
+STICKY_OTHER_WRITABLE 00;38;5;00;48;5;2
+OTHER_WRITABLE        00;38;5;00;48;5;2
+
 # archives or compressed
 .7z     00;38;5;03
 .Z      00;38;5;03
@@ -169,24 +173,22 @@ EXEC          00;38;5;02  # executables
 .php    00;38;5;01
 .pl     00;38;5;01
 .pm     00;38;5;01
+.proto  00;38;5;01
 .py     00;38;5;01
 .rb     00;38;5;01
 .rdf    00;38;5;01
 .rs     00;38;5;01
+.yml    00;38;5;01
 .sh     00;38;5;01
 .ts     00;38;5;01
 .tsx    00;38;5;01
 .vim    00;38;5;01
 .zsh    00;38;5;01
-.shtml  00;38;5;01
-.xml    00;38;5;01
-.xsd    00;38;5;01
-
-# headers
+.db     00;38;5;01
 .h      00;38;5;01
 .hpp    00;38;5;01
 .pch    00;38;5;01
-
-# dbs
-.db     00;38;5;01
+.shtml  00;38;5;01
 .sql    00;38;5;01
+.xml    00;38;5;01
+.xsd    00;38;5;01

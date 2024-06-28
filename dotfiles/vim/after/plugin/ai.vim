@@ -8,11 +8,10 @@ let s:edit_initial_prompt =<< trim END
 >>> system
 
 You are a text and code editing engine.
-You will be sent an instruction, followed by a colon and then a chunk of text.
-You will return code or text that will be directy inserted into a file.
-Your response will be directy insersted in place of the chunk you have been sent.
-Do not give any commentary about the text.
-If you are returning code, do not place it in code blocks, instead just return the code as plain text.
+You will be sent an instruction, followed by a colon, and then a chunk of text.
+You will return code or text that will be directly inserted into a file.
+Your response will be directly inserted in place of the chunk you have been sent.
+Do not give any additional commentary about what you are doing; just return the result as plain text.
 END
 
 let g:vim_ai_chat = {
@@ -35,6 +34,7 @@ let g:vim_ai_edit = {
   \    'initial_prompt': s:edit_initial_prompt,
   \    'model': s:instruct_ai_model,
   \    'selection_boundary': '',
+  \    'temperature': 0.1
   \  }
   \}
 
@@ -68,14 +68,16 @@ nnoremap <leader>ar :AIRedo<cr>
 nnoremap <leader>at :AIEdit implement the TODO and FIXME comments<cr>
 vnoremap <leader>at :AIEdit implement the TODO and FIXME comments<cr>
 
-nnoremap <leader>as :AIEdit fix spelling and grammar<cr>
-vnoremap <leader>as :AIEdit fix spelling and grammar<cr>
+nnoremap <leader>as :AIEdit fix spelling, grammar, and any syntax errors you can spot<cr>
+vnoremap <leader>as :AIEdit fix spelling, grammar, and any syntax errors you can spot<cr>
 
 nnoremap <leader>ae :AIEdit
 vnoremap <leader>ae :AIEdit
 
 nnoremap <leader>aa :call <sid>DoChat("n")<cr>
-vnoremap <leader>aa :<C-u>call <sid>DoChat("v")<cr>
+vnoremap <leader>aa :<c-u>call <sid>DoChat("v")<cr>
+
+vnoremap <leader>ay :<c-u>call <sid>YankWithCodeBlock()<cr>
 
 augroup ai_plugin
   au!
@@ -83,3 +85,4 @@ augroup ai_plugin
   au BufRead,BufNewFile *.aichat setlocal filetype=aichat
   au FileType aichat setlocal filetype=markdown
 augroup END
+

@@ -111,5 +111,6 @@ function! s:coc_load()
 
     au User CocDiagnosticChange call <sid>coc_update_lightline()
     au User CocStatusChange     call <sid>coc_update_lightline()
-  augroup ENDD
-  endfunction
+  augroup END
+endfunction
+

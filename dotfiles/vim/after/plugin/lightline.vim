@@ -13,11 +13,12 @@ let s:p.normal.middle   = copy(s:p.inactive.left)
 
 let s:p.normal.right    = [
       \   [ '#' . g:base16_gui00, '#' . g:base16_gui03, g:base16_cterm00, g:base16_cterm03 ],
-      \   [ '#' . g:base16_gui03, '#' . g:base16_gui02, g:base16_cterm03, g:base16_cterm02 ]
+      \   [ '#' . g:base16_gui05, '#' . g:base16_gui02, g:base16_cterm05, g:base16_cterm02 ]
       \ ]
 
-let s:p.normal.error    = [[ '#' . g:base16_gui01, '#' . g:base16_gui08, g:base16_cterm01, g:base16_cterm08 ]]
-let s:p.normal.warning  = [[ '#' . g:base16_gui01, '#' . g:base16_gui08, g:base16_cterm01, g:base16_cterm08 ]]
+let s:p.normal.error   = [[ '#' . g:base16_gui01, '#' . g:base16_gui08, g:base16_cterm01, g:base16_cterm08 ]]
+let s:p.normal.warning = [[ '#' . g:base16_gui01, '#' . g:base16_gui08, g:base16_cterm01, g:base16_cterm08 ]]
+" let s:p.normal.search  = [[ '#' . g:base16_gui00, '#' . g:base16_gui0A, g:base16_cterm00, g:base16_cterm0A ]]
 
 let s:p.insert.left     = [
       \   [ '#' . g:base16_gui00, '#' . g:base16_gui0D, g:base16_cterm00, g:base16_cterm0D ],
@@ -44,7 +45,7 @@ let g:lightline.colorscheme = 'base16'
 
 let g:lightline.active = {
       \ 'left':  [ [ 'custom_mode' ], [ 'utils_buffer_name' ] ],
-      \ 'right': [ [ 'utils_statusline_right', 'error_status' ], [], [] ]
+      \ 'right': [ [ 'utils_statusline_right' ], [ 'search_count', 'error_status' ], [], [] ]
       \ }
 
 let g:lightline.inactive = {
@@ -60,6 +61,7 @@ let g:lightline.component_function = {
       \ 'inactive_mode':          'LightlineInactiveMode',
       \ 'utils_buffer_name':      'utils#buffer_name',
       \ 'utils_statusline_right': 'utils#statusline_right',
+      \ 'search_count':           'LightlineSearchCount'
       \ }
 
 let g:lightline.tab_component_function = {
@@ -68,11 +70,11 @@ let g:lightline.tab_component_function = {
 
 " for ALE use: 'utils#statusline_ale'
 let g:lightline.component_expand = {
-      \ 'error_status': 'utils#statusline_coc'
+      \ 'error_status': 'utils#statusline_coc',
       \ }
 
 let g:lightline.component_type = {
-      \ 'error_status': 'error'
+      \ 'error_status': 'error',
       \ }
 
 let g:lightline.mode_map = {
@@ -110,3 +112,19 @@ function! LightlineTabFilename(n)
 
   return utils#format_buffer_nr(bufnum)
 endfunction
+
+" search count
+function! LightlineSearchCount()
+  if !&hlsearch
+    return ''
+  endif
+
+  let result = searchcount()
+
+  if result.total == 0
+    return ''
+  endif
+
+  return printf('%d/%d', result.current, result.total)
+endfunction
+

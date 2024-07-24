@@ -46,9 +46,14 @@ fi
 if hash ncu 2> /dev/null; then
   echo -e "$(tput setaf 2)Checking NPM...$(tput sgr0)"
 
-  # actually install
-  npm i -g $(ncu -g --format lines)
+  packages=$(ncu -g --format lines)
 
-  echo
+  if [ -n "$packages" ]; then
+    npm i -g $packages
+    echo
+  else
+    echo "Nothing to do!"
+    echo
+  fi
 fi
 

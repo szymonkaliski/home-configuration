@@ -46,7 +46,10 @@ module.start = function()
 
   local result = cache.db:execute([[
     CREATE TABLE IF NOT EXISTS log (app TEXT NOT NULL, title TEXT NOT NULL, epoch INTEGER NOT NULL, meta TEXT);
+
     CREATE INDEX IF NOT EXISTS basic_search_idx ON log (app, title, meta);
+    CREATE INDEX IF NOT EXISTS epoch_search_idx ON log (app, title, meta, epoch);
+
     CREATE VIRTUAL TABLE IF NOT EXISTS ft_log USING FTS5(title, meta);
 
     CREATE TRIGGER IF NOT EXISTS ft_log_update AFTER INSERT ON log BEGIN

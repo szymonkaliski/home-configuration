@@ -1,4 +1,3 @@
-alias run="open -a"
 alias qopen="qlmanage -p "$@" >& /dev/null"
 
 alias clear-logs="sudo rm -rfv /private/var/log/asl/*.asl"

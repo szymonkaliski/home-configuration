@@ -348,6 +348,7 @@ set ruler
 set sidescroll=1
 set sidescrolloff=0
 set scrolloff=0
+set smoothscroll
 
 " path used by gf, :find, etc..
 set path=.,,,./**

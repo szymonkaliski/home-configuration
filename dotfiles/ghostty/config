@@ -17,6 +17,7 @@ adjust-strikethrough-position = 2
 window-padding-x       = 9
 window-padding-y       = 9
 window-padding-balance = true
+window-padding-color   = background
 
 mouse-hide-while-typing = false
 window-theme            = auto
@@ -24,6 +25,7 @@ window-colorspace       = display-p3
 confirm-close-surface   = false
 shell-integration       = none
 mouse-scroll-multiplier = 2.0
+resize-overlay          = never
 
 # these are set from zsh base16 color setting so they match when switching terminal colors
 background = #1d1f21

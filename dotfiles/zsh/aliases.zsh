@@ -1,7 +1,7 @@
-alias ls="LC_COLLATE=C ls --color=auto --group-directories-first --classify --human-readable --time-style=long-iso"
-alias ll="LC_COLLATE=C ls --color=auto --group-directories-first --classify --human-readable --time-style=long-iso -l"
-alias la="LC_COLLATE=C ls --color=auto --group-directories-first --classify --human-readable --time-style=long-iso -l --almost-all"
-alias lt="LC_COLLATE=C ls --color=auto --group-directories-first --classify --human-readable --time-style=long-iso -l --almost-all -t --reverse"
+alias ls="LC_COLLATE=C ls --color=auto --group-directories-first --classify --human-readable --hyperlink=always --time-style=long-iso"
+alias ll="LC_COLLATE=C ls --color=auto --group-directories-first --classify --human-readable --hyperlink=always --time-style=long-iso -l"
+alias la="LC_COLLATE=C ls --color=auto --group-directories-first --classify --human-readable --hyperlink=always --time-style=long-iso -l --almost-all"
+alias lt="LC_COLLATE=C ls --color=auto --group-directories-first --classify --human-readable --hyperlink=always --time-style=long-iso -l --almost-all -t --reverse"
 
 alias rm="rm -iv"
 alias mv="mv -iv"

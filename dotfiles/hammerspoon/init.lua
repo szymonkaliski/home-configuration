@@ -21,10 +21,9 @@ config = {
   wm = {
     -- tilingMethod = 'hhtwm',
     -- tilingMethod = 'yabai',
-    tilingMethod = 'grid',
     -- tilingMethod = 'autogrid',
-
-    defaultLayouts = { 'monocle', 'main-left' },
+    -- tilingMethod = 'grid',
+    tilingMethod = 'sequoia',
   },
 
   window = {
@@ -85,6 +84,10 @@ end
 if config.wm.tilingMethod == 'autogrid' then
   bindings.enabled = flatten({ basicBindings, { 'grid' } })
   table.insert(watchers.enabled, 'autogrid')
+end
+
+if config.wm.tilingMethod == 'sequoia' then
+  bindings.enabled = flatten({ basicBindings, { 'sequoia' } })
 end
 
 -- start/stop modules

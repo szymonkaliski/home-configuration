@@ -4,7 +4,7 @@ local module = { cache = cache }
 local STYLE = {
   font = {
     name = hs.styledtext.defaultFonts.menuBar.name,
-    size = 12.0
+    size = 13.0
   },
   baselineOffset = 0.0
 }
@@ -20,7 +20,7 @@ local setMenubarMenu = function(percentage)
       disabled = true
     },
     {
-      title = 'Charge: ' .. math.floor( percentage) .. '%'
+      title = 'Charge: ' .. math.floor(percentage) .. '%'
     }
   })
 end
@@ -45,8 +45,8 @@ local batteryWatcher = function(_, _, _, _, battery)
   -- we're charging right now
   if battery.isCharging then
     if battery.timeToFullCharge < 0 then
-      -- still calculating
-      setMenubarText("…")
+      -- still calculating, show percentage
+      setMenubarText('⇡ ' .. math.floor(battery.percentage) .. '%')
       return
     end
 
@@ -55,13 +55,14 @@ local batteryWatcher = function(_, _, _, _, battery)
     return
   end
 
+  -- we're discarchaging
   if battery.timeRemaining < 0 then
-    -- still calculating
-    setMenubarText("…")
+    -- still calculating, show percentage
+    setMenubarText('⇣ ' .. math.floor(battery.percentage) .. '%')
     return
   end
 
-  -- we're discharging, display used watts and leftover time
+  -- display used watts and leftover time when we have it
   local wattage = battery.wattage * -1 -- we know we're discharging!
   local time = stringifyMinutes(battery.timeRemaining)
 

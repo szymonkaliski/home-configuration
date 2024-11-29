@@ -19,9 +19,6 @@ config = {
   },
 
   wm = {
-    -- tilingMethod = 'hhtwm',
-    -- tilingMethod = 'yabai',
-    -- tilingMethod = 'autogrid',
     -- tilingMethod = 'grid',
     tilingMethod = 'sequoia',
   },
@@ -66,24 +63,11 @@ ui.enabled                  = { 'caffeine-menubar' }
 
 -- bindings & modules
 local modules               = { bindings, logger, watchers, ui, watchables } -- watchables have to come last to refresh all the things that depend on them
-local basicBindings         = { 'annotate', 'ask-before-quit', 'block-hide', 'ctrl-esc', 'f-keys', 'focus', 'global', 'mediakeys', 'screenshot-with-meta', 'term-ctrl-i' }
+local basicBindings         = { 'annotate', 'ask-before-quit', 'block-hide', 'ctrl-esc', 'f-keys', 'global', 'mediakeys', 'screenshot-with-meta', 'term-ctrl-i' }
 bindings.askBeforeQuitApps  = flatten({ config.apps.browsers, config.apps.terms, { 'Preview' } })
 
-if config.wm.tilingMethod == 'yabai' then
-  bindings.enabled = flatten({ basicBindings, { 'yabai' } })
-end
-
-if config.wm.tilingMethod == 'hhtwm' then
-  bindings.enabled = flatten({ basicBindings, { 'hhtwm' } })
-end
-
 if config.wm.tilingMethod == 'grid' then
-  bindings.enabled = flatten({ basicBindings, { 'grid' } })
-end
-
-if config.wm.tilingMethod == 'autogrid' then
-  bindings.enabled = flatten({ basicBindings, { 'grid' } })
-  table.insert(watchers.enabled, 'autogrid')
+  bindings.enabled = flatten({ basicBindings, { 'grid', 'focus' } })
 end
 
 if config.wm.tilingMethod == 'sequoia' then

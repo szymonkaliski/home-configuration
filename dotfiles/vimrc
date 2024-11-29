@@ -85,6 +85,10 @@ if isdirectory(expand('~/Documents/Projects/coc-vale/'))
   let &runtimepath = &runtimepath . ',' . expand('~/Documents/Projects/coc-vale/')
 endif
 
+if isdirectory(expand('~/Documents/Projects/coc-pilot/'))
+  let &runtimepath = &runtimepath . ',' . expand('~/Documents/Projects/coc-pilot/')
+endif
+
 if isdirectory(expand('~/Documents/Projects/vim-ai/'))
   Plug '~/Documents/Projects/vim-ai'
 else

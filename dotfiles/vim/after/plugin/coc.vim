@@ -16,7 +16,6 @@ function! s:coc_load()
         \ 'coc-highlight',
         \ 'coc-html',
         \ 'coc-json',
-        \ 'coc-lua',
         \ 'coc-pairs',
         \ 'coc-prettier',
         \ 'coc-pyright',

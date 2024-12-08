@@ -21,6 +21,8 @@
   "pyright.inlayHints.functionReturnTypes": false,
   "pyright.inlayHints.parameterTypes": false,
 
+  "tsserver.useLocalTsdk": true,
+
   "languageserver": {
     "clojure": {
       "command": "clojure-lsp",

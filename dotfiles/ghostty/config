@@ -28,6 +28,12 @@ resize-overlay            = never
 shell-integration         = none
 macos-titlebar-proxy-icon = hidden
 
+# custom b&w icon
+macos-icon              = custom-style
+macos-icon-frame        = aluminum
+macos-icon-ghost-color  = grey
+macos-icon-screen-color = grey,black
+
 # these are set from zsh base16 color setting so they match when switching terminal colors
 background = #1d1f21
 foreground = #c5c8c6

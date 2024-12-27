@@ -39,6 +39,10 @@ let g:vim_ai_edit = {
   \  }
   \}
 
+let g:vim_ai_open_chat_presets = {
+  \  'preset_right': 'vnew'
+  \ }
+
 " this is broken and setting it makes the AIChat just use current buffer
 " let g:vim_ai_chat_scratch_buffer_name = '[AI Chat]'
 
@@ -54,13 +58,21 @@ function! s:YankWithCodeBlock()
   normal! ""
 endfunction
 
-function! s:DoChat(mode)
+function! s:DoChat(mode, is_new)
   if a:mode == "v"
-    :call <sid>YankWithCodeBlock()
-    :AIChat
+    call <sid>YankWithCodeBlock()
+    if a:is_new
+      :AIChat /right
+    else
+      :AIChat
+    endif
     normal! p
   elseif a:mode == "n"
-    :AIChat
+    if a:is_new
+      :AIChat /right
+    else
+      :AIChat
+    endif
   endif
 endfunction
 
@@ -72,18 +84,18 @@ vnoremap <leader>at :AIEdit implement the TODO and FIXME comments<cr>
 nnoremap <leader>as :AIEdit fix spelling, grammar, and any syntax errors you can spot<cr>
 vnoremap <leader>as :AIEdit fix spelling, grammar, and any syntax errors you can spot<cr>
 
-nnoremap <leader>ae :AIEdit
-vnoremap <leader>ae :AIEdit
+nnoremap <leader>aa :call <sid>DoChat("n", v:false)<cr>
+vnoremap <leader>aa :<c-u>call <sid>DoChat("v", v:false)<cr>
 
-nnoremap <leader>aa :call <sid>DoChat("n")<cr>
-vnoremap <leader>aa :<c-u>call <sid>DoChat("v")<cr>
+nnoremap <leader>an :call <sid>DoChat("n", v:true)<cr>
+vnoremap <leader>an :<c-u>call <sid>DoChat("v", v:true)<cr>
 
 vnoremap <leader>ay :<c-u>call <sid>YankWithCodeBlock()<cr>
 
 augroup ai_plugin
   au!
 
-  au BufRead,BufNewFile *.aichat setlocal filetype=aichat
+  " au BufRead,BufNewFile *.aichat setlocal filetype=aichat
   au FileType aichat setlocal filetype=markdown
 augroup END
 

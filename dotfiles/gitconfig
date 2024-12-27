@@ -6,6 +6,7 @@
   pager = less -x2
   safecrlf = false
   excludesfile = ~/.gitignore_global
+  autocrlf = false
 [system]
   untrackedCache = true
 [diff]

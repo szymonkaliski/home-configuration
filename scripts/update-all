@@ -17,7 +17,7 @@ function gitUpdate {
 if [[ $(hostname -s) == "Orchid" ]]; then
   echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"
   pushd ~/.config/home-manager > /dev/null || return
-  sudo nix upgrade-nix --nix-store-paths-url https://install.determinate.systems/nix-upgrade/stable/universal
+  # sudo nix upgrade-nix --nix-store-paths-url https://install.determinate.systems/nix-upgrade/stable/universal
   nix flake update
   home-manager switch --flake .#szymon@orchid
   echo
@@ -58,3 +58,7 @@ if hash ncu 2> /dev/null; then
   fi
 fi
 
+if hash vale 2> /dev/null; then
+  echo -e "$(tput setaf 2)Checking Vale...$(tput sgr0)"
+  vale sync
+fi

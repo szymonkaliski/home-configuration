@@ -21,6 +21,7 @@ function! s:coc_load()
         \ 'coc-pyright',
         \ 'coc-rust-analyzer',
         \ 'coc-sourcekit',
+        \ 'coc-stylelint',
         \ 'coc-tsserver',
         \ 'coc-vimlsp',
         \ 'coc-yaml'

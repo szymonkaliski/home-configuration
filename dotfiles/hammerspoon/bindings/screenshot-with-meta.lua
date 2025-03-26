@@ -10,6 +10,11 @@ local SCREENSHOT_PATH       = os.getenv('HOME') .. '/Documents/Dropbox/Screensho
 local SCREENCAPTURE_PATH    = '/usr/sbin/screencapture'
 local XATTR_PATH            = '/usr/bin/xattr'
 
+local copyImageToClipboard = function(path)
+  local image = hs.image.imageFromPath(path)
+  hs.pasteboard.writeObjects(image)
+end
+
 local genScreenshotPath = function()
   local screenshotName = os.date('Screenshot %Y-%m-%d at %H.%M.%S.png')
   local fileName       = SCREENSHOT_PATH .. screenshotName
@@ -76,6 +81,15 @@ local addMetaToScreenshot = function(win, fileName)
   -- end
 end
 
+-- HOF to handle all that we want to do after we captured the screenshot
+local makePostScreenCaptureHandler = function(focusedWindow, fileName)
+  return function()
+    copyImageToClipboard(fileName)
+    sendNotification(fileName)
+    addMetaToScreenshot(focusedWindow, fileName)
+  end
+end
+
 module.start = function()
   -- capture the main screen
   -- TODO: capture screen with mouse, not sure how to calculate this for screencapture though
@@ -85,11 +99,7 @@ module.start = function()
 
     hs.task.new(
       SCREENCAPTURE_PATH,
-      function()
-        hs.pasteboard.setContents(fileName)
-        sendNotification(fileName)
-        addMetaToScreenshot(focusedWindow, fileName)
-      end,
+      makePostScreenCaptureHandler(focusedWindow, fileName),
       { "-D1", fileName }
     ):start()
   end)
@@ -101,11 +111,7 @@ module.start = function()
 
     hs.task.new(
       SCREENCAPTURE_PATH,
-      function()
-        hs.pasteboard.setContents(fileName)
-        sendNotification(fileName)
-        addMetaToScreenshot(focusedWindow, fileName)
-      end,
+      makePostScreenCaptureHandler(focusedWindow, fileName),
       { "-i", fileName }
     ):start()
   end)
@@ -136,11 +142,7 @@ module.start = function()
 
     hs.task.new(
       SCREENCAPTURE_PATH,
-      function()
-        hs.pasteboard.setContents(fileName)
-        sendNotification(fileName)
-        addMetaToScreenshot(focusedWindow, fileName)
-      end,
+      makePostScreenCaptureHandler(focusedWindow, fileName),
       { "-w", fileName }
     ):start()
 

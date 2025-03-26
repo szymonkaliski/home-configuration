@@ -15,6 +15,7 @@ endfunction
 
 " commands
 command! Today          call <sid>open_today()
+command! WikiOpen       call muninn#open()
 command! WikiBacklinks  call muninn#backlinks()
 command! WikiInbox      call muninn#open('inbox.md')
 command! WikiJournal    call muninn#journal_today()
@@ -25,6 +26,7 @@ command! WikiRandomNote call <sid>open_random_note()
 command! -nargs=? -complete=custom,muninn#complete_open Wiki call muninn#open(<f-args>)
 
 " maps
+nnoremap <leader>ww :WikiOpen<cr>
 nnoremap <leader>wt :WikiTasks<cr>
 nnoremap <leader>wj :WikiJournal<cr>
 nnoremap <leader>wi :WikiInbox<cr>

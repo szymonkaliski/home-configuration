@@ -57,3 +57,5 @@ alias -g N="; notify-terminal"       # [N]otify
 #   $ git log ^
 alias -g ^='$(fc -e - 2> /dev/null)'
 
+alias '??'="llm cmd -m o3-mini "
+

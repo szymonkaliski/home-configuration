@@ -49,6 +49,7 @@ alias -g L="| less"                  # [L]ess
 alias -g P="| pbcopy"                # [P]bcopy
 alias -g B="> /dev/null 2>&1 &"      # [B]lank
 alias -g N="; notify-terminal"       # [N]otify
+alias -g HL="| hl"
 
 # execute last command and use its output
 # stolen from https://github.com/narfdotpl/dotfiles/blob/master/home/.zshrc

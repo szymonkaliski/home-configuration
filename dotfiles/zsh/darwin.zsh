@@ -26,6 +26,7 @@ alias fix-icloud="sudo killall cloudd bird"
 
 # apps
 alias fork="/Applications/Fork.app/Contents/Resources/fork_cli"
+alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 
 # cd to currently open dir in finder
 cdf() {

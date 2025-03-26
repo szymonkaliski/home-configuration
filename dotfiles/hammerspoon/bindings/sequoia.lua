@@ -1,33 +1,30 @@
-local activeScreen = require('ext.screen').activeScreen
-local capitalize   = require('ext.utils').capitalize
-local focusScreen  = require('ext.screen').focusScreen
-local forceFocus   = require('ext.window').forceFocus
+local activeScreen      = require('ext.screen').activeScreen
+local cycleWindowFocus  = require('ext.window').cycleWindowFocus
+local focusAndHighlight = require('ext.window').focusAndHighlight
 
 local cache  = {}
 local module = { cache = cache }
 
 local getWindowMenuItems = function()
   local win = hs.window.frontmostWindow()
+  if not win then return false end
+
   local app = win:application()
+  if not app then return false end
+
   local appElement = hs.axuielement.applicationElement(app)
 
   local appMenuBar = hs.fnutils.find(appElement:attributeValue('AXChildren'), function(childElement)
     return childElement:attributeValue('AXRole') == 'AXMenuBar'
   end)
-
-  if not appMenuBar then
-    return
-  end
+  if not appMenuBar then return false end
 
   local menuItems = appMenuBar:attributeValue('AXChildren')
 
   local windowMenu = hs.fnutils.find(menuItems, function(menuItem)
     return menuItem:attributeValue('AXTitle') == 'Window'
   end)
-
-  if not windowMenu then
-    return
-  end
+  if not windowMenu then return false end
 
   local windowMenuItems = windowMenu:attributeValue('AXChildren')[1]:attributeValue('AXChildren')
 
@@ -36,20 +33,20 @@ end
 
 local pressWindowMenuItem = function(title)
   local windowMenuItems = getWindowMenuItems()
-
-  if not windowMenuItems then
-    return
-  end
+  if not windowMenuItems then return false end
 
   local match = hs.fnutils.find(windowMenuItems, function(menuItem)
     return menuItem:attributeValue('AXTitle') == title
   end)
+  if not match then return false end
 
   match:doAXPress()
+  return true
 end
 
 local pressWindowMoveResizeMenuItem = function(title)
   local windowMenuItems = getWindowMenuItems()
+  if not windowMenuItems then return false end
 
   local moveAndResizeMenu = hs.fnutils.find(windowMenuItems, function(menuItem)
     return menuItem:attributeValue('AXTitle') == 'Move & Resize'
@@ -60,8 +57,10 @@ local pressWindowMoveResizeMenuItem = function(title)
   local match = hs.fnutils.find(moveAndResizeMenuItems, function(menuItem)
     return menuItem:attributeValue('AXTitle') == title
   end)
+  if not match then return false end
 
   match:doAXPress()
+  return true
 end
 
 local getSpacesIdsTable = function()
@@ -118,40 +117,6 @@ local pushWindowPrevScreen = function(win)
   win:moveToScreen(win:screen():previous(), noResize, ensureInScreenBounds)
 end
 
-local ONLY_FRONTMOST = true
-local STRICT_ANGLE   = true
-
--- works for windows and screens!
-local focusAndHighlight = function(cmd)
-  local focusedWindow     = hs.window.focusedWindow()
-  local focusedScreen     = activeScreen()
-
-  local winCmd            = 'windowsTo' .. capitalize(cmd)
-  local screenCmd         = 'to' .. capitalize(cmd)
-
-  local windowsToFocus    = cache.windowFilter[winCmd](cache.windowFilter, focusedWindow, ONLY_FRONTMOST, STRICT_ANGLE)
-  local screenInDirection = focusedScreen[screenCmd](focusedScreen)
-  local filterWindows     = cache.windowFilter:getWindows()
-
-  local windowOnSameOrNextScreen = function(testWin, currentScreen, nextScreen)
-    return testWin:screen():id() == currentScreen:id() or testWin:screen():id() == nextScreen:id()
-  end
-
-  -- focus window if we have any, and it's on nearest or current screen (don't jump over empty screens)
-  if windowsToFocus and #windowsToFocus > 0 and windowOnSameOrNextScreen(windowsToFocus[1], focusedScreen, screenInDirection) then
-    forceFocus(windowsToFocus[1])
-  -- focus screen in given direction if exists
-  elseif screenInDirection then
-    focusScreen(screenInDirection)
-  -- focus first window if there are any
-  elseif #filterWindows > 0 then
-    forceFocus(filterWindows[1])
-  -- finally focus the screen if nothing else works
-  else
-    focusScreen(focusedScreen)
-  end
-end
-
 module.start = function()
   cache.windowFilter = hs.window.filter.new()
     :setCurrentSpace(true)
@@ -162,9 +127,23 @@ module.start = function()
     hs.hotkey.bind({ 'ctrl', 'shift' }, key, fn, nil, fn)
   end
 
-  bind('z', function() pressWindowMenuItem('Fill') end)
-  bind('c', function() pressWindowMenuItem('Center') end)
-  bind('u', function() pressWindowMoveResizeMenuItem('Return to Previous Size') end)
+  bind('z', function()
+    local success = pressWindowMenuItem('Fill')
+    if not success then
+      hs.grid.maximizeWindow(hs.window.frontmostWindow())
+    end
+  end)
+
+  bind('c', function()
+    local success = pressWindowMenuItem('Center')
+    if not success then
+      hs.grid.center(hs.window.frontmostWindow())
+    end
+  end)
+
+  bind('u', function()
+    pressWindowMoveResizeMenuItem('Return to Previous Size')
+  end)
 
   bind('s', function()
     local screen = activeScreen()
@@ -212,6 +191,14 @@ module.start = function()
       hs.eventtap.keyStroke({ 'ctrl' }, idx)
     end)
   end
+
+  -- alt-tab as an alternative to cmd-tab to cycle through windows instead of apps
+  hs.hotkey.bind({ 'alt' }, 'tab', function()
+    cycleWindowFocus('next')
+  end)
+  hs.hotkey.bind({ 'alt', 'shift' }, 'tab', function()
+    cycleWindowFocus('prev')
+  end)
 end
 
 module.stop = function()

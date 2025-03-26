@@ -5,12 +5,14 @@
   "suggest.autoTrigger": "none",
 
   "codeLens.enable": false,
+
   "diagnostic.enable": true,
   "diagnostic.enableSign": false,
   "diagnostic.displayByAle": false,
 
   "diagnostic.virtualText": false,
   "diagnostic.virtualTextCurrentLineOnly": false,
+  "diagnostic.enableHighlightLineNumber": false,
 
   "rust-analyzer.updates.prompt": false,
   "rust-analyzer.lens.enable": false,

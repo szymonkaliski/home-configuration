@@ -8,6 +8,7 @@
     pkgs.difftastic
     pkgs.fd
     pkgs.fzf
+    pkgs.grc
     pkgs.killall
     pkgs.lefthook
     pkgs.lsof
@@ -15,6 +16,7 @@
     pkgs.nil
     pkgs.nixfmt
     pkgs.nnn
+    pkgs.nodejs_20
     pkgs.ripgrep
     pkgs.tree
     pkgs.watchexec

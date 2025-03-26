@@ -84,6 +84,7 @@ module.start = function()
     { key = '/', fn = system.toggleConsole      },
     { key = 'q', fn = system.displaySleep       },
     { key = 'r', fn = system.restartHammerspoon },
+    { key = 't', fn = system.toggleTheme        },
     { key = 'd', fn = forceDrop                 },
     { key = 'v', fn = forcePaste                },
   }, function(object)

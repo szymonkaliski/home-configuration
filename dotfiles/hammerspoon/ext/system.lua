@@ -28,7 +28,6 @@ module.toggleWiFi = function()
   }):send()
 end
 
--- TODO: this is slow, rewrite using `hs.openConsole()` and `:close()`
 module.toggleConsole = function()
   hs.toggleConsole()
   activateFrontmost()
@@ -47,19 +46,16 @@ module.isDarkModeEnabled = function()
 end
 
 module.setTheme = function(theme)
+  -- I used to set Alfred theme here too, but that's not necessary
+  -- Alfred remembers which theme was set when the system was in the light or dark mode
   hs.osascript.javascript(template([[
     var systemEvents = Application("System Events");
-    var alfredApp = Application("Alfred 5");
 
     ObjC.import("stdlib");
 
     systemEvents.appearancePreferences.darkMode = {DARK_MODE};
-
-    // has to be done this way so template function works, lol
-    alfredApp && alfredApp.setTheme("{ALFRED_THEME}");
   ]], {
-    ALFRED_THEME = 'Mojave ' .. capitalize(theme),
-    DARK_MODE = theme == 'dark' and 'true' or 'false',
+    DARK_MODE = theme == 'dark' and 'true' or 'false'
   }))
 end
 

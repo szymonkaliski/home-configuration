@@ -22,6 +22,7 @@ window-padding-color   = background
 mouse-hide-while-typing   = false
 window-theme              = auto
 window-colorspace         = display-p3
+window-save-state         = always
 confirm-close-surface     = false
 mouse-scroll-multiplier   = 2.0
 resize-overlay            = never

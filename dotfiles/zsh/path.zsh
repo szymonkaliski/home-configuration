@@ -23,6 +23,12 @@ if [ -d $HOME/Documents/Projects/go ]; then
   export PATH="$GOBIN:$PATH"
 fi
 
+# orbstack
+if [ -d $HOME/.orbstack/bin ]; then
+  export PATH="$PATH:$HOME/.orbstack/bin"
+  export FPATH="$FPATH:/Applications/OrbStack.app/Contents/Resources/completions/zsh"
+fi
+
 # clean paths
 typeset -gU path
 

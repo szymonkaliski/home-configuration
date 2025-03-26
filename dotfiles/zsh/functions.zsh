@@ -251,3 +251,11 @@ watchexec() {
 
   ~/.nix-profile/bin/watchexec --quiet --restart $opts "echo \"\$(tput setab 19)[\$(date +'%Y-%m-%d %T')] watchexec\$(tput sgr0) $@\" ; $@ ; echo"
 }
+
+hl() {
+  rg --passthru --colors match:bg:16 --colors match:fg:0 --colors match:style:nobold "$@"
+}
+
+ai() {
+  v +"AIChatFull $@"
+}

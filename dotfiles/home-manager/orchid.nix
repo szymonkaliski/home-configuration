@@ -25,7 +25,6 @@
     pkgs.grc
     pkgs.htop
     pkgs.lefthook
-    pkgs.llm
     pkgs.mosquitto
     pkgs.neovim
     pkgs.ngrok
@@ -34,7 +33,6 @@
     pkgs.nnn
     pkgs.nodejs_20
     pkgs.parallel
-    pkgs.python312Packages.pynvim # dependency for `vim-ai`
     pkgs.ripgrep
     pkgs.rsync
     pkgs.tmux
@@ -44,6 +42,12 @@
     pkgs.watchexec
     pkgs.wget
     pkgs.xmlstarlet
+
+    (pkgs.python312.withPackages (ps: [
+      ps.llm
+      ps.llm-cmd
+      ps.pynvim # dependency for `vim-ai`
+    ]))
   ];
 
   programs.home-manager.enable = true;

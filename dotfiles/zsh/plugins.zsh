@@ -2,13 +2,13 @@
 load_direnv() {
   if hash direnv 2> /dev/null; then
     eval "$(direnv hook zsh)"
-fi
+  fi
 }
 
 # z for better jumps
 load_z() {
   if [ ! -f ~/.zsh/plugins/z/z.sh ]; then
-    exit
+    return
   fi
 
   source ~/.zsh/plugins/z/z.sh
@@ -17,7 +17,7 @@ load_z() {
 # better pairs
 load_autopair() {
   if [ ! -f ~/.zsh/plugins/zsh-autopair/autopair.zsh ]; then
-    exit
+    return
   fi
 
   source ~/.zsh/plugins/zsh-autopair/autopair.zsh
@@ -26,7 +26,7 @@ load_autopair() {
 # live command highlighting like fish, but faster than zsh-syntax-highlight
 load_syntax_highlight() {
   if [ ! -f ~/.zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh ]; then
-    exit
+    return
   fi
 
   source ~/.zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
@@ -51,7 +51,7 @@ load_syntax_highlight() {
 # gitstatus
 load_gitstatus() {
   if [ !-f ~/.zsh/plugins/gitstatus/gitstatus.plugin.zsh ]; then
-    exit
+    return
   fi
 
   source ~/.zsh/plugins/gitstatus/gitstatus.plugin.zsh

@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+input_file="$1"
+ext="${input_file##*.}"
+
+output_dir=$(basename "$input_file" .gif)
+output_dir=$(basename "$output_dir" .mp4)
+output_dir=$(basename "$output_dir" .mov)
+
+if [[ -z "$input_file" ]]; then
+  echo "Error: No input file provided."
+  exit 1
+fi
+
+if [[ ! -f "$input_file" ]]; then
+  echo "Error: Input file does not exist."
+  exit 1
+fi
+
+if [[ -d "$output_dir" ]]; then
+  echo "Error: Output directory already exists. Choose a different file."
+  exit 1
+fi
+
+mkdir -p "$output_dir"
+
+case "$ext" in
+  gif)
+    magick convert "$input_file" -coalesce -background white -alpha remove +adjoin "$output_dir/%04d.png"
+    ;;
+  mp4|mov)
+    ffmpeg -i "$input_file" "$output_dir/%04d.png"
+    ;;
+  *)
+    echo "Error: Unsupported file type. Only gif, mp4, mov are supported."
+    exit 1
+    ;;
+esac

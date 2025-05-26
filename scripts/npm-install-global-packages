@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 PACKAGES=(
+  @anthropic-ai/claude-code
+  @openai/codex
   neovim
   npm-check-updates
   prettier

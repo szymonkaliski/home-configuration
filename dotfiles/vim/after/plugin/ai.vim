@@ -36,8 +36,9 @@ Do not add comments to the code you write, unless the code is complex and requir
 END
 
 let g:vim_ai_chat = {
+  \ 'provider': 'openai',
   \ 'options': {
-  \   'model': 'o1-preview',
+  \   'model': 'gpt-4.1',
   \   'initial_prompt': s:chat_initial_prompt,
   \   'stream': 1,
   \   'role_prefix': '#',
@@ -52,14 +53,14 @@ let g:vim_ai_chat = {
   \}
 
 let g:vim_ai_edit = {
-  \ 'engine': 'chat',
+  \ 'provider': 'openai',
   \ 'options': {
   \   'endpoint_url': "https://api.openai.com/v1/chat/completions",
-  \   'model': 'o3-mini',
+  \   'model': 'o4-mini',
   \   'selection_boundary': '',
   \   'temperature': 1,
   \   'request_timeout': 20,
-  \   'initial_prompt': s:edit_initial_prompt
+  \   'initial_prompt': s:edit_initial_prompt,
   \ }
   \}
 
@@ -90,8 +91,6 @@ function! s:DoChat(options)
         \ 'is_new':   v:true,
         \ 'prompt':   ''
         \ }, a:options)
-
-  echom l:opts
 
   if l:opts.mode == 'v'
     call <sid>YankWithCodeBlock()

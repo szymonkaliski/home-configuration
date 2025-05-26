@@ -7,9 +7,9 @@ Plug 'airblade/vim-rooter'
 Plug 'bogado/file-line'
 Plug 'chriskempson/base16-vim'
 Plug 'christoomey/vim-tmux-navigator'
-Plug 'daviesjamie/vim-base16-lightline'
 Plug 'farmergreg/vim-lastplace'
 Plug 'itchyny/lightline.vim'
+Plug 'junegunn/fzf'
 Plug 'junegunn/vim-slash'
 Plug 'justinmk/vim-dirvish'
 Plug 'tpope/vim-abolish'
@@ -185,16 +185,13 @@ function! Base16Customize()
   call g:Base16hi('WinSeparator',                 g:base16_gui01, g:base16_gui00, g:base16_cterm01, g:base16_cterm00, 'none',          '')
   call g:Base16hi('WildMenu',                     g:base16_gui00, g:base16_gui03, g:base16_cterm00, g:base16_cterm03, '',              '')
   call g:Base16hi('QuickFixLine',                 'none',         g:base16_gui01, 'none',           g:base16_cterm01, '',              '')
+  call g:Base16hi('qfseparator1',                 g:base16_gui03, g:base16_gui01, g:base16_cterm03, g:base16_cterm00, '',              '')
+  call g:Base16hi('qfseparator2',                 g:base16_gui03, g:base16_gui01, g:base16_cterm03, g:base16_cterm00, '',              '')
 
   call g:Base16hi('SpellBad',                     g:base16_gui08, g:base16_gui00, g:base16_cterm08, g:base16_cterm00, 'reverse',       '')
   call g:Base16hi('SpellCap',                     g:base16_gui08, g:base16_gui00, g:base16_cterm08, g:base16_cterm00, 'reverse',       '')
   call g:Base16hi('SpellLocal',                   g:base16_gui08, g:base16_gui00, g:base16_cterm08, g:base16_cterm00, 'reverse',       '')
   call g:Base16hi('SpellRare',                    g:base16_gui08, g:base16_gui00, g:base16_cterm08, g:base16_cterm00, 'reverse',       '')
-
-  call g:Base16hi('ALEError',                     g:base16_gui08, g:base16_gui00, g:base16_cterm08, g:base16_cterm00, 'reverse',       '')
-  call g:Base16hi('ALEErrorSign',                 g:base16_gui08, g:base16_gui00, g:base16_cterm08, g:base16_cterm00, 'reverse',       '')
-  call g:Base16hi('ALEWarning',                   g:base16_gui0A, g:base16_gui00, g:base16_cterm0A, g:base16_cterm00, 'reverse',       '')
-  call g:Base16hi('ALEWarningSign',               g:base16_gui0A, g:base16_gui00, g:base16_cterm0A, g:base16_cterm00, 'reverse',       '')
 
   call g:Base16hi('CocHighlightText',             '',             g:base16_gui01, '',               g:base16_cterm01, 'none',          '')
   call g:Base16hi('CocErrorHighlight',            g:base16_gui08, g:base16_gui00, g:base16_cterm08, g:base16_cterm00, 'reverse',       '')
@@ -317,19 +314,44 @@ function! Base16Customize()
   hi! markdownStrikethrough term=strikethrough cterm=strikethrough gui=strikethrough
 endfunction
 
-augroup base16_colorscheme
-  au!
-
-  au ColorScheme * call Base16Customize()
-augroup END
-
 let base16colorspace=256
 
-if filereadable(expand('~/.vimrc_background'))
-  source ~/.vimrc_background
-else
-  colorscheme base16-default-dark
-endif
+function! Base16ReadColorScheme()
+  if !filereadable(expand('~/.vimrc_background'))
+    colorscheme base16-default-dark
+    return
+  endif
+
+  " if the file modified time has changed that means a change to base16 was
+  " made from the terminal, we can detect that, and update vim theme
+  " dynamically (well, once focus is gained in the editor, which is a small
+  " price to pay)
+  let l:background_mtime = getftime(expand('~/.vimrc_background'))
+
+  if l:background_mtime != get(g:, 'base16_background_mtime', 0)
+    let g:base16_background_mtime = l:background_mtime
+
+    source ~/.vimrc_background
+
+    call Base16Customize()
+
+    " lightline might not be available as we parse vimrc for the first time
+    if exists('*LightlineUpdateColorscheme')
+      call LightlineUpdateColorscheme()
+      " no idea why I have to `#disable()` + `#enable()` (`#update()` doesn't
+      " help), but it works
+      call lightline#disable()
+      call lightline#enable()
+    endif
+  endif
+endfunction
+
+call Base16ReadColorScheme()
+
+augroup base16_colorscheme
+  au!
+  au FocusGained,CursorHold,CursorHoldI * call Base16ReadColorScheme()
+augroup END
 
 " indentation
 filetype plugin indent on

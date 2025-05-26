@@ -138,35 +138,6 @@ function! utils#statusline_right() abort
   return l:rhs
 endfunction
 
-function! utils#statusline_ale()
-  if !exists(':ALELint')
-    return ''
-  endif
-
-  let l:error_symbol = 'E: '
-  let l:warning_symbol = 'W: '
-
-  let l:counts = ale#statusline#Count(bufnr(''))
-
-  let l:output = ''
-
-  if l:counts.error
-    let l:output.=l:error_symbol
-    let l:output.=l:counts.error
-  endif
-
-  if l:counts.warning
-    if l:counts.error
-      let l:output.=' '
-    endif
-
-    let l:output.=l:warning_symbol
-    let l:output.=l:counts.warning
-  endif
-
-  return l:output
-endfunction
-
 function! utils#statusline_coc()
   let l:error_symbol = 'E: '
   let l:warning_symbol = 'W: '

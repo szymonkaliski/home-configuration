@@ -24,6 +24,7 @@
     pkgs.go
     pkgs.grc
     pkgs.htop
+    pkgs.imagemagick # for `gif-explode` script
     pkgs.lefthook
     pkgs.mosquitto
     pkgs.neovim
@@ -31,22 +32,24 @@
     pkgs.nil
     pkgs.nixfmt
     pkgs.nnn
-    pkgs.nodejs_20
+    pkgs.nodejs_22
     pkgs.parallel
     pkgs.ripgrep
     pkgs.rsync
+    pkgs.sox # for `whisper` script
     pkgs.tmux
     pkgs.tree
     pkgs.unixtools.watch
     pkgs.vale
     pkgs.watchexec
     pkgs.wget
-    pkgs.xmlstarlet
+    pkgs.xmlstarlet # for `add-ocr-to-image` script
 
     (pkgs.python312.withPackages (ps: [
       ps.llm
       ps.llm-cmd
-      ps.pynvim # dependency for `vim-ai`
+      ps.openai # for `whisper` script
+      ps.pynvim # for `vim-ai`
     ]))
   ];
 

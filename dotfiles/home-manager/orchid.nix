@@ -46,8 +46,6 @@
     pkgs.xmlstarlet # for `add-ocr-to-image` script
 
     (pkgs.python312.withPackages (ps: [
-      ps.llm
-      ps.llm-cmd
       ps.openai # for `whisper` script
       ps.pynvim # for `vim-ai`
     ]))

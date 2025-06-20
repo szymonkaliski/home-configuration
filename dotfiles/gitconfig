@@ -7,6 +7,7 @@
   safecrlf = false
   excludesfile = ~/.gitignore_global
   autocrlf = false
+  editor = v
 [system]
   untrackedCache = true
 [diff]

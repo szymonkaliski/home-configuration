@@ -18,7 +18,18 @@ local function relative_path()
   if root == '' then return nil end
   local abs  = vim.fn.expand('%:p'):gsub('\\','/')
   root       = root:gsub('\\','/')
-  return abs:gsub('^'..root..'/', '')
+  
+  -- Escape special pattern characters in the root path
+  local escaped_root = root:gsub('[%^%$%(%)%%%.%[%]%*%+%-%?]', '%%%1')
+  
+  -- Check if abs path starts with root path
+  if abs:sub(1, #root) == root then
+    -- Return the relative path, removing the root and leading slash
+    local rel = abs:sub(#root + 1)
+    return rel:gsub('^/', '')
+  end
+  
+  return nil
 end
 
 -- final blob URL pinned to the current commit and line(s)

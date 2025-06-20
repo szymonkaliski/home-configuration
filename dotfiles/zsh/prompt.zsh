@@ -58,7 +58,7 @@ setup_git_prompt_status() {
   add-zsh-hook preexec git_prompt_status
 }
 
-# single-quote comments are important here!
+# single-quotes are important here!
 PROMPT='$(prompt_pwd)$ZSH_MAIN_PROMPT'
 PROMPT2='%{$fg[yellow]%}%_%{$reset_color%} > '
 SPROMPT="correct "%R" to "%r' ? ([Y]es/[N]o/[E]dit/[A]bort) '

@@ -63,8 +63,10 @@ load_gitstatus() {
 load_z # I often want to jump somewhere immediately when opening a shell
 load_direnv # same for direnv
 
-# deferred loading
-zsh-defer -t 0.5 load_autopair
-zsh-defer -t 0.5 load_syntax_highlight
-zsh-defer -t 1.0 load_gitstatus
+# deferred loading (only if we're not in vscode/cursor)
+if [ "$TERM_PROGRAM" != "vscode" ]; then
+  zsh-defer -t 0.5 load_autopair
+  zsh-defer -t 0.5 load_syntax_highlight
+  zsh-defer -t 1.0 load_gitstatus
+fi
 

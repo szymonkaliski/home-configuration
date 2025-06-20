@@ -33,9 +33,9 @@
   ll = log --pretty=format:"%C(yellow)%h%x09%C(green)%cd%x09%C(reset)%s\\%C(magenta)%d\\ %C(blue)[%cn]" --decorate --numstat
 
   # edit files with merge conflicts
-  uu = !v $(git diff --name-only --diff-filter=U)
+  edit-conflicts = !v $(git diff --name-only --diff-filter=U)
   # edit files that have been modified
-  mm = !v $(git ls-files --modified) $(git diff --name-only --cached)
+  edit-modifed = !v $(git ls-files --modified) $(git diff --name-only --cached)
   # make a PR
   pr = !git push && gh pr create --web
 [push]

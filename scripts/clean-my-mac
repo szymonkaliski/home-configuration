@@ -18,20 +18,16 @@ if [ "$RESP" == "y" ]; then
   if hash pnpm > /dev/null; then
     pnpm store prune
   fi
-
-  if hash brew > /dev/null; then
-    brew cleanup -s
-  fi
 fi
 
 read -p "$(tput setaf 3)Clean docker caches?$(tput sgr0) (y/n) " RESP
 if [ "$RESP" == "y" ]; then
-  docker system prune --all --force --volumes
+  docker system prune
 fi
 
 read -p "$(tput setaf 3)Clean nix garbage?$(tput sgr0) (y/n) " RESP
 if [ "$RESP" == "y" ]; then
-  nix-collect-garbage -d
+  nix-collect-garbage
 fi
 
 read -p "$(tput setaf 3)Clean xcode caches?$(tput sgr0) (y/n) " RESP

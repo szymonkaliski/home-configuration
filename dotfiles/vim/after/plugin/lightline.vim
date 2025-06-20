@@ -25,7 +25,7 @@ function! LightlineUpdateColorscheme() abort
 
   let s:p.normal.left     = [ [ s:base01, s:base03 ], [ s:base05, s:base02 ] ]
   let s:p.normal.middle   = [ [ s:base07, s:base01 ] ]
-  let s:p.normal.right    = [ [ s:base01, s:base03 ], [ s:base03, s:base02 ] ]
+  let s:p.normal.right    = copy(s:p.normal.left)
 
   let s:p.normal.error    = [ [ s:base01, s:base08 ] ]
   let s:p.normal.warning  = [ [ s:base01, s:base09 ] ]
@@ -44,8 +44,8 @@ function! LightlineUpdateColorscheme() abort
 
   let s:p.tabline.left    = [ [ s:base05, s:base02 ] ]
   let s:p.tabline.middle  = [ [ s:base05, s:base01 ] ]
-  let s:p.tabline.right   = copy(s:p.inactive.left)
-  let s:p.tabline.tabsel  = [ [ s:base02, s:base03 ] ]
+  let s:p.tabline.right   = copy(s:p.tabline.left)
+  let s:p.tabline.tabsel  = [ [ s:base01, s:base03 ] ]
 
   let g:lightline#colorscheme#base16#palette = lightline#colorscheme#flatten(s:p)
 endfunction

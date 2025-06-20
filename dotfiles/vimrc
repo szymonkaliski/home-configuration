@@ -178,7 +178,7 @@ function! Base16Customize()
   call g:Base16hi('VertSplit',                    g:base16_gui01, g:base16_gui00, g:base16_cterm01, g:base16_cterm00, 'none',          '')
   call g:Base16hi('WinSeparator',                 g:base16_gui01, g:base16_gui00, g:base16_cterm01, g:base16_cterm00, 'none',          '')
   call g:Base16hi('WildMenu',                     g:base16_gui00, g:base16_gui03, g:base16_cterm00, g:base16_cterm03, '',              '')
-  call g:Base16hi('QuickFixLine',                 'none',         g:base16_gui01, 'none',           g:base16_cterm01, '',              '')
+  call g:Base16hi('QuickFixLine',                 g:base16_gui05, g:base16_gui01, g:base16_cterm05, g:base16_cterm01, '',              '')
   call g:Base16hi('qfseparator1',                 g:base16_gui03, g:base16_gui01, g:base16_cterm03, g:base16_cterm00, '',              '')
   call g:Base16hi('qfseparator2',                 g:base16_gui03, g:base16_gui01, g:base16_cterm03, g:base16_cterm00, '',              '')
 

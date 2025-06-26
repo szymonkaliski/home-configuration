@@ -22,7 +22,5 @@
     pkgs.watchexec
   ];
 
-  programs.home-manager.enable = true;
-
   programs.nix-index-database.comma.enable = true;
 }

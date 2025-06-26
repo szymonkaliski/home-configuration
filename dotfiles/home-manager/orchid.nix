@@ -24,7 +24,7 @@
     pkgs.go
     pkgs.grc
     pkgs.htop
-    pkgs.imagemagick # for `gif-explode` script
+    pkgs.imagemagick # for `explode-video` script
     pkgs.lefthook
     pkgs.mosquitto
     pkgs.neovim
@@ -45,13 +45,9 @@
     pkgs.wget
     pkgs.xmlstarlet # for `add-ocr-to-image` script
 
-    (pkgs.python312.withPackages (ps: [
-      ps.openai # for `whisper` script
-      ps.pynvim # for `vim-ai`
-    ]))
+    (pkgs.python312.withPackages (ps: [ ps.openai ])) # for `whisper` script
   ];
 
-  programs.home-manager.enable = true;
 
   programs.nix-index-database.comma.enable = true;
 

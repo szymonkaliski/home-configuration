@@ -1,4 +1,5 @@
-{ pkgs, ... }: {
+{ pkgs, ... }:
+{
   home.username = "szymon";
   home.homeDirectory = "/Users/szymon";
   home.stateVersion = "23.11";
@@ -37,6 +38,7 @@
     pkgs.ripgrep
     pkgs.rsync
     pkgs.sox # for `whisper` script
+    pkgs.terminal-notifier
     pkgs.tmux
     pkgs.tree
     pkgs.unixtools.watch
@@ -47,7 +49,6 @@
 
     (pkgs.python312.withPackages (ps: [ ps.openai ])) # for `whisper` script
   ];
-
 
   programs.nix-index-database.comma.enable = true;
 

@@ -256,8 +256,3 @@ hl() {
   rg --passthru --colors match:bg:16 --colors match:fg:0 --colors match:style:nobold "$@"
 }
 
-if hash codex 2>/dev/null; then
-  codex() {
-    OPENAI_API_KEY=$(<~/.codex-openai-key) command codex "$@"
-  }
-fi

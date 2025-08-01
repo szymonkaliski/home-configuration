@@ -31,9 +31,6 @@ fi
 if [ -f "/Applications/Tailscale.app/Contents/MacOS/Tailscale" ]; then
   alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 fi
-if [ -f "/Applications/Cursor.app/Contents/Resources/app/bin/cursor" ]; then
-  alias cursor="/Applications/Cursor.app/Contents/Resources/app/bin/cursor"
-fi
 
 # cd to currently open dir in finder
 cdf() {

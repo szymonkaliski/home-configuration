@@ -35,7 +35,7 @@
   # edit files with merge conflicts
   edit-conflicts = !v $(git diff --name-only --diff-filter=U)
   # edit files that have been modified
-  edit-modifed = !v $(git ls-files --modified) $(git diff --name-only --cached)
+  edit-modified = !v $(git ls-files --modified) $(git diff --name-only --cached)
   # make a PR
   pr = !git push && gh pr create --web
 [push]
@@ -55,6 +55,8 @@
   defaultBranch = main
 [url "git@github.com:"]
   insteadOf = git://github.com/
+[url "https://github.com/"]
+  insteadOf = http://github.com/
 [fetch]
   prune = true
   pruneTags = true

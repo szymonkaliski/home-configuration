@@ -453,6 +453,14 @@ else
   set laststatus=2
 endif
 
+" remove global nvim maps conflicting with ReplaceWithRegister
+if has('nvim')
+  nunmap gra
+  nunmap gri
+  nunmap grn
+  nunmap grr
+endif
+
 " always display tabline
 set showtabline=1
 

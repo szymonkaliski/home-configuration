@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
 
 export PATH="$HOME/.nix-profile/bin:$PATH"
+export OPENAI_API_KEY="$(cat ~/.openai-key)"
 
-tmp=$(mktemp /tmp/voice.XXXXXX.wav)
+tmp=$(mktemp /tmp/whisper.XXXXXX.wav)
 trap 'rm -f "$tmp"' EXIT
 
 echo "Recording... (press Ctrl-C to stop)"
@@ -11,7 +13,6 @@ rec --no-show-progress -c 1 -b 16 -r 16000 "$tmp"
 
 [ "$(soxi -r "$tmp")" != "16000" ] && sox "$tmp" -q -r 16000 "${tmp%.wav}_16k.wav" && mv "${tmp%.wav}_16k.wav" "$tmp"
 
-export OPENAI_API_KEY="$(cat ~/.openai-key)"
 text=$(openai api audio.transcriptions.create -m whisper-1 -f "$tmp" --response-format text)
 
 echo $text | pbcopy

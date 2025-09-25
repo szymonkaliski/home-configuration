@@ -92,8 +92,8 @@ module.start = function()
     { key = 'k', fn = hs.grid.pushWindowUp         },
     { key = 'l', fn = hs.grid.pushWindowRight      },
 
-    { key = '[', fn = hs.grid.pushWindowNextScreen },
-    { key = ']', fn = hs.grid.pushWindowPrevScreen },
+    { key = '[', fn = hs.grid.pushWindowPrevScreen },
+    { key = ']', fn = hs.grid.pushWindowNextScreen },
 
     { key = ',', fn = hs.grid.resizeWindowThinner  },
     { key = '.', fn = hs.grid.resizeWindowWider    },

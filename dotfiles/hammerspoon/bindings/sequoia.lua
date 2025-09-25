@@ -162,8 +162,8 @@ module.start = function()
     end
   end)
 
-  bind("[", function() pushWindowNextScreen() end)
-  bind("]", function() pushWindowPrevScreen() end)
+  bind('[', function() pushWindowPrevScreen() end)
+  bind(']', function() pushWindowNextScreen() end)
 
   hs.fnutils.each({
     { key = 'h', cmd = 'west'  },

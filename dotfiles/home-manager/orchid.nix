@@ -37,7 +37,6 @@
     pkgs.parallel
     pkgs.ripgrep
     pkgs.rsync
-    pkgs.sox # for `whisper` script
     pkgs.terminal-notifier
     pkgs.tmux
     pkgs.tree
@@ -46,8 +45,6 @@
     pkgs.watchexec
     pkgs.wget
     pkgs.xmlstarlet # for `add-ocr-to-image` script
-
-    (pkgs.python312.withPackages (ps: [ ps.openai ])) # for `whisper` script
   ];
 
   programs.nix-index-database.comma.enable = true;

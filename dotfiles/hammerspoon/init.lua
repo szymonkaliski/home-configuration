@@ -63,7 +63,7 @@ ui.enabled                  = { 'caffeine-menubar' }
 
 -- bindings & modules
 local modules               = { bindings, logger, watchers, ui, watchables } -- watchables have to come last to refresh all the things that depend on them
-local basicBindings         = { 'ask-before-quit', 'block-hide', 'ctrl-esc', 'f-keys', 'global', 'screenshot-with-meta', 'term-ctrl-i', 'whisper' }
+local basicBindings         = { 'ask-before-quit', 'block-hide', 'ctrl-esc', 'f-keys', 'global', 'screenshot-with-meta', 'term-ctrl-i' }
 bindings.askBeforeQuitApps  = flatten({ config.apps.browsers, config.apps.terms, { 'Preview' } })
 
 if config.wm.tilingMethod == 'grid' then

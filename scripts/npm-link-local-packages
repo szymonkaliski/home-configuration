@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 PACKAGES=(
+  "ai-grep"
+  "ai-translate"
   "alfred-infinite-clipboard"
   "archivist/archivist-cli"
   "logger-search"

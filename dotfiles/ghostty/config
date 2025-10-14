@@ -36,6 +36,6 @@ macos-icon-ghost-color  = grey
 macos-icon-screen-color = grey,black
 
 # these are set from zsh base16 color setting so they match when switching terminal colors
-background = #1d1f21
-foreground = #c5c8c6
+background = #181818
+foreground = #d8d8d8
 

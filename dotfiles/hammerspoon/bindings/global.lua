@@ -95,7 +95,6 @@ module.start = function()
   hs.fnutils.each({
     { key = 'return', apps = config.apps.terms        },
     { key = 'space',  apps = config.apps.browsers     },
-    { key = 'i',      apps = { 'ChatGPT' }            },
     { key = ',',      apps = { 'System Preferences' } },
   }, function(object)
     hs.hotkey.bind(ultra, object.key, function() smartLaunchOrFocus(object.apps) end)

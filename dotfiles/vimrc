@@ -89,9 +89,9 @@ endif
 "   let &runtimepath = &runtimepath . ',' . expand('~/Documents/Projects/coc-pilot/')
 " endif
 
-if isdirectory(expand('~/Documents/Projects/coc-pilot-v2/'))
-  let &runtimepath = &runtimepath . ',' . expand('~/Documents/Projects/coc-pilot-v2/')
-endif
+" if isdirectory(expand('~/Documents/Projects/coc-pilot-v2/'))
+"   let &runtimepath = &runtimepath . ',' . expand('~/Documents/Projects/coc-pilot-v2/')
+" endif
 
 call plug#end()
 

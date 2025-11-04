@@ -1,3 +1,3 @@
-source ~/.zsh/exports.zsh
 source ~/.zsh/path.zsh
+source ~/.zsh/exports.zsh
 

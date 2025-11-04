@@ -35,10 +35,9 @@
     pkgs.nnn
     pkgs.nodejs_22
     pkgs.parallel
-    pkgs.poppler_utils # for `name-pdf-papers` script
+    pkgs.poppler-utils # for `name-pdf-papers` script
     pkgs.ripgrep
     pkgs.rsync
-    pkgs.terminal-notifier
     pkgs.tmux
     pkgs.tree
     pkgs.unixtools.watch

@@ -6,12 +6,6 @@ else
   echo
 fi
 
-# this check is enough to know if we're on devvm, for now
-# additionally could run `/run/current-system/sw/bin/hostname -s` to be double-sure
-if [ -d /run/current-system/sw/bin/ ]; then
-  source ~/.zsh/devvm.zsh
-fi
-
 # load files
 files=(
   options

@@ -20,15 +20,8 @@
       nix-index-database,
       ...
     }:
-    let
-      systems = [
-        "aarch64-darwin"
-        "x86_64-linux"
-      ];
-      forAllSystems = nixpkgs.lib.genAttrs systems;
-    in
     {
-      formatter = forAllSystems (system: nixpkgs.${system}.nixfmt);
+      formatter.aarch64-darwin = nixpkgs.legacyPackages.aarch64-darwin.nixfmt;
 
       homeConfigurations = {
         "szymon@orchid" = home-manager.lib.homeManagerConfiguration {
@@ -36,16 +29,7 @@
 
           modules = [
             ./orchid.nix
-            nix-index-database.hmModules.nix-index
-          ];
-        };
-
-        "szymon@devvm" = home-manager.lib.homeManagerConfiguration {
-          pkgs = nixpkgs.legacyPackages.x86_64-linux;
-
-          modules = [
-            ./devvm.nix
-            nix-index-database.hmModules.nix-index
+            nix-index-database.homeModules.nix-index
           ];
         };
       };

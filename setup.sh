@@ -75,8 +75,6 @@ if command -v nix &> /dev/null; then
 
     if [[ $HOSTNAME == "Orchid" ]]; then
       nix run home-manager -- switch --flake .#szymon@orchid
-    elif [[ $HOSTNAME == "szymon-vm" ]]; then
-      nix run home-manager -- switch --flake .#szymon@devvm
     else
       echo
       echo "No home-manager configuration found for this machine!"

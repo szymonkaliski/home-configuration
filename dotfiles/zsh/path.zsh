@@ -23,11 +23,6 @@ if [ -d $HOME/Documents/Projects/go ]; then
   export PATH="$GOBIN:$PATH"
 fi
 
-# docker
-if [ -d /Applications/Docker.app/Contents/Resources/bin ]; then
-  export PATH="$PATH:/Applications/Docker.app/Contents/Resources/bin/"
-fi
-
 # clean paths
 typeset -gU path
 

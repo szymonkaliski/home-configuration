@@ -36,8 +36,6 @@
   edit-conflicts = !v $(git diff --name-only --diff-filter=U)
   # edit files that have been modified
   edit-modified = !v $(git ls-files --modified) $(git diff --name-only --cached)
-  # make a PR
-  pr = !git push && gh pr create --web
 [push]
   default = current
   autoSetupRemote = true
@@ -68,4 +66,8 @@
 [credential "https://gist.github.com"]
   helper =
   helper = !gh auth git-credential
+[http]
+  cookiefile = /Users/szymon/.gitcookies
+[includeIf "hasconfig:remote.*.url:https://*googlesource.com/**"]
+  path = ~/.gitconfig_google
 

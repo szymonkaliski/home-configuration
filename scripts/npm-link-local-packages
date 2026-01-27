@@ -9,6 +9,7 @@ PACKAGES=(
   "muninn-get-asset"
   "muninn-make-month"
   "muninn-simple"
+  "name-pdfs"
   "timav-cli"
   "timav-dashboard"
 )

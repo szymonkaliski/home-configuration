@@ -23,6 +23,7 @@ alias ssh="TERM=xterm-256color ssh"
 # fixes for processess getting stuck
 alias fix-camera="sudo killall VDCAssistant"
 alias fix-icloud="sudo killall cloudd bird"
+alias fix-gemini="rm -rf ~/.gemini/tmp ~/.gemini/google_accounts.json ~/.gemini/installation_id ~/.gemini/mcp-oauth-tokens-v2.json"
 
 # apps
 if [ -f "/Applications/Fork.app/Contents/Resources/fork_cli" ]; then

@@ -1,4 +1,4 @@
-let g:muninn_path = expand('~/Documents/Dropbox/Wiki/')
+let g:muninn_path = expand('~/Library/CloudStorage/Dropbox/Wiki/')
 
 function! s:open_random_note()
   let g:note_path = g:muninn_path . 'Notes/'

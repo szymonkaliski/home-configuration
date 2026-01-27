@@ -2,7 +2,7 @@
 
 date
 
-pushd ~/Documents/Dropbox/Wiki/ || exit 1
+pushd ~/Library/CloudStorage/Dropbox/Wiki/ || exit 1
 
 git diff-index --quiet HEAD -- || (
   git add -A .

@@ -1,4 +1,4 @@
-export WIKI_PATH=$HOME/Documents/Dropbox/Wiki
+export WIKI_PATH=$HOME/Library/CloudStorage/Dropbox/Wiki
 
 if [ -d $WIKI_PATH ]; then
   alias muninn="muninn --root $WIKI_PATH"
@@ -13,7 +13,7 @@ if [ -d $WIKI_PATH ]; then
   }
 
   wiki() {
-    pushd $HOME/Documents/Dropbox/Wiki > /dev/null
+    pushd $WIKI_PATH > /dev/null
 
     if [ "$#" -eq 0 ]; then
       v +"Wiki"
@@ -27,7 +27,7 @@ if [ -d $WIKI_PATH ]; then
 
   # even quicker inbox access
   inbox() {
-    local file=$HOME/Documents/Dropbox/Wiki/inbox.md
+    local file=$WIKI_PATH/inbox.md
 
     if [ "$#" -eq 0 ]; then
       cat $file

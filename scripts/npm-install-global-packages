@@ -2,6 +2,7 @@
 
 PACKAGES=(
   @anthropic-ai/claude-code
+  @google/gemini-cli
   neovim
   npm-check-updates
   prettier

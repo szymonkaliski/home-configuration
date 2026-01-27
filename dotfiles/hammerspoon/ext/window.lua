@@ -204,7 +204,7 @@ module.focusAndHighlight = function(cmd)
   local filterWindows     = cache.windowFilter:getWindows()
 
   local windowOnSameOrNextScreen = function(testWin, currentScreen, nextScreen)
-    return testWin:screen():id() == currentScreen:id() or testWin:screen():id() == nextScreen:id()
+    return testWin:screen():id() == currentScreen:id() or (nextScreen and testWin:screen():id() == nextScreen:id())
   end
 
   -- focus window if we have any, and it's on nearest or current screen (don't jump over empty screens)

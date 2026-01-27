@@ -35,6 +35,15 @@ ln -si $DOTFILE_DIR/zshrc ~/.zshrc
 
 ln -si $(pwd)/scripts ~/.bin
 
+# Claude config (individual files, not whole dir)
+if [ ! -d ~/.claude ]; then
+  mkdir ~/.claude
+fi
+ln -si $DOTFILE_DIR/claude/CLAUDE.md ~/.claude/CLAUDE.md
+ln -si $DOTFILE_DIR/claude/settings.json ~/.claude/settings.json
+ln -si $DOTFILE_DIR/claude/notify.sh ~/.claude/notify.sh
+ln -si $DOTFILE_DIR/claude/statusline-command.sh ~/.claude/statusline-command.sh
+
 if [[ $HOSTNAME == "Orchid" ]]; then
   ln -si $DOTFILE_DIR/hammerspoon ~/.hammerspoon
   ln -si $DOTFILE_DIR/ghostty ~/.config/ghostty

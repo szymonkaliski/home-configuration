@@ -1,0 +1,6 @@
+- skip unnecessary comments, add them only if really necessary
+- keep code consistent with the patterns in the codebase, for example naming, using `interface` vs `type`, etc.
+- for running shell commands you have access to nix-comma: `, something` (for example: `, pdfifno [...]`); prefer it over trying to do ad-hoc code
+- you have access to `gh`
+- if writing ad-hoc code, use `node` instead of `python`
+- use `trash` command instead `rm`

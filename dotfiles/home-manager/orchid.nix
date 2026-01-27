@@ -1,4 +1,18 @@
 { pkgs, ... }:
+let
+  tnotify = pkgs.buildGoModule rec {
+    pname = "tnotify";
+    version = "0.1.6";
+    src = pkgs.fetchFromGitHub {
+      owner = "soloterm";
+      repo = "tnotify";
+      rev = "v${version}";
+      hash = "sha256-6KvszN9mmLrReUqheROk1tiX6ou4m3T4HwfxA4kM/i0=";
+    };
+    vendorHash = "sha256-7K17JaXFsjf163g5PXCb5ng2gYdotnZ2IDKk8KFjNj0=";
+    doCheck = false;
+  };
+in
 {
   home.username = "szymon";
   home.homeDirectory = "/Users/szymon";
@@ -13,7 +27,8 @@
   };
 
   home.packages = [
-    pkgs.bat
+    tnotify
+
     pkgs.coreutils
     pkgs.darwin.trash
     pkgs.difftastic
@@ -26,7 +41,6 @@
     pkgs.grc
     pkgs.htop
     pkgs.imagemagick # for `explode-video` script
-    pkgs.lefthook
     pkgs.mosquitto
     pkgs.neovim
     pkgs.ngrok
@@ -35,7 +49,6 @@
     pkgs.nnn
     pkgs.nodejs_22
     pkgs.parallel
-    pkgs.poppler-utils # for `name-pdf-papers` script
     pkgs.ripgrep
     pkgs.rsync
     pkgs.tmux
@@ -45,6 +58,7 @@
     pkgs.watchexec
     pkgs.wget
     pkgs.xmlstarlet # for `add-ocr-to-image` script
+    pkgs.yt-dlp
   ];
 
   programs.nix-index-database.comma.enable = true;

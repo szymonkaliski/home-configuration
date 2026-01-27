@@ -25,5 +25,3 @@
 # auto-generated plist files
 launchctls/*.plist
 
-# claude
-.claude/

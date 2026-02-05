@@ -5,6 +5,7 @@ PACKAGES=(
   "ai-translate"
   "alfred-infinite-clipboard"
   "archivist/archivist-cli"
+  "lgtm"
   "logger-search"
   "muninn-get-asset"
   "muninn-make-month"

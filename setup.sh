@@ -2,6 +2,9 @@
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
+DOTFILE_DIR="$(pwd)/dotfiles"
+HOSTNAME="$(hostname -s)"
+
 function askBeforeRunning() {
   SCRIPT=$1
 
@@ -11,8 +14,17 @@ function askBeforeRunning() {
   fi
 }
 
-DOTFILE_DIR="$(pwd)/dotfiles"
-HOSTNAME="$(hostname -s)"
+function claudeSetup() {
+  if [ ! -d ~/.claude ]; then
+    mkdir ~/.claude
+  fi
+
+  ln -si $DOTFILE_DIR/claude/CLAUDE.md ~/.claude/CLAUDE.md
+  ln -si $DOTFILE_DIR/claude/settings.json ~/.claude/settings.json
+  ln -si $DOTFILE_DIR/claude/notify.sh ~/.claude/notify.sh
+  ln -si $DOTFILE_DIR/claude/statusline-command.sh ~/.claude/statusline-command.sh
+  ln -si $DOTFILE_DIR/claude/skills ~/.claude/skills
+}
 
 if [ ! -d ~/.config ]; then
   mkdir ~/.config
@@ -34,15 +46,6 @@ ln -si $DOTFILE_DIR/zsh ~/.zsh
 ln -si $DOTFILE_DIR/zshrc ~/.zshrc
 
 ln -si $(pwd)/scripts ~/.bin
-
-# Claude config (individual files, not whole dir)
-if [ ! -d ~/.claude ]; then
-  mkdir ~/.claude
-fi
-ln -si $DOTFILE_DIR/claude/CLAUDE.md ~/.claude/CLAUDE.md
-ln -si $DOTFILE_DIR/claude/settings.json ~/.claude/settings.json
-ln -si $DOTFILE_DIR/claude/notify.sh ~/.claude/notify.sh
-ln -si $DOTFILE_DIR/claude/statusline-command.sh ~/.claude/statusline-command.sh
 
 if [[ $HOSTNAME == "Orchid" ]]; then
   ln -si $DOTFILE_DIR/hammerspoon ~/.hammerspoon
@@ -92,4 +95,6 @@ if command -v nix &> /dev/null; then
     popd
   fi
 fi
+
+claudeSetup
 

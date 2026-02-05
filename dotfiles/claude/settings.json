@@ -1,6 +1,13 @@
 {
   "permissions": {
-    "allow": ["mcp__chrome-devtools__*", "WebFetch", "WebSearch"]
+    "allow": [
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "WebFetch",
+      "WebSearch",
+      "mcp__chrome-devtools__*"
+    ]
   },
   "hooks": {
     "Notification": [
@@ -16,10 +23,7 @@
       {
         "matcher": "idle_prompt",
         "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/notify.sh 'Idle'"
-          }
+          { "type": "command", "command": "~/.claude/notify.sh 'Idle'" }
         ]
       }
     ],
@@ -38,5 +42,6 @@
     "type": "command",
     "command": "~/.claude/statusline-command.sh"
   },
-  "enabledPlugins": {}
+  "enabledPlugins": {},
+  "attribution": { "commit": "", "pr": "" }
 }

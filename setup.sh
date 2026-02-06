@@ -54,8 +54,30 @@ if [[ $HOSTNAME == "Orchid" ]]; then
   askBeforeRunning ./launchctls/reinstall-launchctls.sh
   askBeforeRunning ./terminfos/generate-terminfos.sh
   askBeforeRunning ./scripts/setup-osx
-  askBeforeRunning ./scripts/npm-install-global-packages
-  askBeforeRunning ./scripts/npm-link-global-packages
+fi
+
+if command -v nix &> /dev/null; then
+  read -p "$(tput setaf 3)Do you want to set up home-manager?$(tput sgr0) (y/n) " RESP
+
+  if [ "$RESP" == "y" ]; then
+    ln -si $DOTFILE_DIR/home-manager ~/.config/home-manager
+    pushd ~/.config/home-manager
+
+    if [[ $HOSTNAME == "Orchid" ]]; then
+      nix run home-manager -- switch --flake .#szymon@orchid
+    elif [[ $HOSTNAME == "minix" || $HOSTNAME == "nixos" ]]; then
+      if [ -f /etc/nixos/hardware-configuration.nix ]; then
+        cp /etc/nixos/hardware-configuration.nix $DOTFILE_DIR/home-manager/minix/hardware-configuration.nix
+        echo "Copied hardware-configuration.nix from /etc/nixos/"
+      fi
+      sudo nixos-rebuild switch --flake .#minix
+    else
+      echo
+      echo "No home-manager configuration found for this machine!"
+    fi
+
+    popd
+  fi
 fi
 
 if [ -d ~/.vim/ ]; then
@@ -78,29 +100,10 @@ if [ -d ~/.zsh/ ]; then
   popd > /dev/null
 fi
 
-if command -v nix &> /dev/null; then
-  read -p "$(tput setaf 3)Do you want to set up home-manager?$(tput sgr0) (y/n) " RESP
-
-  if [ "$RESP" == "y" ]; then
-    ln -si $DOTFILE_DIR/home-manager ~/.config/home-manager
-    pushd ~/.config/home-manager
-
-    if [[ $HOSTNAME == "Orchid" ]]; then
-      nix run home-manager -- switch --flake .#szymon@orchid
-    elif [[ $HOSTNAME == "minix" ]]; then
-      if [ -f /etc/nixos/hardware-configuration.nix ]; then
-        cp /etc/nixos/hardware-configuration.nix $DOTFILE_DIR/home-manager/minix/hardware-configuration.nix
-        echo "Copied hardware-configuration.nix from /etc/nixos/"
-      fi
-      sudo nixos-rebuild switch --flake .#minix
-    else
-      echo
-      echo "No home-manager configuration found for this machine!"
-    fi
-
-    popd
-  fi
-fi
-
 claudeSetup
+
+if command -v npm &> /dev/null; then
+  askBeforeRunning ./scripts/npm-install-global-packages
+  askBeforeRunning ./scripts/npm-link-global-packages
+fi
 

@@ -16,8 +16,6 @@ if [ -d $HOME/.nix-profile/bin ]; then
   export PATH="$HOME/.nix-profile/bin/:$PATH"
 fi
 
-# necessary for npm/node from home-manager
-# add to `.npmrc`: `prefix = ~/.npm`
 if [ -d $HOME/.npm/bin ]; then
   export PATH="$HOME/.npm/bin:$PATH"
 fi

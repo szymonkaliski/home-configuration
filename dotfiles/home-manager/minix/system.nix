@@ -11,6 +11,7 @@
 
   services.openssh.enable = true;
   services.tailscale.enable = true;
+  services.tailscale.useRoutingFeatures = "server";
 
   users.users.szymon = {
     isNormalUser = true;

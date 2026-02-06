@@ -8,6 +8,7 @@
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(rg:*)",
+      "Read(/tmp/tmux-panes-*)",
       "WebFetch",
       "WebSearch",
       "mcp__chrome-devtools__*"

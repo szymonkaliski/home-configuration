@@ -5,7 +5,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 DOTFILE_DIR="$(pwd)/dotfiles"
 HOSTNAME="$(hostname -s)"
 function git() {
-  if command -v git &> /dev/null; then
+  if type -P git &> /dev/null; then
     command git "$@"
   elif command -v nix &> /dev/null; then
     nix --extra-experimental-features "nix-command flakes" run nixpkgs#git -- "$@"

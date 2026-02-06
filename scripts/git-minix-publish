@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+name="${1:-$(basename "$(git rev-parse --show-toplevel)")}"
+ssh minix "git init --bare ~/Git/${name}.git"
+git remote add minix "szymon@minix:Git/${name}.git"
+git push minix "$(git branch --show-current)"

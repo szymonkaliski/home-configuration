@@ -1,5 +1,10 @@
 export PATH="/usr/local/bin:/usr/bin:/bin/:/usr/local/sbin:/usr/sbin:/sbin"
 
+# nixos system path
+if [ -d /run/current-system/sw/bin ]; then
+  export PATH="/run/current-system/sw/bin:$PATH"
+fi
+
 # nix stuff, bin/ with slash at the end so the path gets cleaned up - nix sets its own too
 if [ -d $HOME/.nix-profile/bin ]; then
   export PATH="$HOME/.nix-profile/bin/:$PATH"

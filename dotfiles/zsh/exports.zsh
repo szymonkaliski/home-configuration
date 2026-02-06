@@ -13,3 +13,13 @@ if [ -d $HOME/.terminfo ]; then
   export TERMINFO=$HOME/.terminfo/
 fi
 
+if [ -d "$HOME/Library/CloudStorage/Dropbox" ]; then
+  export DROPBOX_PATH="$HOME/Library/CloudStorage/Dropbox"
+elif [ -d "$HOME/Dropbox" ]; then
+  export DROPBOX_PATH="$HOME/Dropbox"
+fi
+
+if [ -n "$DROPBOX_PATH" ]; then
+  export WIKI_PATH="$DROPBOX_PATH/Wiki"
+  export SCREENSHOTS_PATH="$DROPBOX_PATH/Screenshots"
+fi

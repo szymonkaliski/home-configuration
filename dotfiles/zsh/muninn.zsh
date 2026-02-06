@@ -1,5 +1,3 @@
-export WIKI_PATH=$HOME/Library/CloudStorage/Dropbox/Wiki
-
 if [ -d $WIKI_PATH ]; then
   alias muninn="muninn --root $WIKI_PATH"
   alias tasks="muninn tasks"

@@ -1,7 +1,7 @@
 # z with fzf
 j() {
   if [[ -z "$*" ]]; then
-    cd "$(_z -l 2>&1 | sed -n 's/^[ 0-9.,]*//p' | fzf --prompt='jump > ')"
+    cd "$(_z -l 2>&1 | sed -n 's/^[ 0-9.,]*//p' | grep -v '^common:' | fzf --prompt='jump > ')"
   else
     _z "$@"
   fi

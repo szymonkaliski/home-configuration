@@ -133,7 +133,7 @@ function! LightlineSearchCount()
 
   let result = searchcount()
 
-  if result.total == 0
+  if empty(result) || result.total == 0
     return ''
   endif
 

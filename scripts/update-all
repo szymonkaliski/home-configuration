@@ -14,7 +14,9 @@ function gitUpdate {
   fi
 }
 
-if [[ $(hostname -s) == "Orchid" || $(hostname -s) == "orchid" ]]; then
+HOSTNAME=$(hostname -s)
+
+if [[ $HOSTNAME == "Orchid" || $HOSTNAME == "orchid" ]]; then
   echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"
 
   pushd ~/.config/home-manager > /dev/null || return
@@ -22,6 +24,16 @@ if [[ $(hostname -s) == "Orchid" || $(hostname -s) == "orchid" ]]; then
   sudo determinate-nixd upgrade
   nix flake update
   nix run home-manager -- switch --flake .#szymon@orchid
+
+  echo
+  popd > /dev/null || return
+elif [[ $HOSTNAME == "minix" ]]; then
+  echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"
+
+  pushd ~/.config/home-manager > /dev/null || return
+
+  nix flake update
+  sudo nixos-rebuild switch --flake .#minix
 
   echo
   popd > /dev/null || return

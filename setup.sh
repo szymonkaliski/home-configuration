@@ -87,6 +87,12 @@ if command -v nix &> /dev/null; then
 
     if [[ $HOSTNAME == "Orchid" ]]; then
       nix run home-manager -- switch --flake .#szymon@orchid
+    elif [[ $HOSTNAME == "minix" ]]; then
+      if [ -f /etc/nixos/hardware-configuration.nix ]; then
+        cp /etc/nixos/hardware-configuration.nix $DOTFILE_DIR/home-manager/minix/hardware-configuration.nix
+        echo "Copied hardware-configuration.nix from /etc/nixos/"
+      fi
+      sudo nixos-rebuild switch --flake .#minix
     else
       echo
       echo "No home-manager configuration found for this machine!"

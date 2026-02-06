@@ -14,6 +14,7 @@
     pkgs.htop
     pkgs.lm_sensors
     pkgs.imagemagick
+    pkgs.jq
     pkgs.mosquitto
     pkgs.neovim
     pkgs.nil

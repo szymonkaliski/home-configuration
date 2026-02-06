@@ -1,10 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 input=$(cat)
 cwd=$(echo "$input" | jq -r '.workspace.current_dir')
 
-if [ "$(uname)" = "Darwin" ]; then
+hostname=$(hostname -s)
+if [ "$hostname" = "Orchid" ]; then
   promptcolor="34"
+elif [ "$hostname" = "minix" ]; then
+  promptcolor="36"
 else
   promptcolor="35"
 fi

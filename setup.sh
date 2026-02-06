@@ -118,3 +118,6 @@ if command -v npm &> /dev/null; then
   askBeforeRunning ./scripts/npm-link-global-packages
 fi
 
+echo
+echo "Done! Restart your machine to make sure everything is loaded correctly."
+

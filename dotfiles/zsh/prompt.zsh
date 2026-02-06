@@ -1,5 +1,7 @@
-if [ "$(uname)" = "Darwin" ]; then
+if [ "$(hostname -s)" = "Orchid" ]; then
   PROMPTCOLOR=blue
+elif [ "$(hostname -s)" = "minix" ]; then
+  PROMPTCOLOR=cyan
 else
   PROMPTCOLOR=magenta
 fi

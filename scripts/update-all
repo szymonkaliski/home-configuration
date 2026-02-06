@@ -16,7 +16,7 @@ function gitUpdate {
 
 HOSTNAME=$(hostname -s)
 
-if [[ $HOSTNAME == "Orchid" || $HOSTNAME == "orchid" ]]; then
+if [[ $HOSTNAME == "Orchid" ]]; then
   echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"
 
   pushd ~/.config/home-manager > /dev/null || return

@@ -6,4 +6,4 @@
 - use `trash` command instead of `rm`
 - use web search if you are unsure about anything, especially in the planning stages - look for documentation, recent online GitHub issues, etc.
 - when struggling to understand a library, just git clone it into `/tmp/` and review the code there
-- when running in tmux, other pane contents are captured to /tmp/tmux-panes-$TMUX_PANE.txt before each prompt — read it when you need to see adjacent panes or send commands to them with `tmux send-keys -t <pane_id> 'command' Enter`
+- when running in tmux, other pane contents are captured to /tmp/tmux-panes-$TMUX_PANE.txt before each prompt — always run `echo $TMUX_PANE` first to get the actual pane ID, never guess it. Read the file when you need to see adjacent panes or send commands to them with `tmux send-keys -t <pane_id> 'command' Enter`

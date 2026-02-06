@@ -13,6 +13,11 @@ if [ -d $HOME/.terminfo ]; then
   export TERMINFO=$HOME/.terminfo/
 fi
 
+# SSH doesn't forward COLORTERM, so set it for true color support over SSH
+if [[ -z "$COLORTERM" && "$TERM" == *256color* ]]; then
+  export COLORTERM=truecolor
+fi
+
 if [ -d "$HOME/Library/CloudStorage/Dropbox" ]; then
   export DROPBOX_PATH="$HOME/Library/CloudStorage/Dropbox"
 elif [ -d "$HOME/Dropbox" ]; then

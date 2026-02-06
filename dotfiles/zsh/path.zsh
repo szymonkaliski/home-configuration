@@ -1,8 +1,14 @@
 export PATH="/usr/local/bin:/usr/bin:/bin/:/usr/local/sbin:/usr/sbin:/sbin"
 
-# nixos system path
+# nixos paths
+if [ -d /run/wrappers/bin ]; then
+  export PATH="/run/wrappers/bin:$PATH"
+fi
 if [ -d /run/current-system/sw/bin ]; then
   export PATH="/run/current-system/sw/bin:$PATH"
+fi
+if [ -d /etc/profiles/per-user/$USER/bin ]; then
+  export PATH="/etc/profiles/per-user/$USER/bin:$PATH"
 fi
 
 # nix stuff, bin/ with slash at the end so the path gets cleaned up - nix sets its own too

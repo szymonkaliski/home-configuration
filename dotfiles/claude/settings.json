@@ -1,4 +1,8 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "permissions": {
     "allow": [
       "Bash(find:*)",
@@ -23,7 +27,10 @@
       {
         "matcher": "idle_prompt",
         "hooks": [
-          { "type": "command", "command": "~/.claude/notify.sh 'Idle'" }
+          {
+            "type": "command",
+            "command": "~/.claude/notify.sh 'Idle'"
+          }
         ]
       }
     ],
@@ -42,6 +49,5 @@
     "type": "command",
     "command": "~/.claude/statusline-command.sh"
   },
-  "enabledPlugins": {},
-  "attribution": { "commit": "", "pr": "" }
+  "enabledPlugins": {}
 }

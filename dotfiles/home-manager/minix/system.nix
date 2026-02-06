@@ -9,6 +9,9 @@
 
   time.timeZone = "Europe/Warsaw";
 
+  hardware.bluetooth.enable = true;
+  hardware.bluetooth.powerOnBoot = true;
+
   services.openssh.enable = true;
   services.tailscale.enable = true;
   services.tailscale.useRoutingFeatures = "server";

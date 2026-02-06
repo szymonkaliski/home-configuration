@@ -6,7 +6,12 @@ DOTFILE_DIR="$(pwd)/dotfiles"
 HOSTNAME="$(hostname -s)"
 GIT="git"
 if ! command -v git &> /dev/null; then
-  GIT="nix --extra-experimental-features 'nix-command flakes' run nixpkgs#git --"
+  if command -v nix &> /dev/null; then
+    GIT="nix --extra-experimental-features 'nix-command flakes' run nixpkgs#git --"
+  else
+    echo "Error: git is not installed and nix is not available as fallback"
+    exit 1
+  fi
 fi
 
 function askBeforeRunning() {

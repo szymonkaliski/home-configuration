@@ -25,7 +25,7 @@ defaults write com.apple.dock autohide-delay -float 0
 defaults write NSGlobalDomain NSDocumentSaveNewDocumentsToCloud -bool false
 
 # save screenshots to Dropbox
-defaults write com.apple.screencapture location ~/Library/CloudStorage/Dropbox/Screenshots/
+defaults write com.apple.screencapture location $SCREENSHOTS_PATH
 
 # name screenshots as Screenshot...
 defaults write com.apple.screencapture name "Screenshot"

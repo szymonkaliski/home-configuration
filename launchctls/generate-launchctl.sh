@@ -17,5 +17,9 @@ if [ -z "$OUTPUT" ]; then
   exit 1
 fi
 
-sed "s|LAUNCHCTL_SCRIPTS_PATH|$LAUNCHCTL_SCRIPTS_PATH|g" "$TEMPLATE" > "$OUTPUT"
+DROPBOX_WIKI_PATH="$HOME/Library/CloudStorage/Dropbox/Wiki"
+
+sed -e "s|LAUNCHCTL_SCRIPTS_PATH|$LAUNCHCTL_SCRIPTS_PATH|g" \
+    -e "s|DROPBOX_WIKI_PATH|$DROPBOX_WIKI_PATH|g" \
+    "$TEMPLATE" > "$OUTPUT"
 

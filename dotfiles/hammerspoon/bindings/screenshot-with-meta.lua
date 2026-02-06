@@ -10,11 +10,6 @@ local SCREENSHOT_PATH       = os.getenv('HOME') .. '/Library/CloudStorage/Dropbo
 local SCREENCAPTURE_PATH    = '/usr/sbin/screencapture'
 local XATTR_PATH            = '/usr/bin/xattr'
 
-local copyImageToClipboard = function(path)
-  local image = hs.image.imageFromPath(path)
-  hs.pasteboard.writeObjects(image)
-end
-
 local genScreenshotPath = function()
   local screenshotName = os.date('Screenshot %Y-%m-%d at %H.%M.%S.png')
   local fileName       = SCREENSHOT_PATH .. screenshotName
@@ -49,6 +44,7 @@ local addMetaToScreenshot = function(win, fileName)
     ADD_OCR_TO_IMAGE_PATH,
     function(exitCode, stdOut, stdErr)
       if exitCode == 0 then
+        log.i("OCR done: " .. fileName)
         return
       end
 
@@ -81,12 +77,31 @@ local addMetaToScreenshot = function(win, fileName)
   -- end
 end
 
--- HOF to handle all that we want to do after we captured the screenshot
-local makePostScreenCaptureHandler = function(focusedWindow, fileName)
-  return function()
-    copyImageToClipboard(fileName)
+-- screencapture can exit before the file is fully flushed to disk
+local processScreenshot = function(focusedWindow, fileName, attempt)
+  attempt = attempt or 1
+
+  local image = hs.image.imageFromPath(fileName)
+
+  if image then
+    log.i("processing screenshot: " .. fileName)
+    hs.pasteboard.writeObjects(image)
     sendNotification(fileName)
     addMetaToScreenshot(focusedWindow, fileName)
+    return
+  end
+
+  if attempt < 5 then
+    log.w("file not ready (attempt " .. attempt .. "): " .. fileName)
+    hs.timer.doAfter(0.5, function()
+      processScreenshot(focusedWindow, fileName, attempt + 1)
+    end)
+  else
+    log.e("file not ready after 5 attempts: " .. fileName)
+    hs.notify.new({
+      title    = "Screenshot",
+      subTitle = "Failed to process screenshot"
+    }):send()
   end
 end
 
@@ -99,7 +114,7 @@ module.start = function()
 
     hs.task.new(
       SCREENCAPTURE_PATH,
-      makePostScreenCaptureHandler(focusedWindow, fileName),
+      function() processScreenshot(focusedWindow, fileName) end,
       { "-D1", fileName }
     ):start()
   end)
@@ -111,7 +126,7 @@ module.start = function()
 
     hs.task.new(
       SCREENCAPTURE_PATH,
-      makePostScreenCaptureHandler(focusedWindow, fileName),
+      function() processScreenshot(focusedWindow, fileName) end,
       { "-i", fileName }
     ):start()
   end)
@@ -142,7 +157,7 @@ module.start = function()
 
     hs.task.new(
       SCREENCAPTURE_PATH,
-      makePostScreenCaptureHandler(focusedWindow, fileName),
+      function() processScreenshot(focusedWindow, fileName) end,
       { "-w", fileName }
     ):start()
 

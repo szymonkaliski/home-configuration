@@ -33,6 +33,15 @@
             nix-index-database.homeModules.nix-index
           ];
         };
+
+        "szymon@minix" = home-manager.lib.homeManagerConfiguration {
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+
+          modules = [
+            ./minix/home.nix
+            nix-index-database.homeModules.nix-index
+          ];
+        };
       };
 
       nixosConfigurations.minix = nixpkgs.lib.nixosSystem {

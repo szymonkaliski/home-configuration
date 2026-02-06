@@ -33,7 +33,7 @@ elif [[ $HOSTNAME == "minix" ]]; then
   pushd ~/.config/home-manager > /dev/null || return
 
   nix flake update
-  sudo nixos-rebuild switch --flake .#minix
+  nix run home-manager -- switch --flake .#szymon@minix
 
   echo
   popd > /dev/null || return

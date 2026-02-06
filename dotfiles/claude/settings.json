@@ -34,6 +34,16 @@
         ]
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/capture-panes.sh"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

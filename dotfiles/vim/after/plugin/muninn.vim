@@ -1,7 +1,9 @@
-let g:muninn_path = expand('~/Library/CloudStorage/Dropbox/Wiki/')
+" no trailing slash - coc-muninn uses this directly and breaks with one;
+" muninn#wiki_path() in muninn-vim adds it when needed
+let g:muninn_path = expand('$WIKI_PATH')
 
 function! s:open_random_note()
-  let g:note_path = g:muninn_path . 'Notes/'
+  let g:note_path = g:muninn_path . '/Notes/'
   let files = split(glob(g:note_path . '*.md'), '\n')
   let random_file = files[rand() % len(files)]
   execute 'edit ' . random_file

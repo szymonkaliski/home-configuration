@@ -36,6 +36,10 @@ function! s:coc_load()
   call coc#config('signature', { 'target': <sid>has_floating_window() ? 'float' : 'echo' })
   call coc#config('hover', { 'target': <sid>has_floating_window() ? 'float' : 'echo' })
 
+  if exists('g:muninn_path') && !empty(g:muninn_path)
+    call coc#config('coc-muninn.rootDirectory', g:muninn_path)
+  endif
+
   inoremap <silent><expr> <tab>
         \ coc#pum#visible() ? coc#pum#next(1):
         \ <sid>check_backspace() ? "\<tab>" :

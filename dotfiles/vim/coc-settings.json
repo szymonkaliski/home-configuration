@@ -26,7 +26,6 @@
   "tsserver.useLocalTsdk": true,
 
   "coc-muninn.enabled": true,
-  "coc-muninn.rootDirectory": "/Users/szymon/Library/CloudStorage/Dropbox/Wiki",
 
   "languageserver": {
     "clojure": {

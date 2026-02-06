@@ -4,6 +4,10 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 DOTFILE_DIR="$(pwd)/dotfiles"
 HOSTNAME="$(hostname -s)"
+GIT="git"
+if ! command -v git &> /dev/null; then
+  GIT="nix --extra-experimental-features 'nix-command flakes' run nixpkgs#git --"
+fi
 
 function askBeforeRunning() {
   SCRIPT=$1
@@ -68,6 +72,7 @@ if command -v nix &> /dev/null; then
     elif [[ $HOSTNAME == "minix" || $HOSTNAME == "nixos" ]]; then
       if [ -f /etc/nixos/hardware-configuration.nix ]; then
         cp /etc/nixos/hardware-configuration.nix $DOTFILE_DIR/home-manager/minix/hardware-configuration.nix
+        $GIT add $DOTFILE_DIR/home-manager/minix/hardware-configuration.nix
         echo "Copied hardware-configuration.nix from /etc/nixos/"
       fi
       sudo nixos-rebuild switch --flake .#minix
@@ -90,12 +95,12 @@ if [ -d ~/.zsh/ ]; then
   mkdir -p ~/.zsh/plugins/
   pushd ~/.zsh/plugins/ > /dev/null
 
-  git clone https://github.com/mafredri/z -b zsh-flock
-  git clone https://github.com/chriskempson/base16-shell
-  git clone https://github.com/hlissner/zsh-autopair
-  git clone https://github.com/romkatv/gitstatus
-  git clone https://github.com/zdharma-continuum/fast-syntax-highlighting
-  git clone https://github.com/romkatv/zsh-defer
+  $GIT clone https://github.com/mafredri/z -b zsh-flock
+  $GIT clone https://github.com/chriskempson/base16-shell
+  $GIT clone https://github.com/hlissner/zsh-autopair
+  $GIT clone https://github.com/romkatv/gitstatus
+  $GIT clone https://github.com/zdharma-continuum/fast-syntax-highlighting
+  $GIT clone https://github.com/romkatv/zsh-defer
 
   popd > /dev/null
 fi

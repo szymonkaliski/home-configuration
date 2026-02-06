@@ -4,6 +4,15 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 DOTFILE_DIR="$(pwd)/dotfiles"
 HOSTNAME="$(hostname -s)"
+
+if [[ $HOSTNAME == "nixos" ]]; then
+  read -p "$(tput setaf 3)Hostname is 'nixos' (fresh install?). Set up as minix?$(tput sgr0) (y/n) " RESP
+  if [ "$RESP" != "y" ]; then
+    echo "Aborting."
+    exit 0
+  fi
+fi
+
 function gitwrapped() {
   if command -v git &> /dev/null; then
     git "$@"

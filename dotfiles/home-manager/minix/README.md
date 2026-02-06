@@ -10,14 +10,18 @@
    nix --extra-experimental-features "nix-command flakes" run nixpkgs#git -- clone https://github.com/szymonkaliski/home-configuration.git ~/Projects/home-configuration
    ```
 4. Run `./setup.sh` - it will copy `hardware-configuration.nix` from `/etc/nixos/`, git-track it, and run `nixos-rebuild switch`
-5. Restart the machine
+5. Restart: `sudo reboot`
 6. Set up Tailscale: `sudo tailscale up --advertise-exit-node`
-7. Approve the exit node at https://login.tailscale.com/admin/machines
-8. From your Mac, copy your SSH key: `ssh-copy-id szymon@minix`
 
 `/etc/nixos/` is not used after initial setup - the flake in this repo is the single source of truth.
 
 ## Updating
+
+```bash
+update-all
+```
+
+To only rebuild NixOS (without updating plugins, npm, etc.):
 
 ```bash
 sudo nixos-rebuild switch --flake .#minix

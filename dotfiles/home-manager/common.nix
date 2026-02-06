@@ -12,6 +12,7 @@
     pkgs.go
     pkgs.grc
     pkgs.htop
+    pkgs.lm_sensors
     pkgs.imagemagick
     pkgs.mosquitto
     pkgs.neovim

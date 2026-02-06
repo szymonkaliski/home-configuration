@@ -9,9 +9,10 @@
    mkdir -p ~/Projects
    nix --extra-experimental-features "nix-command flakes" run nixpkgs#git -- clone https://github.com/szymonkaliski/home-configuration.git ~/Projects/home-configuration
    ```
-4. Run `./setup.sh` - it will copy `hardware-configuration.nix` from `/etc/nixos/` and run `nixos-rebuild switch`
-5. Set up Tailscale: `sudo tailscale up`
-6. From your Mac, copy your SSH key: `ssh-copy-id szymon@minix`
+4. Run `./setup.sh` - it will copy `hardware-configuration.nix` from `/etc/nixos/`, git-track it, and run `nixos-rebuild switch`
+5. Restart the machine
+6. Set up Tailscale: `sudo tailscale up`
+7. From your Mac, copy your SSH key: `ssh-copy-id szymon@minix`
 
 `/etc/nixos/` is not used after initial setup - the flake in this repo is the single source of truth.
 

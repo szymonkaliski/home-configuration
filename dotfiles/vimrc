@@ -73,25 +73,21 @@ Plug 'tikhomirov/vim-glsl',                { 'for': [ 'javascript', 'glsl' ] }
 Plug 'vim-scripts/ck.vim',                 { 'for': 'ck' }
 
 " local plugins
-if isdirectory(expand('~/Documents/Projects/muninn-vim/'))
-  Plug '~/Documents/Projects/muninn-vim'
+let s:projects_path = $PROJECTS_PATH
+
+if !empty(s:projects_path)
+  if isdirectory(s:projects_path . '/muninn-vim/')
+    exe 'Plug' "'" . s:projects_path . '/muninn-vim' . "'"
+  endif
+
+  if isdirectory(s:projects_path . '/coc-muninn/')
+    let &runtimepath = &runtimepath . ',' . s:projects_path . '/coc-muninn'
+  endif
+
+  if isdirectory(s:projects_path . '/coc-vale/')
+    let &runtimepath = &runtimepath . ',' . s:projects_path . '/coc-vale'
+  endif
 endif
-
-if isdirectory(expand('~/Documents/Projects/coc-muninn/'))
-  let &runtimepath = &runtimepath . ',' . expand('~/Documents/Projects/coc-muninn/')
-endif
-
-if isdirectory(expand('~/Documents/Projects/coc-vale/'))
-  let &runtimepath = &runtimepath . ',' . expand('~/Documents/Projects/coc-vale/')
-endif
-
-" if isdirectory(expand('~/Documents/Projects/coc-pilot/'))
-"   let &runtimepath = &runtimepath . ',' . expand('~/Documents/Projects/coc-pilot/')
-" endif
-
-" if isdirectory(expand('~/Documents/Projects/coc-pilot-v2/'))
-"   let &runtimepath = &runtimepath . ',' . expand('~/Documents/Projects/coc-pilot-v2/')
-" endif
 
 call plug#end()
 

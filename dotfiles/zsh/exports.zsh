@@ -18,6 +18,12 @@ if [[ -z "$COLORTERM" && "$TERM" == *256color* ]]; then
   export COLORTERM=truecolor
 fi
 
+if [ -d "$HOME/Documents/Projects" ]; then
+  export PROJECTS_PATH="$HOME/Documents/Projects"
+elif [ -d "$HOME/Projects" ]; then
+  export PROJECTS_PATH="$HOME/Projects"
+fi
+
 if [ -d "$HOME/Library/CloudStorage/Dropbox" ]; then
   export DROPBOX_PATH="$HOME/Library/CloudStorage/Dropbox"
 elif [ -d "$HOME/Dropbox" ]; then

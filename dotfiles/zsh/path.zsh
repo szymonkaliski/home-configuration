@@ -1,11 +1,8 @@
 export PATH="/usr/local/bin:/usr/bin:/bin/:/usr/local/sbin:/usr/sbin:/sbin"
 
-# nixos paths (order matters: wrappers must come before current-system for setuid sudo)
+# nixos paths
 if [ -d /run/current-system/sw/bin ]; then
   export PATH="/run/current-system/sw/bin:$PATH"
-fi
-if [ -d /etc/profiles/per-user/$USER/bin ]; then
-  export PATH="/etc/profiles/per-user/$USER/bin:$PATH"
 fi
 if [ -d /run/wrappers/bin ]; then
   export PATH="/run/wrappers/bin:$PATH"

@@ -9,7 +9,10 @@ in
 
   nixpkgs.config.allowUnfree = true;
 
-  home.packages = [ neolink ];
+  home.packages = [
+    neolink
+    pkgs.lm_sensors
+  ];
 
   services.dropbox.enable = true;
 }

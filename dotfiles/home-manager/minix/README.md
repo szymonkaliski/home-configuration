@@ -24,7 +24,7 @@ update-all
 To only rebuild home-manager (without updating plugins, npm, etc.):
 
 ```bash
-nix run home-manager -- switch --flake .#szymon@minix
+home-manager switch --flake .#szymon@minix
 ```
 
 To rebuild the full NixOS system (needed for changes to `system.nix`):

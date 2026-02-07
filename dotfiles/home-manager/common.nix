@@ -11,8 +11,8 @@
     pkgs.gh
     pkgs.go
     pkgs.grc
+    pkgs.home-manager
     pkgs.htop
-    pkgs.lm_sensors
     pkgs.imagemagick
     pkgs.jq
     pkgs.mosquitto

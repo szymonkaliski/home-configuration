@@ -23,7 +23,7 @@ if [[ $HOSTNAME == "Orchid" ]]; then
 
   sudo determinate-nixd upgrade
   nix flake update
-  nix run home-manager -- switch --flake .#szymon@orchid
+  home-manager switch --flake .#szymon@orchid
 
   echo
   popd > /dev/null || return
@@ -33,7 +33,7 @@ elif [[ $HOSTNAME == "minix" ]]; then
   pushd ~/.config/home-manager > /dev/null || return
 
   nix flake update
-  nix run home-manager -- switch --flake .#szymon@minix
+  home-manager switch --flake .#szymon@minix
 
   echo
   popd > /dev/null || return

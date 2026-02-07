@@ -26,6 +26,7 @@ in
     pkgs.coreutils
     pkgs.darwin.trash
     pkgs.git
+    pkgs.mosh
     pkgs.unixtools.watch
   ];
 }

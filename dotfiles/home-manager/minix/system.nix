@@ -5,6 +5,7 @@
 
   networking.hostName = "minix";
   networking.networkmanager.enable = true;
+  networking.networkmanager.dns = "systemd-resolved";
   networking.firewall.enable = false;
 
   time.timeZone = "Europe/Warsaw";
@@ -15,6 +16,11 @@
   services.openssh.enable = true;
   services.tailscale.enable = true;
   services.tailscale.useRoutingFeatures = "server";
+  services.resolved.enable = true;
+  services.resolved.fallbackDns = [
+    "1.1.1.2"
+    "1.0.0.2"
+  ];
 
   users.users.szymon = {
     isNormalUser = true;
@@ -23,6 +29,8 @@
   };
 
   programs.zsh.enable = true;
+
+  nixpkgs.config.allowUnfree = true;
 
   nix.settings.experimental-features = [
     "nix-command"

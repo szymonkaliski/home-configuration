@@ -14,7 +14,11 @@ Check what tooling exists:
 
 !`cat package.json 2>/dev/null | head -50 || true`
 
-!`git log --oneline -5`
+Study the repo's commit message style:
+
+!`git log --oneline -20`
+
+Note the pattern: conventional commits? imperative mood? lowercase? prefix? scope? Look at casing, punctuation, length, and structure. Your commit message MUST follow this pattern.
 
 ## 2. Current Changes
 

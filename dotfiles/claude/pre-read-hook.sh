@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+file_path=$(jq -r '.tool_input.file_path // ""')
+case "$file_path" in
+  /tmp/tmux-panes-*) ;;
+  *) exit 0 ;;
+esac
+
 [ -z "$TMUX" ] && exit 0
 
 current_pane=$(tmux display-message -p '#{pane_id}')

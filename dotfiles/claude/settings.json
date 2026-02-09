@@ -8,6 +8,8 @@
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(rg:*)",
+      "Bash(echo $TMUX_PANE)",
+      "Bash(tmux *)",
       "Read(/tmp/tmux-panes-*)",
       "WebFetch",
       "WebSearch",
@@ -35,12 +37,13 @@
         ]
       }
     ],
-    "UserPromptSubmit": [
+    "PreToolUse": [
       {
+        "matcher": "Read",
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/capture-panes.sh"
+            "command": "~/.claude/pre-read-hook.sh"
           }
         ]
       }

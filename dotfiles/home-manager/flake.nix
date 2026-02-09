@@ -11,6 +11,11 @@
       url = "github:Mic92/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    microvm = {
+      url = "github:microvm-nix/microvm.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -18,6 +23,7 @@
       nixpkgs,
       home-manager,
       nix-index-database,
+      microvm,
       ...
     }:
     {
@@ -47,9 +53,13 @@
       nixosConfigurations.minix = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
+        specialArgs = { inherit microvm; };
+
         modules = [
           ./minix/system.nix
           ./minix/hardware-configuration.nix
+          ./minix/microvms.nix
+          microvm.nixosModules.host
 
           home-manager.nixosModules.home-manager
           {

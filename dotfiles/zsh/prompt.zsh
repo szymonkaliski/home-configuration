@@ -1,7 +1,7 @@
 if [ "$(hostname -s)" = "Orchid" ]; then
   PROMPTCOLOR=blue
 elif [ "$(hostname -s)" = "minix" ]; then
-  PROMPTCOLOR=cyan
+  PROMPTCOLOR=yellow
 else
   PROMPTCOLOR=magenta
 fi

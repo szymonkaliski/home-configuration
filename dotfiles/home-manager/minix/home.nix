@@ -7,8 +7,6 @@ in
 
   home.homeDirectory = "/home/szymon";
 
-  nixpkgs.config.allowUnfree = true;
-
   home.packages = [
     neolink
     pkgs.lm_sensors

@@ -2,6 +2,7 @@
 - keep code consistent with the patterns in the codebase, for example naming, using `interface` vs `type`, etc.
 - prefer discriminated unions over optional fields; make illegal states unrepresentable
 - for running shell commands you have access to nix-comma: `, something` (for example: `, pdfinfo [...]`); prefer it over trying to do ad-hoc code
+  - in microvms (vm-*), comma is not available; use `nix run nixpkgs#<pkg> -- <args>` or `nix shell nixpkgs#<pkg>` instead
 - if writing ad-hoc code, use `node` instead of `python`
 - use `trash` command instead of `rm` on macOS
 - use web search if you are unsure about anything, especially in the planning stages - look for documentation, recent online GitHub issues, etc.
@@ -10,4 +11,4 @@
   - always run `echo $TMUX_PANE` first to get the actual pane ID, never guess it
   - read the file when you need to see adjacent panes, use `capture-pane` for more context
   - send commands to these panes with `tmux send-keys -t <pane_id> 'command' Enter`
-  - for testing commands depending on the environment, running things requiring `sudo` etc. feel free to create new splits - wait for `zsh` to appear, and then run the command in there
+  - for testing commands depending on the environment, running things requiring `sudo` etc. feel free to create new splits - wait for the shell prompt to appear, and then run the command in there

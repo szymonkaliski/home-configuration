@@ -7,7 +7,7 @@ hostname=$(hostname -s)
 if [ "$hostname" = "Orchid" ]; then
   promptcolor="34"
 elif [ "$hostname" = "minix" ]; then
-  promptcolor="36"
+  promptcolor="33"
 else
   promptcolor="35"
 fi

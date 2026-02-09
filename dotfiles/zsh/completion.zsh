@@ -38,8 +38,8 @@ zstyle ":completion:*" completer _expand _complete _approximate
 # remove the trailing slashes
 zstyle ":completion:*" squeeze-slashes true
 
-# complete mosh/ssh/scp
-zstyle -e ':completion:*:(mosh|ssh|scp):*' hosts 'reply=(
+# complete ssh/scp
+zstyle -e ':completion:*:(ssh|scp):*' hosts 'reply=(
   ${=${${${${(@M)${(f)"$(<~/.ssh/config)"}:#Host *}#Host }:#*\**}:#*\?*}}
 )'
 
@@ -88,6 +88,47 @@ compctl -g '*.tar.bz2 *.tar.gz *.bz2 *.gz *.jar *.rar *.tar *.tbz2 *.tgz *.zip *
 compctl -f -x "c[-1,retry]" -c -- retry
 compctl -f -x "c[-1,repeatedly]" -c -- repeatedly
 compctl -f -x "c[-1,watchexec]" -c -- watchexec
+
+if (( $+commands[microvm] )); then
+  function _microvm() {
+    local -a subcmds=(start stop ssh list stop-all clean clean-all)
+    if (( CURRENT == 2 )); then
+      _describe 'command' subcmds
+      return
+    fi
+    case "${words[2]}" in
+      start)
+        if [[ "${words[CURRENT-1]}" == "--dir" ]]; then
+          _directories
+        elif [[ "${words[CURRENT]}" == -* ]]; then
+          _arguments '*:option:(--dir)'
+        else
+          local -a vms
+          for i in {1..8}; do
+            local state=$(systemctl is-active "microvm@vm-${i}" 2>/dev/null)
+            [[ "$state" != "active" ]] && vms+=("$i")
+          done
+          compadd -a vms
+        fi
+        ;;
+      stop|ssh)
+        local -a vms
+        for i in {1..8}; do
+          [[ "$(systemctl is-active "microvm@vm-${i}" 2>/dev/null)" == "active" ]] && vms+=("$i")
+        done
+        compadd -a vms
+        ;;
+      clean)
+        local -a vms
+        for i in {1..8}; do
+          [[ "$(systemctl is-active "microvm@vm-${i}" 2>/dev/null)" != "active" ]] && vms+=("$i")
+        done
+        compadd -a vms
+        ;;
+    esac
+  }
+  compdef _microvm microvm
+fi
 
 # # make `open` aware of /Applications
 # compctl -f \

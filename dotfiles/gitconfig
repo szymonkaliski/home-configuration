@@ -66,8 +66,6 @@
 [credential "https://gist.github.com"]
   helper =
   helper = !gh auth git-credential
-[http]
-  cookiefile = /Users/szymon/.gitcookies
 [includeIf "hasconfig:remote.*.url:https://*googlesource.com/**"]
   path = ~/.gitconfig_google
 

@@ -2,7 +2,8 @@ local windowMetadata = require('ext.window').windowMetadata
 local template       = require('ext.template')
 local log            = hs.logger.new("screenshot-with-meta", "debug")
 
-local module = {}
+local cache  = {}
+local module = { cache = cache }
 
 local ADD_OCR_TO_IMAGE_PATH = os.getenv('HOME') .. '/.bin/add-ocr-to-image'
 local SCREENSHOT_PATH       = os.getenv('HOME') .. '/Library/CloudStorage/Dropbox/Screenshots/'
@@ -40,9 +41,12 @@ local addMetaToScreenshot = function(win, fileName)
   end
 
   -- adds OCR to the image
-  hs.task.new(
+  -- task must be stored to prevent GC before callback fires
+  cache[fileName] = hs.task.new(
     ADD_OCR_TO_IMAGE_PATH,
     function(exitCode, stdOut, stdErr)
+      cache[fileName] = nil
+
       if exitCode == 0 then
         log.i("OCR done: " .. fileName)
         return
@@ -57,7 +61,8 @@ local addMetaToScreenshot = function(win, fileName)
       log.e(stdErr)
     end,
     { fileName }
-  ):start()
+  )
+  cache[fileName]:start()
 
   -- storing title doesn't seem to work - the metadata is there, but mdfind is not importing it
   -- another idea would be to store an array in kMDItemWhereFroms, first entry would be the tile, and then the URL:
@@ -112,11 +117,12 @@ module.start = function()
     local focusedWindow = hs.window.frontmostWindow()
     local fileName      = genScreenshotPath()
 
-    hs.task.new(
+    cache[fileName] = hs.task.new(
       SCREENCAPTURE_PATH,
-      function() processScreenshot(focusedWindow, fileName) end,
+      function() cache[fileName] = nil; processScreenshot(focusedWindow, fileName) end,
       { "-D1", fileName }
-    ):start()
+    )
+    cache[fileName]:start()
   end)
 
   -- normal picker, with additional metadata for focused window
@@ -124,11 +130,12 @@ module.start = function()
     local focusedWindow = hs.window.frontmostWindow()
     local fileName      = genScreenshotPath()
 
-    hs.task.new(
+    cache[fileName] = hs.task.new(
       SCREENCAPTURE_PATH,
-      function() processScreenshot(focusedWindow, fileName) end,
+      function() cache[fileName] = nil; processScreenshot(focusedWindow, fileName) end,
       { "-i", fileName }
-    ):start()
+    )
+    cache[fileName]:start()
   end)
 
   -- fullscreen window screenshot
@@ -155,11 +162,12 @@ module.start = function()
     -- that's why the `addMetaToScreenshot` is inside the callback when screencapture terminates,
     -- it will run _after_ the code which simulates mouse click:
 
-    hs.task.new(
+    cache[fileName] = hs.task.new(
       SCREENCAPTURE_PATH,
-      function() processScreenshot(focusedWindow, fileName) end,
+      function() cache[fileName] = nil; processScreenshot(focusedWindow, fileName) end,
       { "-w", fileName }
-    ):start()
+    )
+    cache[fileName]:start()
 
     -- click
     hs.timer.usleep(100000)

@@ -41,6 +41,27 @@
         "type": "github"
       }
     },
+    "neolink": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1770711333,
+        "narHash": "sha256-FrhUabhhJwVCwld+YaHWZ6231cDwc1wgoZEAQDj0ciI=",
+        "owner": "szymonkaliski",
+        "repo": "neolink",
+        "rev": "7fa59e6f059b8023e22fcac093a3375517a1e6aa",
+        "type": "github"
+      },
+      "original": {
+        "owner": "szymonkaliski",
+        "ref": "dev",
+        "repo": "neolink",
+        "type": "github"
+      }
+    },
     "nix-index-database": {
       "inputs": {
         "nixpkgs": [
@@ -81,6 +102,7 @@
       "inputs": {
         "home-manager": "home-manager",
         "microvm": "microvm",
+        "neolink": "neolink",
         "nix-index-database": "nix-index-database",
         "nixpkgs": "nixpkgs"
       }

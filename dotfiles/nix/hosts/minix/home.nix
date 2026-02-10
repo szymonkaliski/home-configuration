@@ -1,14 +1,11 @@
-{ pkgs, ... }:
-let
-  neolink = pkgs.callPackage ./neolink.nix { };
-in
+{ pkgs, neolink, ... }:
 {
-  imports = [ ../common.nix ];
+  imports = [ ../../common.nix ];
 
   home.homeDirectory = "/home/szymon";
 
   home.packages = [
-    neolink
+    neolink.packages.${pkgs.stdenv.hostPlatform.system}.default
     pkgs.lm_sensors
   ];
 

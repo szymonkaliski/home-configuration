@@ -5,6 +5,10 @@ VM_BASE="$HOME/MicroVMs"
 HOST_DIR="$VM_BASE/host"
 SSH_OPTS=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR)
 
+REPO_SETUP_SH="$HOME/Projects/home-configuration/dotfiles/nix/hosts/minix/microvms/setup.sh"
+
+vm_size() { [ "$1" -le 4 ] && echo "2G" || echo "1G"; }
+
 sync_host_config() {
   mkdir -p "$HOST_DIR"
   rm -rf "$HOST_DIR/claude" "$HOST_DIR/ssh" "$HOST_DIR/claude.json" "$HOST_DIR/gitconfig" "$HOST_DIR/gitignore_global"
@@ -13,6 +17,12 @@ sync_host_config() {
   command cp -rL "$HOME/.ssh" "$HOST_DIR/ssh"
   command cp -L "$HOME/.gitconfig" "$HOST_DIR/gitconfig"
   command cp -L "$HOME/.gitignore_global" "$HOST_DIR/gitignore_global"
+  {
+    echo "#!/usr/bin/env bash"
+    echo "# DO NOT EDIT - copied from dotfiles/nix/hosts/minix/microvms/setup.sh"
+    tail -n +2 "$REPO_SETUP_SH"
+  } > "$HOST_DIR/setup.sh"
+  chmod +x "$HOST_DIR/setup.sh"
 }
 
 find_free_vm() {
@@ -55,7 +65,7 @@ case "$CMD" in
     sync_host_config
     sudo -v
     t0=$SECONDS
-    printf "vm-${VM} (10.100.0.${VM}) ${PROJECT}\nstarting..."
+    printf "vm-${VM} [$(vm_size "$VM")] (10.100.0.${VM}) ${PROJECT}\nstarting..."
     sudo systemctl start "microvm@vm-${VM}"
     printf " booting..."
     wait_for_ssh "$VM"
@@ -99,7 +109,7 @@ case "$CMD" in
         *) status="stopped" ;;
       esac
       ws=$(readlink "$VM_BASE/vm-${i}/workspace" 2>/dev/null || echo "(none)")
-      printf "vm-%-2d %-8s  %s\n" "$i" "$status" "$ws"
+      printf "vm-%-2d %-3s %-8s  %s\n" "$i" "$(vm_size "$i")" "$status" "$ws"
     done
     ;;
 

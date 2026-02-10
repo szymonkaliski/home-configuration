@@ -14,7 +14,7 @@ let
   };
 in
 {
-  imports = [ ../common.nix ];
+  imports = [ ../../common.nix ];
 
   home.homeDirectory = "/Users/szymon";
 

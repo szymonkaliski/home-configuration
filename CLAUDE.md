@@ -6,7 +6,7 @@ Run `hostname -s` to detect which one you're on.
 ## Key paths
 
 - `setup.sh` - symlinks dotfiles into `$HOME`, sets up home-manager, etc.
-- `dotfiles/home-manager/` - Nix flakes for different machines
+- `dotfiles/nix/` - Nix flakes for different machines
 - `dotfiles/claude/` - Claude Code settings, skills, hooks
 - `scripts/` - shell scripts symlinked to `~/.bin`
 
@@ -29,3 +29,4 @@ macOS - home-manager:
 ```sh
 home-manager switch --flake ~/.config/home-manager#szymon@orchid
 ```
+

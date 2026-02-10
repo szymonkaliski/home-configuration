@@ -16,6 +16,11 @@
       url = "github:microvm-nix/microvm.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    neolink = {
+      url = "github:szymonkaliski/neolink/dev";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -24,6 +29,7 @@
       home-manager,
       nix-index-database,
       microvm,
+      neolink,
       ...
     }:
     {
@@ -35,7 +41,7 @@
           pkgs = nixpkgs.legacyPackages.aarch64-darwin;
 
           modules = [
-            ./orchid/home.nix
+            ./hosts/orchid/home.nix
             nix-index-database.homeModules.nix-index
           ];
         };
@@ -43,30 +49,33 @@
         "szymon@minix" = home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages.x86_64-linux;
 
+          extraSpecialArgs = { inherit neolink; };
+
           modules = [
-            ./minix/home.nix
+            ./hosts/minix/home.nix
             nix-index-database.homeModules.nix-index
+            { nixpkgs.config.allowUnfree = true; }
           ];
         };
       };
 
       nixosConfigurations.minix = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
 
         specialArgs = { inherit microvm; };
 
         modules = [
-          ./minix/system.nix
-          ./minix/hardware-configuration.nix
-          ./minix/microvms.nix
+          ./hosts/minix/system.nix
+          ./hosts/minix/hardware-configuration.nix
+          ./hosts/minix/microvms
           microvm.nixosModules.host
 
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
+            home-manager.extraSpecialArgs = { inherit neolink; };
             home-manager.users.szymon = {
               imports = [
-                ./minix/home.nix
+                ./hosts/minix/home.nix
                 nix-index-database.homeModules.nix-index
               ];
             };

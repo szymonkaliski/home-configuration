@@ -81,15 +81,15 @@ if command -v nix &> /dev/null; then
   read -p "$(tput setaf 3)Do you want to set up home-manager?$(tput sgr0) (y/n) " RESP
 
   if [ "$RESP" == "y" ]; then
-    ln -sni $DOTFILE_DIR/home-manager ~/.config/home-manager
+    ln -sni $DOTFILE_DIR/nix ~/.config/home-manager
     pushd ~/.config/home-manager
 
     if [[ $HOSTNAME == "Orchid" ]]; then
       home-manager switch --flake .#szymon@orchid
     elif [[ $HOSTNAME == "minix" || $HOSTNAME == "nixos" ]]; then
       if [ -f /etc/nixos/hardware-configuration.nix ]; then
-        cp /etc/nixos/hardware-configuration.nix $DOTFILE_DIR/home-manager/minix/hardware-configuration.nix
-        gitwrapped add $DOTFILE_DIR/home-manager/minix/hardware-configuration.nix
+        cp /etc/nixos/hardware-configuration.nix $DOTFILE_DIR/nix/hosts/minix/hardware-configuration.nix
+        gitwrapped add $DOTFILE_DIR/nix/hosts/minix/hardware-configuration.nix
         echo "Copied hardware-configuration.nix from /etc/nixos/"
       fi
       sudo nixos-rebuild switch --flake .#minix

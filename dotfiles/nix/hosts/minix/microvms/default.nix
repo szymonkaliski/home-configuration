@@ -1,7 +1,7 @@
 { lib, microvm, ... }:
 
 let
-  microvmBase = import ./microvm-base.nix;
+  microvmBase = import ./base.nix;
 
   mkVm = index: {
     name = "vm-${toString index}";
@@ -16,6 +16,8 @@ let
             tapId = "vm-tap${toString index}";
             mac = "02:00:00:00:00:0${toString index}";
             vsockCid = index + 2;
+            # large (1-4): 2GB, small (5-8): 1GB
+            mem = if index <= 4 then 2048 else 1024;
           })
         ];
       };

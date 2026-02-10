@@ -33,6 +33,12 @@ To rebuild the full NixOS system (needed for changes to `system.nix`):
 sudo nixos-rebuild switch --flake .#minix
 ```
 
+This rarely needs updating - only regenerate if the hardware changes (new disk, new partition layout):
+
+```bash
+nixos-generate-config --show-hardware-config > minix/hardware-configuration.nix
+```
+
 ## MicroVMs
 
 Ephemeral NixOS VMs (pool of 8) for running coding agents and other potentially destructive things in isolation.
@@ -45,7 +51,7 @@ Ephemeral NixOS VMs (pool of 8) for running coding agents and other potentially 
    ssh-keygen -t ed25519
    ```
 
-   Then replace the public key in `microvm-base.nix` under
+   Then replace the public key in `microvms/base.nix` under
    `users.users.szymon.openssh.authorizedKeys.keys` with the contents of
    `~/.ssh/id_ed25519.pub`, and rebuild:
 
@@ -72,10 +78,3 @@ Ephemeral NixOS VMs (pool of 8) for running coding agents and other potentially 
 
 Run `microvm help` for available commands.
 
-## `hardware-configuration.nix`
-
-This rarely needs updating - only regenerate if the hardware changes (new disk, new partition layout):
-
-```bash
-nixos-generate-config --show-hardware-config > minix/hardware-configuration.nix
-```

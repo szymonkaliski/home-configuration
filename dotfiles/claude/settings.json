@@ -23,16 +23,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/notify.sh 'Waiting for permission'"
-          }
-        ]
-      },
-      {
-        "matcher": "idle_prompt",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/notify.sh 'Idle'"
+            "command": "~/.claude/notify.sh"
           }
         ]
       }
@@ -53,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/notify.sh 'Waiting for input'"
+            "command": "~/.claude/notify.sh"
           }
         ]
       }

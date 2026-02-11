@@ -12,6 +12,11 @@ else
   promptcolor="35"
 fi
 
+vm_prefix=""
+if [[ "$hostname" == vm-* ]]; then
+  vm_prefix="$hostname "
+fi
+
 if [ "$(whoami)" = "root" ]; then
   promptcolor="31"
 fi
@@ -49,7 +54,7 @@ if git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
     branch_color="31"
   fi
 
-  printf "\033[${promptcolor}m%s\033[0m \033[${branch_color}m%s\033[0m" "$pwd_display" "$branch"
+  printf "%s\033[${promptcolor}m%s\033[0m \033[${branch_color}m%s\033[0m" "$vm_prefix" "$pwd_display" "$branch"
 else
-  printf "\033[${promptcolor}m%s\033[0m" "$pwd_display"
+  printf "%s\033[${promptcolor}m%s\033[0m" "$vm_prefix" "$pwd_display"
 fi

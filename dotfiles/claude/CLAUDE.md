@@ -3,7 +3,7 @@
 - for running shell commands you have access to nix-comma: `, something` (for example: `, pdfinfo [...]`); prefer it over trying to do ad-hoc code
   - in microvms (vm-*), comma is not available; use `nix run nixpkgs#<pkg> -- <args>` or `nix shell nixpkgs#<pkg>` instead
 - if writing ad-hoc code, use `node` instead of `python`
-- use `trash` command instead of `rm` on macOS
+- use `trash` instead of `rm` if available
 - when fixing a bug in a project with a test suite, first write a failing test that reproduces the bug, then fix the bug, then confirm the test passes
 - in planning stages, use web search to check documentation and recent GitHub issues before committing to an approach
 - when struggling to understand a library, just git clone it into `/tmp/` and review the code there

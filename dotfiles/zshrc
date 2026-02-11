@@ -31,3 +31,8 @@ for file in $files; do
   source ~/.zsh/$file.zsh
 done
 
+# ssh motd
+if [[ -n "$SSH_TTY" && "$(tty)" = "$SSH_TTY" ]] && (( $+commands[motd] )); then
+  motd
+fi
+

@@ -1,6 +1,7 @@
 { pkgs, ... }:
 {
   boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot.configurationLimit = 10;
   boot.loader.efi.canTouchEfiVariables = true;
 
   networking.hostName = "minix";
@@ -49,6 +50,22 @@
     "1.0.0.2"
   ];
 
+  security.sudo.extraRules = [
+    {
+      users = [ "szymon" ];
+      commands = [
+        {
+          command = "/run/current-system/sw/bin/systemctl start microvm@*";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/systemctl stop microvm@*";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
+
   users.users.szymon = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
@@ -66,6 +83,9 @@
     "nix-command"
     "flakes"
   ];
+  nix.gc.automatic = true;
+  nix.gc.dates = "weekly";
+  nix.gc.options = "--delete-older-than 14d";
 
   environment.systemPackages = with pkgs; [
     vim

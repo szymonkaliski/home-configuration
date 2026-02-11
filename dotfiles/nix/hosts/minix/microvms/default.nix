@@ -7,6 +7,7 @@ let
     name = "vm-${toString index}";
     value = {
       autostart = false;
+      restartIfChanged = false;
       config = {
         imports = [
           microvm.nixosModules.microvm

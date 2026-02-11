@@ -23,6 +23,10 @@
     "nix-command"
     "flakes"
   ];
+  nix.gc.automatic = true;
+  nix.gc.dates = "daily";
+  nix.gc.options = "--delete-older-than 7d";
+
   environment.systemPackages = with pkgs; [
     claude-code
     git
@@ -110,7 +114,10 @@
 
   zramSwap.enable = true;
   zramSwap.memoryPercent = 200;
-  programs.direnv.enable = true;
+  programs.direnv = {
+    enable = true;
+    settings.whitelist.prefix = [ "/workspace" ];
+  };
 
   microvm = {
     hypervisor = "cloud-hypervisor";
@@ -123,7 +130,7 @@
       {
         image = "nix-store-overlay.img";
         mountPoint = config.microvm.writableStoreOverlay;
-        size = 4096;
+        size = 16384;
       }
     ];
 

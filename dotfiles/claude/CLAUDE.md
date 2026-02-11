@@ -1,11 +1,11 @@
-- skip unnecessary comments, add them only if really necessary
-- keep code consistent with the patterns in the codebase, for example naming, using `interface` vs `type`, etc.
+- don't add comments to code you didn't write; in code you write, only comment non-obvious logic
 - prefer discriminated unions over optional fields; make illegal states unrepresentable
 - for running shell commands you have access to nix-comma: `, something` (for example: `, pdfinfo [...]`); prefer it over trying to do ad-hoc code
   - in microvms (vm-*), comma is not available; use `nix run nixpkgs#<pkg> -- <args>` or `nix shell nixpkgs#<pkg>` instead
 - if writing ad-hoc code, use `node` instead of `python`
 - use `trash` command instead of `rm` on macOS
-- use web search if you are unsure about anything, especially in the planning stages - look for documentation, recent online GitHub issues, etc.
+- when fixing a bug in a project with a test suite, first write a failing test that reproduces the bug, then fix the bug, then confirm the test passes
+- in planning stages, use web search to check documentation and recent GitHub issues before committing to an approach
 - when struggling to understand a library, just git clone it into `/tmp/` and review the code there
 - when running in `tmux`, other pane contents are captured to `/tmp/tmux-panes-$TMUX_PANE.txt` before each prompt
   - always run `echo $TMUX_PANE` first to get the actual pane ID, never guess it

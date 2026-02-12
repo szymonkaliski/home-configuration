@@ -74,7 +74,7 @@ if [[ $os == "Linux" ]]; then
   while read -r unit _; do
     [[ -z $unit ]] && continue
     failed+=("$unit")
-  done < <(systemctl list-units --state=failed --no-legend --no-pager 2>/dev/null | sed 's/^[● ]*//' | cut -d' ' -f1)
+  done < <({ systemctl list-units --state=failed --no-legend --no-pager 2>/dev/null; systemctl --user list-units --state=failed --no-legend --no-pager 2>/dev/null; } | sed 's/^[● ]*//' | cut -d' ' -f1)
 
   # nixos generation drift
   current=$(readlink /run/current-system 2>/dev/null)
@@ -139,9 +139,9 @@ fi
 printf "   ${dim}ssd${reset} %${pad}s ${dim}/${reset} %${pad}s ${dim}GB${reset}\n" "$disk_used" "$disk_total"
 if (( ${#vms[@]} > 0 )); then
   echo
-  printf "   ${dim}vms${reset} %s  ${dim}%s${reset}\n" "${vms[0]}" "${vm_projects[0]}"
+  printf "   ${dim}vms${reset} %s ${dim}%s${reset}\n" "${vms[0]}" "${vm_projects[0]}"
   for ((i=1; i<${#vms[@]}; i++)); do
-    printf "       %s  ${dim}%s${reset}\n" "${vms[$i]}" "${vm_projects[$i]}"
+    printf "       %s ${dim}%s${reset}\n" "${vms[$i]}" "${vm_projects[$i]}"
   done
 fi
 if (( ${#tmuxes[@]} > 0 )); then

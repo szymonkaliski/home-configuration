@@ -2,12 +2,107 @@
 
 dim=$(tput setaf 8)
 yellow=$(tput setaf 3)
+blue=$(tput setaf 4)
 red=$(tput setaf 1)
 reset=$(tput sgr0)
 
-# uptime
-read -r uptime_secs _ < /proc/uptime
-uptime_secs=${uptime_secs%%.*}
+hostname=$(hostname -s | tr '[:upper:]' '[:lower:]')
+os=$(uname)
+
+case $hostname in
+  minix)  host_color=$yellow ;;
+  orchid) host_color=$blue ;;
+esac
+
+if [[ $os == "Linux" ]]; then
+  # uptime
+  read -r uptime_secs _ < /proc/uptime
+  uptime_secs=${uptime_secs%%.*}
+
+  # load
+  read -r l1 l2 l3 _ < /proc/loadavg
+  load="$l1 $l2 $l3"
+
+  # temps
+  for hwmon in /sys/class/hwmon/hwmon*/; do
+    read -r name < "${hwmon}name"
+    case $name in
+      coretemp)
+        read -r raw < "${hwmon}temp1_input"
+        cpu_temp=$((raw / 1000))
+        ;;
+      nvme)
+        read -r raw < "${hwmon}temp1_input"
+        nvme_temp=$((raw / 1000))
+        ;;
+      iwlwifi_1)
+        read -r raw < "${hwmon}temp1_input"
+        wifi_temp=$((raw / 1000))
+        ;;
+    esac
+  done
+
+  # memory + swap
+  while IFS=': ' read -r key val _; do
+    case $key in
+      MemTotal)     mem_total_kb=$val; mem_total=$((val / 1000000)) ;;
+      MemAvailable) mem_used=$(( (mem_total_kb - val) / 1000000 )) ;;
+      SwapTotal)    swap_total_kb=$val; swap_total=$((val / 1000000)) ;;
+      SwapFree)     swap_used=$(( (swap_total_kb - val) / 1000000 )); break ;;
+    esac
+  done < /proc/meminfo
+
+  # disk
+  read -r _ disk_total disk_used _ < <(df -BG / | tail -1)
+  disk_total=${disk_total%G}
+  disk_used=${disk_used%G}
+
+  # microvms
+  vms=()
+  vm_projects=()
+  while read -r unit _; do
+    [[ -z $unit ]] && continue
+    vm=${unit#microvm@}
+    vm=${vm%.service}
+    vms+=("$vm")
+    ws=$(readlink "/home/szymon/MicroVMs/$vm/workspace" 2>/dev/null)
+    vm_projects+=("${ws##*/}")
+  done < <(systemctl list-units 'microvm@*.service' --state=running --no-legend --no-pager 2>/dev/null)
+
+  # failed units
+  failed=()
+  while read -r unit _; do
+    [[ -z $unit ]] && continue
+    failed+=("$unit")
+  done < <(systemctl list-units --state=failed --no-legend --no-pager 2>/dev/null | sed 's/^[● ]*//' | cut -d' ' -f1)
+
+  # nixos generation drift
+  current=$(readlink /run/current-system 2>/dev/null)
+  latest=$(readlink "$(readlink -f /nix/var/nix/profiles/system)" 2>/dev/null)
+
+elif [[ $os == "Darwin" ]]; then
+  # uptime
+  boot=$(sysctl -n kern.boottime | sed 's/.*{ sec = \([0-9]*\).*/\1/')
+  uptime_secs=$(( $(date +%s) - boot ))
+
+  # load
+  load=$(sysctl -n vm.loadavg | awk '{print $2, $3, $4}')
+
+  # memory
+  mem_total_bytes=$(sysctl -n hw.memsize)
+  mem_total=$(( mem_total_bytes / 1000000000 ))
+  page_size=$(vm_stat | head -1 | sed 's/.*page size of \([0-9]*\).*/\1/')
+  pages_free=$(vm_stat | awk '/Pages free:/{gsub(/\./,"",$NF); print $NF}')
+  pages_inactive=$(vm_stat | awk '/Pages inactive:/{gsub(/\./,"",$NF); print $NF}')
+  pages_speculative=$(vm_stat | awk '/Pages speculative:/{gsub(/\./,"",$NF); print $NF}')
+  mem_available=$(( (pages_free + pages_inactive + pages_speculative) * page_size ))
+  mem_used=$(( (mem_total_bytes - mem_available) / 1000000000 ))
+
+  # disk
+  read -r _ disk_total disk_used _ < <(df -g / | tail -1)
+fi
+
+# uptime formatting (shared)
 days=$((uptime_secs / 86400))
 hours=$(( (uptime_secs % 86400) / 3600 ))
 if (( days > 0 )); then
@@ -16,55 +111,6 @@ else
   uptime="${hours}h"
 fi
 
-# load
-read -r load _ < /proc/loadavg
-
-# temps
-for hwmon in /sys/class/hwmon/hwmon*/; do
-  read -r name < "${hwmon}name"
-  case $name in
-    coretemp)
-      read -r raw < "${hwmon}temp1_input"
-      cpu_temp=$((raw / 1000))
-      ;;
-    nvme)
-      read -r raw < "${hwmon}temp1_input"
-      nvme_temp=$((raw / 1000))
-      ;;
-    iwlwifi_1)
-      read -r raw < "${hwmon}temp1_input"
-      wifi_temp=$((raw / 1000))
-      ;;
-  esac
-done
-
-# memory + swap
-while IFS=': ' read -r key val _; do
-  case $key in
-    MemTotal)     mem_total_kb=$val; mem_total=$((val / 1000000)) ;;
-    MemAvailable) mem_used=$(( (mem_total_kb - val) / 1000000 )) ;;
-    SwapTotal)    swap_total_kb=$val; swap_total=$((val / 1000000)) ;;
-    SwapFree)     swap_used=$(( (swap_total_kb - val) / 1000000 )); break ;;
-  esac
-done < /proc/meminfo
-
-# disk
-read -r _ disk_total disk_used _ < <(df -BG / | tail -1)
-disk_total=${disk_total%G}
-disk_used=${disk_used%G}
-
-# microvms
-vms=()
-vm_projects=()
-while read -r unit _; do
-  [[ -z $unit ]] && continue
-  vm=${unit#microvm@}
-  vm=${vm%.service}
-  vms+=("$vm")
-  ws=$(readlink "/home/szymon/MicroVMs/$vm/workspace" 2>/dev/null)
-  vm_projects+=("${ws##*/}")
-done < <(systemctl list-units 'microvm@*.service' --state=running --no-legend --no-pager 2>/dev/null)
-
 # tmux sessions
 tmuxes=()
 while read -r name; do
@@ -72,52 +118,47 @@ while read -r name; do
   tmuxes+=("$name")
 done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null)
 
-# failed units
-failed=()
-while read -r unit _; do
-  [[ -z $unit ]] && continue
-  failed+=("$unit")
-done < <(systemctl list-units --state=failed --no-legend --no-pager 2>/dev/null | sed 's/^[● ]*//' | cut -d' ' -f1)
-
-# nixos generation drift
-current=$(readlink /run/current-system 2>/dev/null)
-latest=$(readlink "$(readlink -f /nix/var/nix/profiles/system)" 2>/dev/null)
-
+# display
 echo
-printf "  ${yellow}minix${reset}  ${dim}up${reset} %s  ${dim}load${reset} %s\n" "$uptime" "$load"
+printf "  ${host_color}%s${reset}\n" "$hostname"
+echo
+printf "    ${dim}up${reset} %s\n" "$uptime"
+printf "  ${dim}load${reset} %s\n" "$load"
 echo
 pad=${#disk_total}
-printf "  ${dim}temp${reset}   cpu  %2s ${dim}°C${reset}\n" "$cpu_temp"
-printf "         ssd  %2s ${dim}°C${reset}\n" "$nvme_temp"
-printf "         wifi %2s ${dim}°C${reset}\n" "$wifi_temp"
-echo
-printf "  ${dim}ram${reset}    %${pad}s ${dim}/${reset} %${pad}s ${dim}GB${reset}\n" "$mem_used" "$mem_total"
-if (( swap_total > 0 )); then
-  printf "  ${dim}swap${reset}   %${pad}s ${dim}/${reset} %${pad}s ${dim}GB${reset}\n" "$swap_used" "$swap_total"
+if [[ -n $cpu_temp ]]; then
+  printf "  ${dim}temp${reset} cpu  %2s ${dim}°C${reset}\n" "$cpu_temp"
+  printf "       ssd  %2s ${dim}°C${reset}\n" "$nvme_temp"
+  printf "       wifi %2s ${dim}°C${reset}\n" "$wifi_temp"
+  echo
 fi
-printf "  ${dim}ssd${reset}    %${pad}s ${dim}/${reset} %${pad}s ${dim}GB${reset}\n" "$disk_used" "$disk_total"
+printf "   ${dim}ram${reset} %${pad}s ${dim}/${reset} %${pad}s ${dim}GB${reset}\n" "$mem_used" "$mem_total"
+if (( ${swap_total:-0} > 0 )); then
+  printf "  ${dim}swap${reset} %${pad}s ${dim}/${reset} %${pad}s ${dim}GB${reset}\n" "$swap_used" "$swap_total"
+fi
+printf "   ${dim}ssd${reset} %${pad}s ${dim}/${reset} %${pad}s ${dim}GB${reset}\n" "$disk_used" "$disk_total"
 if (( ${#vms[@]} > 0 )); then
   echo
-  printf "  ${dim}vms${reset}    %s  ${dim}%s${reset}\n" "${vms[0]}" "${vm_projects[0]}"
+  printf "   ${dim}vms${reset} %s  ${dim}%s${reset}\n" "${vms[0]}" "${vm_projects[0]}"
   for ((i=1; i<${#vms[@]}; i++)); do
-    printf "         %s  ${dim}%s${reset}\n" "${vms[$i]}" "${vm_projects[$i]}"
+    printf "       %s  ${dim}%s${reset}\n" "${vms[$i]}" "${vm_projects[$i]}"
   done
 fi
 if (( ${#tmuxes[@]} > 0 )); then
   echo
-  printf "  ${dim}tmux${reset}   %s\n" "${tmuxes[0]}"
+  printf "  ${dim}tmux${reset} %s\n" "${tmuxes[0]}"
   for ((i=1; i<${#tmuxes[@]}; i++)); do
-    printf "         %s\n" "${tmuxes[$i]}"
+    printf "       %s\n" "${tmuxes[$i]}"
   done
 fi
 if (( ${#failed[@]} > 0 )); then
   echo
-  printf "  ${red}fail${reset}   %s\n" "${failed[0]}"
+  printf "  ${red}fail${reset} %s\n" "${failed[0]}"
   for ((i=1; i<${#failed[@]}; i++)); do
-    printf "         %s\n" "${failed[$i]}"
+    printf "       %s\n" "${failed[$i]}"
   done
 fi
 if [[ -n $current && -n $latest && $current != "$latest" ]]; then
-  printf "  ${red}nixos${reset}  reboot needed (new generation pending)\n"
+  printf " ${red}nixos${reset} reboot needed (new generation pending)\n"
 fi
 echo

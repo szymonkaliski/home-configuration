@@ -5,9 +5,6 @@
   },
   "permissions": {
     "allow": [
-      "Bash(find:*)",
-      "Bash(grep:*)",
-      "Bash(rg:*)",
       "Bash(echo $TMUX_PANE)",
       "Bash(tmux *)",
       "Read(/tmp/tmux-panes-*)",
@@ -23,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/notify.sh"
+            "command": "~/.claude/notify.js"
           }
         ]
       }
@@ -44,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/notify.sh"
+            "command": "~/.claude/notify.js"
           }
         ]
       }

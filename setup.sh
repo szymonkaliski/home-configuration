@@ -41,7 +41,7 @@ function claudeSetup() {
   ln -sni $DOTFILE_DIR/claude/CLAUDE.md ~/.claude/CLAUDE.md
   ln -sni $DOTFILE_DIR/claude/settings.json ~/.claude/settings.json
   ln -sni $DOTFILE_DIR/claude/pre-read-hook.sh ~/.claude/pre-read-hook.sh
-  ln -sni $DOTFILE_DIR/claude/notify.sh ~/.claude/notify.sh
+  ln -sni $DOTFILE_DIR/claude/notify.js ~/.claude/notify.js
   ln -sni $DOTFILE_DIR/claude/statusline-command.sh ~/.claude/statusline-command.sh
   ln -sni $DOTFILE_DIR/claude/skills ~/.claude/skills
 }

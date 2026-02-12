@@ -29,12 +29,13 @@
 
   environment.systemPackages = with pkgs; [
     claude-code
-    git
-    gh
-    difftastic
-    ripgrep
     curl
+    difftastic
+    gh
+    git
     jq
+    nodejs_22
+    ripgrep
     tmux
   ];
 

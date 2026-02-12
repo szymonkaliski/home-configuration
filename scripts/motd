@@ -65,6 +65,13 @@ while read -r unit _; do
   vm_projects+=("${ws##*/}")
 done < <(systemctl list-units 'microvm@*.service' --state=running --no-legend --no-pager 2>/dev/null)
 
+# tmux sessions
+tmuxes=()
+while read -r name; do
+  [[ -z $name ]] && continue
+  tmuxes+=("$name")
+done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null)
+
 # failed units
 failed=()
 while read -r unit _; do
@@ -94,6 +101,13 @@ if (( ${#vms[@]} > 0 )); then
   printf "  ${dim}vms${reset}    %s  ${dim}%s${reset}\n" "${vms[0]}" "${vm_projects[0]}"
   for ((i=1; i<${#vms[@]}; i++)); do
     printf "         %s  ${dim}%s${reset}\n" "${vms[$i]}" "${vm_projects[$i]}"
+  done
+fi
+if (( ${#tmuxes[@]} > 0 )); then
+  echo
+  printf "  ${dim}tmux${reset}   %s\n" "${tmuxes[0]}"
+  for ((i=1; i<${#tmuxes[@]}; i++)); do
+    printf "         %s\n" "${tmuxes[$i]}"
   done
 fi
 if (( ${#failed[@]} > 0 )); then

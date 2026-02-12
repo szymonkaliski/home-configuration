@@ -56,7 +56,6 @@ ln -sni $DOTFILE_DIR/dircolors ~/.dircolors
 ln -sni $DOTFILE_DIR/gitconfig ~/.gitconfig
 ln -sni $DOTFILE_DIR/gitignore_global ~/.gitignore_global
 ln -sni $DOTFILE_DIR/ignore ~/.ignore
-ln -sni $DOTFILE_DIR/npmrc ~/.npmrc
 ln -sni $DOTFILE_DIR/tmux.conf ~/.tmux.conf
 ln -sni $DOTFILE_DIR/vale.ini ~/.vale.ini
 ln -sni $DOTFILE_DIR/vim ~/.vim

@@ -4,7 +4,7 @@ const fs = require("fs");
 const os = require("os");
 const { execFileSync, execSync } = require("child_process");
 
-const input = JSON.parse(fs.readFileSync("/dev/stdin", "utf8"));
+const input = JSON.parse(fs.readFileSync(0, "utf8"));
 const event = input.hook_event_name;
 const transcriptPath = input.transcript_path;
 

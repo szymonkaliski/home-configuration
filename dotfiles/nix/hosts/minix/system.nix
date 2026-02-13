@@ -12,6 +12,7 @@
 
   # MicroVM bridge network
   systemd.network.enable = true;
+  systemd.network.wait-online.enable = false;
   systemd.network.netdevs."20-vm-bridge".netdevConfig = {
     Kind = "bridge";
     Name = "vm-bridge";
@@ -91,6 +92,18 @@
     vim
     git
   ];
+
+  services.caddy = {
+    enable = true;
+    virtualHosts.":80".extraConfig = ''
+      handle_path /mqtt/* {
+        reverse_proxy localhost:10000
+      }
+      handle /socket.io/* {
+        reverse_proxy localhost:10000
+      }
+    '';
+  };
 
   system.stateVersion = "25.11";
 }

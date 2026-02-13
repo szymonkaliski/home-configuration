@@ -17,10 +17,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    neolink = {
-      url = "github:szymonkaliski/neolink/dev";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs =
@@ -29,7 +25,6 @@
       home-manager,
       nix-index-database,
       microvm,
-      neolink,
       ...
     }:
     {
@@ -49,8 +44,6 @@
         "szymon@minix" = home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages.x86_64-linux;
 
-          extraSpecialArgs = { inherit neolink; };
-
           modules = [
             ./hosts/minix/home.nix
             nix-index-database.homeModules.nix-index
@@ -60,7 +53,6 @@
       };
 
       nixosConfigurations.minix = nixpkgs.lib.nixosSystem {
-
         specialArgs = { inherit microvm; };
 
         modules = [
@@ -72,7 +64,6 @@
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
-            home-manager.extraSpecialArgs = { inherit neolink; };
             home-manager.users.szymon = {
               imports = [
                 ./hosts/minix/home.nix

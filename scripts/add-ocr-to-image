@@ -46,7 +46,16 @@ HEX=$((cat << EOF
 EOF
 ) | plutil -convert binary1 - -o - | xxd -p | tr -d '\n')
 
-xattr -w -x com.apple.metadata:kMDItemFinderComment "$HEX" "$1"
+# Spotlight's mdworker indexes new files asynchronously (~1-2s after creation)
+# and can overwrite xattrs when it finishes. Write the xattr, verify it stuck,
+# and retry if Spotlight stripped it.
+for attempt in 1 2 3 4 5; do
+  xattr -w -x com.apple.metadata:kMDItemFinderComment "$HEX" "$1"
+  sleep 1
+  if xattr "$1" | grep -q kMDItemFinderComment; then
+    break
+  fi
+  echo "xattr stripped (attempt $attempt), retrying..."
+done
 
 mdimport "$1"
-

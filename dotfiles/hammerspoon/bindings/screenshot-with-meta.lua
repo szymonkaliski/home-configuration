@@ -47,6 +47,9 @@ local addMetaToScreenshot = function(win, fileName)
     function(exitCode, stdOut, stdErr)
       cache[fileName] = nil
 
+      if stdOut and #stdOut > 0 then log.i(stdOut) end
+      if stdErr and #stdErr > 0 then log.w(stdErr) end
+
       if exitCode == 0 then
         log.i("OCR done: " .. fileName)
         return
@@ -56,9 +59,6 @@ local addMetaToScreenshot = function(win, fileName)
         title    = "Screenshot OCR failed",
         subTitle = "Look into Hammerspoon Console for more info"
       }):send()
-
-      log.e(stdOut)
-      log.e(stdErr)
     end,
     { fileName }
   )

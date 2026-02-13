@@ -35,9 +35,9 @@ Based on what you found:
 1. **Format**: Run formatter if available (prettier, black, gofmt, cargo fmt, nixfmt, etc.)
 2. **Lint**: Run linter if available (eslint, tsc --noEmit, clippy, etc.)
 3. **Test**: Run tests related to changed files if test runner exists
-4. **Stage**: `git add -A`
-5. **Commit**: Create commit message matching repo's existing style (from git log)
+4. **Plan commits**: Look at the git log style. If the repo favors small, focused commits (one logical change each), split the staged/unstaged changes into multiple commits — group related files together by logical change. If the repo uses larger commits, a single commit is fine.
+5. **Stage & commit**: For each logical group, `git add` the relevant files and commit with a message matching the repo's style. Go from most independent change to most dependent.
 
-If `$ARGUMENTS` is provided, use it as the commit message. Otherwise, generate one matching the repo's commit style.
+If `$ARGUMENTS` is provided, use it as the commit message for a single commit of all changes. Otherwise, generate messages matching the repo's commit style, splitting into multiple commits when it matches the repo's pattern.
 
 Fix any formatting/lint issues automatically. If tests fail, report and stop.

@@ -51,6 +51,13 @@
     "1.0.0.2"
   ];
 
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    publish.enable = true;
+    publish.addresses = true;
+  };
+
   security.sudo.extraRules = [
     {
       users = [ "szymon" ];
@@ -92,6 +99,35 @@
     vim
     git
   ];
+
+  services.mosquitto = {
+    enable = true;
+    listeners = [
+      {
+        port = 1883;
+        users.mqtt = {
+          password = "mqtt-secure";
+          acl = [ "readwrite #" ];
+        };
+        settings.allow_anonymous = false;
+      }
+    ];
+    # TODO: remove bridge once berry (192.168.1.2) MQTT broker is retired
+    bridges.berry = {
+      addresses = [
+        { address = "192.168.1.2"; port = 1883; }
+      ];
+      topics = [ "# both 0" ];
+      settings = {
+        remote_username = "mqtt";
+        remote_password = "mqtt-secure";
+        start_type = "automatic";
+        try_private = true;
+        cleansession = true;
+        notifications = false;
+      };
+    };
+  };
 
   services.caddy = {
     enable = true;

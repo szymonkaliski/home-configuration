@@ -7,7 +7,6 @@ SSH_OPTS=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLeve
 
 REPO_SETUP_SH="$HOME/Projects/home-configuration/dotfiles/nix/hosts/minix/microvms/setup.sh"
 
-vm_size() { [ "$1" -le 4 ] && echo "2G" || echo "1G"; }
 
 sync_host_config() {
   mkdir -p "$HOST_DIR"
@@ -26,7 +25,7 @@ sync_host_config() {
 }
 
 find_free_vm() {
-  for i in $(seq 1 8); do
+  for i in $(seq 1 4); do
     local state
     state=$(systemctl is-active "microvm@vm-${i}" 2>/dev/null || true)
     if [ "$state" = "inactive" ] || [ "$state" = "failed" ]; then
@@ -64,7 +63,7 @@ case "$CMD" in
     ln -s "$PROJECT" "$VM_BASE/vm-${VM}/workspace"
     sync_host_config
     t0=$SECONDS
-    printf "vm-${VM} [$(vm_size "$VM")] (10.100.0.${VM}) ${PROJECT}\nstarting..."
+    printf "vm-${VM} (10.100.0.${VM}) ${PROJECT}\nstarting..."
     sudo systemctl start "microvm@vm-${VM}"
     printf " booting..."
     wait_for_ssh "$VM"
@@ -99,7 +98,7 @@ case "$CMD" in
     ;;
 
   list)
-    for i in $(seq 1 8); do
+    for i in $(seq 1 4); do
       state=$(systemctl is-active "microvm@vm-${i}" 2>/dev/null || true)
       case "$state" in
         active|activating) status="running" ;;
@@ -107,12 +106,12 @@ case "$CMD" in
         *) status="stopped" ;;
       esac
       ws=$(readlink "$VM_BASE/vm-${i}/workspace" 2>/dev/null || echo "(none)")
-      printf "vm-%-2d %-3s %-8s  %s\n" "$i" "$(vm_size "$i")" "$status" "$ws"
+      printf "vm-%-2d %-8s  %s\n" "$i" "$status" "$ws"
     done
     ;;
 
   stop-all)
-    for i in $(seq 1 8); do
+    for i in $(seq 1 4); do
       if systemctl is-active "microvm@vm-${i}" &>/dev/null; then
         (
           ssh -o ConnectTimeout=3 "${SSH_OPTS[@]}" "szymon@10.100.0.${i}" "sudo tailscale logout" 2>/dev/null || true
@@ -135,7 +134,7 @@ case "$CMD" in
     ;;
 
   clean-all)
-    for i in $(seq 1 8); do
+    for i in $(seq 1 4); do
       if systemctl is-active "microvm@vm-${i}" &>/dev/null; then
         echo "skipping vm-${i} (running)"
         continue

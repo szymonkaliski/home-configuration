@@ -17,8 +17,7 @@ let
             tapId = "vm-tap${toString index}";
             mac = "02:00:00:00:00:0${toString index}";
             vsockCid = index + 2;
-            # large (1-4): 2GB, small (5-8): 1GB
-            mem = if index <= 4 then 2048 else 1024;
+            mem = 2048;
           })
         ];
       };
@@ -26,5 +25,5 @@ let
   };
 in
 {
-  microvm.vms = builtins.listToAttrs (map mkVm (lib.range 1 8));
+  microvm.vms = builtins.listToAttrs (map mkVm (lib.range 1 4));
 }

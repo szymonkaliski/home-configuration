@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+name="${1:-$(basename "$(git rev-parse --show-toplevel)")}"
+
+run_on_minix() {
+  if [ "$(hostname -s)" = "minix" ]; then
+    eval "$1"
+  else
+    ssh minix "$1"
+  fi
+}
+
+run_on_minix "test -d ~/Git/${name}.git || git init --bare ~/Git/${name}.git"
+
+if ! git remote get-url minix &>/dev/null; then
+  if [ "$(hostname -s)" = "minix" ]; then
+    git remote add minix "$HOME/Git/${name}.git"
+  else
+    git remote add minix "szymon@minix:Git/${name}.git"
+  fi
+fi
+
+git push minix "$(git branch --show-current)"

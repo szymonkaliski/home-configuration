@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+name="${1:?Usage: git minix-clone <name>}"
+name="${name%.git}"
+
+if [ "$(hostname -s)" = "minix" ]; then
+  git clone "$HOME/Git/${name}.git"
+else
+  git clone "szymon@minix:Git/${name}.git"
+fi

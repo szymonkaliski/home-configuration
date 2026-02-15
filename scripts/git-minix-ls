@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+run_on_minix() {
+  if [ "$(hostname -s)" = "minix" ]; then
+    eval "$1"
+  else
+    ssh minix "$1"
+  fi
+}
+
+run_on_minix "ls ~/Git" | sed 's/\.git$//'

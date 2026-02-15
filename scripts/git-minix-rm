@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+name="${1:?Usage: git minix-rm <name>}"
+name="${name%.git}"
+
+run_on_minix() {
+  if [ "$(hostname -s)" = "minix" ]; then
+    eval "$1"
+  else
+    ssh minix "$1"
+  fi
+}
+
+printf "Delete ~/Git/${name}.git on minix? [y/N] "
+read -r confirm
+if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+  run_on_minix "rm -rf ~/Git/${name}.git"
+  echo "Deleted ${name}"
+else
+  echo "Aborted"
+fi

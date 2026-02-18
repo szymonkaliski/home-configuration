@@ -67,6 +67,69 @@ function readLastAssistantText(filePath) {
   return null;
 }
 
+function readLastToolUse(filePath) {
+  const fd = fs.openSync(filePath, "r");
+  try {
+    const stat = fs.fstatSync(fd);
+    const readSize = Math.min(stat.size, 65536);
+    const buf = Buffer.alloc(readSize);
+    fs.readSync(fd, buf, 0, readSize, stat.size - readSize);
+    const chunk = buf.toString("utf8");
+
+    const firstNewline = chunk.indexOf("\n");
+    const lines = chunk
+      .slice(firstNewline + 1)
+      .split("\n")
+      .filter(Boolean);
+
+    for (let i = lines.length - 1; i >= 0; i--) {
+      let entry;
+      try {
+        entry = JSON.parse(lines[i]);
+      } catch {
+        continue;
+      }
+      if (entry.type !== "assistant") continue;
+
+      const contents = entry.message?.content;
+      if (!Array.isArray(contents)) return null;
+
+      for (let j = contents.length - 1; j >= 0; j--) {
+        if (contents[j].type !== "tool_use") continue;
+        return contents[j];
+      }
+      return null;
+    }
+  } finally {
+    fs.closeSync(fd);
+  }
+  return null;
+}
+
+function formatToolUse(toolUse) {
+  const name = toolUse.name;
+  const inp = toolUse.input || {};
+
+  if (name === "Bash") {
+    const cmd = (inp.command || "").slice(0, 120);
+    return `Bash: ${cmd}`;
+  }
+  if (name === "Edit") return `Edit: ${inp.file_path || "?"}`;
+  if (name === "Write") return `Write: ${inp.file_path || "?"}`;
+  if (name === "Read") return `Read: ${inp.file_path || "?"}`;
+
+  if (name === "AskUserQuestion") {
+    const q = inp.questions?.[0]?.question;
+    if (q) return `Question: ${q.slice(0, 120)}`;
+    return "Question";
+  }
+
+  // generic: tool name + first string-valued input field
+  const firstVal = Object.values(inp).find((v) => typeof v === "string");
+  if (firstVal) return `${name}: ${firstVal.slice(0, 100)}`;
+  return name;
+}
+
 let body;
 
 if (event === "Stop") {
@@ -90,6 +153,17 @@ if (event === "Stop") {
   }
 } else {
   body = input.message || "Notification";
+
+  if (
+    input.notification_type === "permission_prompt" &&
+    transcriptPath &&
+    fs.existsSync(transcriptPath)
+  ) {
+    try {
+      const toolUse = readLastToolUse(transcriptPath);
+      if (toolUse) body = formatToolUse(toolUse);
+    } catch {}
+  }
 }
 
 const title = `Claude Code (${os.hostname()})`;

@@ -24,6 +24,8 @@ in
       Description = "Neolink MQTT bridge for Reolink cameras";
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
+      StartLimitBurst = 5;
+      StartLimitIntervalSec = 300;
     };
 
     Service = {
@@ -42,6 +44,8 @@ in
       Description = "Smartbox to MQTT bridge for heaters";
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
+      StartLimitBurst = 5;
+      StartLimitIntervalSec = 300;
     };
 
     Service = {
@@ -60,6 +64,8 @@ in
       Description = "LG TV to MQTT bridge";
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
+      StartLimitBurst = 5;
+      StartLimitIntervalSec = 300;
     };
 
     Service = {
@@ -79,6 +85,8 @@ in
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
       ConditionPathIsDirectory = "%h/Projects/friday-homebridge";
+      StartLimitBurst = 5;
+      StartLimitIntervalSec = 300;
     };
 
     Service = {
@@ -99,6 +107,8 @@ in
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
       ConditionPathIsDirectory = "%h/Projects/friday-ruler";
+      StartLimitBurst = 5;
+      StartLimitIntervalSec = 300;
     };
 
     Service = {

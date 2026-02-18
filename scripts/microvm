@@ -130,6 +130,7 @@ case "$CMD" in
     fi
     sudo rm -f "/var/lib/microvms/vm-${1}/nix-store-overlay.img"
     rm -rf "$VM_BASE/vm-${1}/data"
+    rm -f "$VM_BASE/vm-${1}/workspace"
     echo "vm-${1} cleaned"
     ;;
 
@@ -141,6 +142,7 @@ case "$CMD" in
       fi
       sudo rm -f "/var/lib/microvms/vm-${i}/nix-store-overlay.img"
       rm -rf "$VM_BASE/vm-${i}/data"
+      rm -f "$VM_BASE/vm-${i}/workspace"
       echo "vm-${i} cleaned"
     done
     ;;
@@ -149,12 +151,12 @@ case "$CMD" in
     cat <<EOF
 usage: microvm <command> [args]
 
+  list                     show all VMs
   start [N] [--dir path]   start VM (default: current dir, auto-picks VM)
-  stop N                   stop VM (= full reset, ephemeral)
-  ssh N                    ssh into running VM (lands in /workspace)
-  list                     show all VMs, status, and workspace paths
+  ssh N                    ssh into running VM
+  stop N                   stop VM
   stop-all                 stop all VMs
-  clean N                  remove overlay image and data for a stopped VM
+  clean N                  clean all ephemeral data for VM
   clean-all                clean all stopped VMs
 EOF
     ;;

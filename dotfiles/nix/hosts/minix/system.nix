@@ -45,7 +45,10 @@
   services.openssh.enable = true;
   services.tailscale.enable = true;
   services.tailscale.useRoutingFeatures = "server";
+  networking.nameservers = [ "127.0.0.1" ];
+
   services.resolved.enable = true;
+  services.resolved.settings.Resolve.DNSStubListener = "no";
   services.resolved.settings.Resolve.FallbackDNS = [
     "1.1.1.2"
     "1.0.0.2"
@@ -112,33 +115,84 @@
         settings.allow_anonymous = false;
       }
     ];
-    # TODO: remove bridge once berry (192.168.1.2) MQTT broker is retired
-    bridges.berry = {
-      addresses = [
-        { address = "192.168.1.2"; port = 1883; }
-      ];
-      topics = [ "# both 0" ];
-      settings = {
-        remote_username = "mqtt";
-        remote_password = "mqtt-secure";
-        start_type = "automatic";
-        try_private = true;
-        cleansession = true;
-        notifications = false;
+  };
+
+  services.blocky = {
+    enable = true;
+    settings = {
+      ports = {
+        dns = 53;
+        http = 10002;
       };
+
+      upstreams.groups.default = [
+        "https://security.cloudflare-dns.com/dns-query"
+      ];
+
+      bootstrapDns = {
+        upstream = "https://security.cloudflare-dns.com/dns-query";
+        ips = [
+          "1.1.1.2"
+          "1.0.0.2"
+        ];
+      };
+
+      blocking = {
+        denylists = {
+          ads = [
+            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro.txt"
+            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/tif.txt"
+            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/fake.txt"
+            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/popupads.txt"
+            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/gambling.txt"
+          ];
+        };
+        clientGroupsBlock.default = [ "ads" ];
+        blockType = "zeroIp";
+      };
+
+      caching = {
+        prefetching = true;
+        minTime = "5m";
+      };
+
+      queryLog = {
+        type = "csv";
+        target = "/var/lib/blocky";
+        logRetentionDays = 7;
+      };
+
+      prometheus.enable = true;
     };
   };
 
-  services.caddy = {
-    enable = true;
-    virtualHosts.":80".extraConfig = ''
-      handle_path /mqtt/* {
-        reverse_proxy localhost:10000
-      }
-      handle /socket.io/* {
-        reverse_proxy localhost:10000
-      }
-    '';
+  virtualisation.podman.enable = true;
+
+  virtualisation.oci-containers = {
+    backend = "podman";
+    containers = {
+      mqtt-explorer = {
+        image = "ghcr.io/thomasnordquist/mqtt-explorer:latest";
+        environment = {
+          PORT = "10000";
+          MQTT_EXPLORER_SKIP_AUTH = "true";
+        };
+        extraOptions = [ "--network=host" ];
+      };
+
+      blocky-ui = {
+        image = "ghcr.io/gabeduartem/blocky-ui:latest";
+        environment = {
+          TZ = "Europe/Warsaw";
+          PORT = "10001";
+          BLOCKY_API_URL = "http://localhost:10002";
+          QUERY_LOG_TYPE = "csv";
+          QUERY_LOG_TARGET = "/logs";
+        };
+        volumes = [ "/var/lib/blocky:/logs:ro" ];
+        extraOptions = [ "--network=host" ];
+      };
+    };
   };
 
   system.stateVersion = "25.11";

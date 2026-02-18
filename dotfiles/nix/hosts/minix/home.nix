@@ -3,7 +3,6 @@ let
   neolink = pkgs.callPackage ../../pkgs/neolink.nix { };
   smartbox2mqtt = pkgs.callPackage ../../pkgs/smartbox2mqtt.nix { };
   lgtv2mqtt2 = pkgs.callPackage ../../pkgs/lgtv2mqtt2.nix { };
-  mqtt-explorer = pkgs.callPackage ../../pkgs/mqtt-explorer.nix { };
 in
 {
   imports = [ ../../common.nix ];
@@ -74,19 +73,37 @@ in
     };
   };
 
-  systemd.user.services.mqtt-explorer = {
+  systemd.user.services.friday-homebridge = {
     Unit = {
-      Description = "MQTT Explorer Web UI";
+      Description = "Homebridge";
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
+      ConditionPathIsDirectory = "%h/Projects/friday-homebridge";
     };
 
     Service = {
-      ExecStart = "${mqtt-explorer}/bin/mqtt-explorer";
-      Environment = [
-        "PORT=10000"
-        "MQTT_EXPLORER_SKIP_AUTH=true"
-      ];
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/friday-homebridge --command npm start";
+      WorkingDirectory = "%h/Projects/friday-homebridge";
+      Restart = "on-failure";
+      RestartSec = 10;
+    };
+
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
+  systemd.user.services.friday-ruler = {
+    Unit = {
+      Description = "Friday Ruler";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+      ConditionPathIsDirectory = "%h/Projects/friday-ruler";
+    };
+
+    Service = {
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/friday-ruler --command npm start";
+      WorkingDirectory = "%h/Projects/friday-ruler";
       Restart = "on-failure";
       RestartSec = 10;
     };

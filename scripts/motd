@@ -98,8 +98,10 @@ elif [[ $os == "Darwin" ]]; then
   mem_available=$(( (pages_free + pages_inactive + pages_speculative) * page_size ))
   mem_used=$(( (mem_total_bytes - mem_available) / 1000000000 ))
 
-  # disk
-  read -r _ disk_total disk_used _ < <(df -g / | tail -1)
+  # disk (df -k is portable; convert KB to GB)
+  read -r _ disk_total_k disk_used_k _ < <(df -k / | tail -1)
+  disk_total=$(( disk_total_k / 1048576 ))
+  disk_used=$(( disk_used_k / 1048576 ))
 fi
 
 # uptime formatting (shared)

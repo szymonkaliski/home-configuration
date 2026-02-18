@@ -12,8 +12,13 @@ cp /mnt/host/claude.json /home/szymon/.claude.json
 cp /mnt/host/gitconfig /home/szymon/.gitconfig
 cp /mnt/host/gitignore_global /home/szymon/.gitignore_global
 
+# install/update claude-code via npm (nixpkgs version lags behind)
+export NPM_CONFIG_PREFIX=/home/szymon/.npm
+npm install -g @anthropic-ai/claude-code@latest
+
 # shell: start in /workspace, aliases
 echo 'cd /workspace 2>/dev/null' > /home/szymon/.bash_profile
+echo 'export PATH="/home/szymon/.npm/bin:$PATH"' >> /home/szymon/.bash_profile
 echo "alias claude-dangerously='claude --dangerously-skip-permissions'" >> /home/szymon/.bash_profile
 
 if [ -f /mnt/host/claude-oauth-token ]; then

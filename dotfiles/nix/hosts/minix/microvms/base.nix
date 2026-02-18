@@ -28,7 +28,6 @@
   nix.gc.options = "--delete-older-than 7d";
 
   environment.systemPackages = with pkgs; [
-    claude-code
     curl
     difftastic
     gh
@@ -63,6 +62,7 @@
       "mnt-host.mount"
       "home.mount"
     ];
+    path = [ pkgs.nodejs_22 ];
     script = ''
       /bin/sh /mnt/host/setup.sh
     '';
@@ -99,10 +99,7 @@
     addresses = [ { Address = "${ipAddress}/24"; } ];
     routes = [ { Gateway = "10.100.0.254"; } ];
   };
-  networking.nameservers = [
-    "1.1.1.2"
-    "1.0.0.2"
-  ];
+  networking.nameservers = [ "10.100.0.254" ];
   networking.firewall.enable = false;
 
   fileSystems."/home" = {

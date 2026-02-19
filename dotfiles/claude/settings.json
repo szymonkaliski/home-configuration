@@ -1,5 +1,4 @@
 {
-  "model": "opus",
   "attribution": {
     "commit": "",
     "pr": ""
@@ -14,6 +13,7 @@
       "mcp__chrome-devtools__*"
     ]
   },
+  "model": "opus",
   "hooks": {
     "Notification": [
       {
@@ -52,5 +52,6 @@
     "type": "command",
     "command": "~/.claude/statusline-command.sh"
   },
-  "enabledPlugins": {}
+  "enabledPlugins": {},
+  "promptSuggestionEnabled": false
 }

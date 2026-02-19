@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 
 input=$(cat)
+
+duration_ms=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
+# skip rendering while the npm->native installer nag banner is visible, as it
+# squeezes the statusline into a single column (no way to suppress it yet:
+# https://github.com/anthropics/claude-code/issues/23683)
+[ "$duration_ms" -lt 30000 ] 2>/dev/null && exit 0
+
 cwd=$(echo "$input" | jq -r '.workspace.current_dir')
 
 hostname=$(hostname -s)

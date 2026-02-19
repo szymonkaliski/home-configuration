@@ -19,11 +19,23 @@ in
 
   services.dropbox.enable = true;
 
+  systemd.user.services."notify-failure@" = {
+    Unit.Description = "Failure notification for %i";
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash -c '%h/.bin/notify-pushover \"Failed: %i\"'";
+      Environment = "PATH=${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.curl}/bin";
+    };
+  };
+
   systemd.user.services.neolink = {
     Unit = {
       Description = "Neolink MQTT bridge for Reolink cameras";
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
+      OnFailure = [ "notify-failure@%n.service" ];
+      StartLimitBurst = 5;
+      StartLimitIntervalSec = 300;
     };
 
     Service = {
@@ -42,6 +54,9 @@ in
       Description = "Smartbox to MQTT bridge for heaters";
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
+      OnFailure = [ "notify-failure@%n.service" ];
+      StartLimitBurst = 5;
+      StartLimitIntervalSec = 300;
     };
 
     Service = {
@@ -60,6 +75,9 @@ in
       Description = "LG TV to MQTT bridge";
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
+      OnFailure = [ "notify-failure@%n.service" ];
+      StartLimitBurst = 5;
+      StartLimitIntervalSec = 300;
     };
 
     Service = {
@@ -78,7 +96,10 @@ in
       Description = "Homebridge";
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
+      OnFailure = [ "notify-failure@%n.service" ];
       ConditionPathIsDirectory = "%h/Projects/friday-homebridge";
+      StartLimitBurst = 5;
+      StartLimitIntervalSec = 300;
     };
 
     Service = {
@@ -93,12 +114,36 @@ in
     };
   };
 
+  systemd.user.services.boot-notify = {
+    Unit = {
+      Description = "Boot notification";
+      After = [
+        "default.target"
+        "network-online.target"
+      ];
+      Wants = [ "network-online.target" ];
+    };
+
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash -c '%h/.bin/notify-pushover \"Booted: $(date +%%Y-%%m-%%d\\ %%H:%%M)\"'";
+      Environment = "PATH=${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.curl}/bin";
+    };
+
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
   systemd.user.services.friday-ruler = {
     Unit = {
       Description = "Friday Ruler";
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
+      OnFailure = [ "notify-failure@%n.service" ];
       ConditionPathIsDirectory = "%h/Projects/friday-ruler";
+      StartLimitBurst = 5;
+      StartLimitIntervalSec = 300;
     };
 
     Service = {
@@ -110,6 +155,83 @@ in
 
     Install = {
       WantedBy = [ "default.target" ];
+    };
+  };
+
+  systemd.user.services.timav-cache = {
+    Unit = {
+      Description = "Timav cache update";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+      OnFailure = [ "notify-failure@%n.service" ];
+      ConditionPathIsDirectory = "%h/Projects/timav";
+    };
+
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/timav --command ./cli.js cache";
+      WorkingDirectory = "%h/Projects/timav";
+      Environment = "DEBUG=*";
+    };
+  };
+
+  systemd.user.timers.timav-cache = {
+    Unit = {
+      Description = "Timav cache update timer";
+    };
+
+    Timer = {
+      OnCalendar = "hourly";
+      Persistent = true;
+    };
+
+    Install = {
+      WantedBy = [ "timers.target" ];
+    };
+  };
+
+  systemd.user.services.szymonkaliski-com-publish = {
+    Unit = {
+      Description = "Publish szymonkaliski.com";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+      OnFailure = [ "notify-failure@%n.service" ];
+      ConditionPathIsDirectory = "%h/Projects/szymonkaliski-com";
+    };
+
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/szymonkaliski-com --command bash -c './scripts/update-notes.sh && ./scripts/publish.sh'";
+      WorkingDirectory = "%h/Projects/szymonkaliski-com";
+      Environment = [
+        "WIKI_PATH=%h/Dropbox/Wiki"
+        "PATH=${
+          pkgs.lib.makeBinPath [
+            pkgs.ripgrep
+            pkgs.rsync
+            pkgs.git
+            pkgs.openssh
+            pkgs.coreutils
+            pkgs.bash
+            pkgs.nix
+          ]
+        }:%h/.bin"
+      ];
+    };
+  };
+
+  systemd.user.timers.szymonkaliski-com-publish = {
+    Unit = {
+      Description = "Weekly publish of szymonkaliski.com";
+    };
+
+    Timer = {
+      OnCalendar = "Mon *-*-* 01:00:00";
+      Persistent = true;
+    };
+
+    Install = {
+      WantedBy = [ "timers.target" ];
     };
   };
 

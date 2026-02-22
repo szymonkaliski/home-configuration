@@ -5,9 +5,19 @@
   },
   "permissions": {
     "allow": [
-      "Bash(echo $TMUX_PANE)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(hostname:*)",
+      "Bash(ls:*)",
+      "Bash(rg:*)",
+      "Bash(tail:*)",
       "Bash(tmux *)",
-      "Read(/tmp/tmux-panes-*)",
+      "Bash(wc:*)",
+      "Bash(which:*)",
+      "Bash(echo $TMUX_PANE)",
+      "Read(//tmp/tmux-panes-*)",
       "WebFetch",
       "WebSearch",
       "mcp__chrome-devtools__*"

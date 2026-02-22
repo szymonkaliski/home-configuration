@@ -35,9 +35,9 @@ if [[ $os == "Linux" ]]; then
         read -r raw < "${hwmon}temp1_input"
         nvme_temp=$((raw / 1000))
         ;;
-      iwlwifi_1)
+      acpitz)
         read -r raw < "${hwmon}temp1_input"
-        wifi_temp=$((raw / 1000))
+        board_temp=$((raw / 1000))
         ;;
     esac
   done
@@ -128,10 +128,15 @@ printf "    ${dim}up${reset} %s\n" "$uptime"
 printf "  ${dim}load${reset} %s\n" "$load"
 echo
 pad=${#disk_total}
-if [[ -n $cpu_temp ]]; then
-  printf "  ${dim}temp${reset} cpu  %2s ${dim}°C${reset}\n" "$cpu_temp"
-  printf "       ssd  %2s ${dim}°C${reset}\n" "$nvme_temp"
-  printf "       wifi %2s ${dim}°C${reset}\n" "$wifi_temp"
+temps=()
+[[ -n $cpu_temp ]]  && temps+=("$(printf "cpu  %2s ${dim}°C${reset}" "$cpu_temp")")
+[[ -n $nvme_temp ]] && temps+=("$(printf "ssd  %2s ${dim}°C${reset}" "$nvme_temp")")
+[[ -n $board_temp ]] && temps+=("$(printf "mb   %2s ${dim}°C${reset}" "$board_temp")")
+if (( ${#temps[@]} > 0 )); then
+  printf "  ${dim}temp${reset} %s\n" "${temps[0]}"
+  for ((i=1; i<${#temps[@]}; i++)); do
+    printf "       %s\n" "${temps[$i]}"
+  done
   echo
 fi
 printf "   ${dim}ram${reset} %${pad}s ${dim}/${reset} %${pad}s ${dim}GB${reset}\n" "$mem_used" "$mem_total"

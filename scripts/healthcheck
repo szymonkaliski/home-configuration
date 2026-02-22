@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+# Behavioral healthcheck for minix. Catches services that appear healthy to
+# systemd but aren't actually working. Service crashes are already handled by
+# systemd OnFailure=notify-failure@%N.service — this script only verifies
+# that things are *actually doing their job*.
+
+[[ $(hostname -s) != "minix" ]] && exit 0
+
+if [[ -t 1 ]]; then
+  green=$'\033[32m'
+  red=$'\033[31m'
+  dim=$'\033[2m'
+  reset=$'\033[0m'
+else
+  green= red= dim= reset=
+fi
+
+tmpdir=$(mktemp -d)
+trap 'rm -rf "$tmpdir"' EXIT
+n=0
+names=()
+
+check() {
+  local name="$1" idx=$n
+  shift
+  names+=("$name")
+  (
+    if output=$("$@" 2>&1); then
+      echo ok > "$tmpdir/$idx.status"
+    else
+      echo fail > "$tmpdir/$idx.status"
+      printf '%s' "$output" > "$tmpdir/$idx.output"
+    fi
+  ) &
+  n=$((n + 1))
+}
+
+check "disk-has-space" bash -c '
+  pct=$(df --output=pcent / | tail -1 | tr -d " %")
+  if (( pct > 90 )); then
+    echo "${pct}% full"
+    exit 1
+  fi
+'
+
+check "blocky-blocks-ads" bash -c '
+  result=$(dig @127.0.0.1 +short +time=5 pagead2.googlesyndication.com 2>&1)
+  if [[ "$result" != "0.0.0.0" ]]; then
+    echo "expected 0.0.0.0, got: $result"
+    exit 1
+  fi
+'
+
+check "blocky-resolves-dns" bash -c '
+  result=$(dig @127.0.0.1 +short +time=5 google.com 2>&1)
+  if [[ -z "$result" ]]; then
+    echo "failed to resolve google.com"
+    exit 1
+  fi
+'
+
+check "restic-backed-up" bash -c '
+  snap=$(timeout 30 sudo -n \
+    RESTIC_REPOSITORY="rclone:nas:/NAS/Backup/Minix" \
+    RESTIC_PASSWORD_FILE=/etc/restic-password \
+    RCLONE_CONFIG=/etc/rclone-nas.conf \
+    /run/current-system/sw/bin/restic snapshots --latest 1 --json --no-cache 2>&1)
+  ts=$(echo "$snap" | jq -r "sort_by(.time) | .[-1].time // empty" 2>/dev/null)
+  if [[ -z "$ts" ]]; then
+    echo "no snapshots found"
+    exit 1
+  fi
+  snap_epoch=$(date -d "$ts" +%s 2>/dev/null)
+  now_epoch=$(date +%s)
+  age_h=$(( (now_epoch - snap_epoch) / 3600 ))
+  if (( age_h > 36 )); then
+    echo "last snapshot ${age_h}h ago"
+    exit 1
+  fi
+'
+
+check "website-published" bash -c '
+  last_mod=$(curl -sI --max-time 10 https://szymonkaliski.com | grep -i "^last-modified:" | sed "s/^[^:]*: //")
+  if [[ -z "$last_mod" ]]; then
+    echo "no Last-Modified header"
+    exit 1
+  fi
+  mod_epoch=$(date -d "$last_mod" +%s 2>/dev/null)
+  now_epoch=$(date +%s)
+  age_d=$(( (now_epoch - mod_epoch) / 86400 ))
+  if (( age_d > 8 )); then
+    echo "last modified ${age_d}d ago"
+    exit 1
+  fi
+'
+
+check "timav-has-events" bash -c '
+  cache="/home/szymon/.local/share/timav-nodejs/Tracking-parsed_events.json"
+  if [[ ! -f "$cache" ]]; then
+    echo "cache file not found"
+    exit 1
+  fi
+  recent=$(jq "[.[] | select(.start) | (.start | sub(\"\\\\.[0-9]+Z$\"; \"Z\") | fromdate) | select(. >= (now - 7*86400) and . <= now)] | length" "$cache")
+  if [[ -z "$recent" || "$recent" == "0" ]]; then
+    echo "no events in the last 7 days"
+    exit 1
+  fi
+'
+
+check "mosquitto-connects" bash -c '
+  if ! mosquitto_pub -h localhost -p 1883 -u mqtt -P mqtt-secure -t "healthcheck" -m "ping" -q 0 2>&1; then
+    echo "cannot connect to broker"
+    exit 1
+  fi
+'
+
+check "zigbee2mqtt-online" bash -c '
+  state=$(mosquitto_sub -h localhost -p 1883 -u mqtt -P mqtt-secure -t "zigbee2mqtt/bridge/state" -C 1 -W 5 2>&1)
+  if [[ -z "$state" ]]; then
+    echo "no bridge state (timeout)"
+    exit 1
+  fi
+  online=$(echo "$state" | jq -r ".state // empty" 2>/dev/null)
+  if [[ "$online" != "online" ]]; then
+    echo "bridge state: $online"
+    exit 1
+  fi
+'
+
+check "xiaomiclock-synced" bash -c '
+  sync=$(mosquitto_sub -h localhost -p 1883 -u mqtt -P mqtt-secure -t "friday/sensor_living_room_temperature/last_sync" -C 1 -W 5 2>&1)
+  if [[ -z "$sync" ]]; then
+    echo "no last_sync (timeout)"
+    exit 1
+  fi
+  sync_epoch=$(date -d "$sync" +%s 2>/dev/null)
+  if [[ -z "$sync_epoch" ]]; then
+    echo "cannot parse: $sync"
+    exit 1
+  fi
+  age=$(( $(date +%s) - sync_epoch ))
+  if (( age > 7200 )); then
+    echo "last sync $(( age / 3600 ))h ago"
+    exit 1
+  fi
+'
+
+check "tailscale-online" bash -c '
+  for i in 1 2 3; do
+    online=$(tailscale status --self --json 2>&1 | jq -r ".Self.Online // empty" 2>/dev/null)
+    [[ "$online" == "true" ]] && exit 0
+    (( i < 3 )) && sleep $((i * 5))
+  done
+  echo "node not online"
+  exit 1
+'
+
+# system services — OnFailure can't use user-level notify-failure@
+for ctr in mqtt-explorer blocky-ui; do
+  check "podman-${ctr}-running" bash -c "
+    if ! systemctl is-active --quiet podman-$ctr 2>/dev/null; then
+      echo 'not running'
+      exit 1
+    fi
+  "
+done
+
+wait
+
+errors=()
+for i in "${!names[@]}"; do
+  status=$(< "$tmpdir/$i.status")
+  if [[ "$status" == "ok" ]]; then
+    printf "  %b%4s%b  %s\n" "$green" "ok" "$reset" "${names[$i]}"
+  else
+    output=$(< "$tmpdir/$i.output" 2>/dev/null)
+    printf "  %b%4s%b  %s %b%s%b\n" "$red" "fail" "$reset" "${names[$i]}" "$dim" "$output" "$reset"
+    errors+=("${names[$i]}: $output")
+  fi
+done
+
+if (( ${#errors[@]} > 0 )); then
+  msg=$(printf '%s\n' "${errors[@]}")
+  if [[ ! -t 1 ]] && command -v notify-pushover &>/dev/null; then
+    notify-pushover "Healthcheck failed:
+$msg"
+  fi
+  printf '%s\n' "$msg" >&2
+  exit 1
+fi

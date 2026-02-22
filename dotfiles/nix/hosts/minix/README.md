@@ -10,8 +10,22 @@
    nix --extra-experimental-features "nix-command flakes" run nixpkgs#git -- clone https://github.com/szymonkaliski/home-configuration.git ~/Projects/home-configuration
    ```
 4. Run `./setup.sh` - it will copy `hardware-configuration.nix` from `/etc/nixos/`, git-track it, and run `nixos-rebuild switch`
-5. Restart: `sudo reboot`
-6. Set up Tailscale: `sudo tailscale up --advertise-exit-node`
+5. Set up backups to NAS - obscure the password with `rclone obscure 'your-password'`, then:
+   ```bash
+   sudo tee /etc/rclone-nas.conf << 'EOF'
+   [nas]
+   type = sftp
+   host = nas
+   user = Szymon
+   pass = <obscured-password>
+   shell_type = unix
+   EOF
+   head -c 32 /dev/urandom | base64 | sudo tee /etc/restic-password
+   sudo chmod 600 /etc/rclone-nas.conf /etc/restic-password
+   ```
+   Save the `/etc/restic-password` somewhere safe - it's needed to restore backups.
+6. Restart: `sudo reboot`
+7. Set up Tailscale: `sudo tailscale up --advertise-exit-node`
 
 `/etc/nixos/` is not used after initial setup - the flake in this repo is the single source of truth.
 
@@ -41,7 +55,7 @@ nixos-generate-config --show-hardware-config > minix/hardware-configuration.nix
 
 ## MicroVMs
 
-Ephemeral NixOS VMs (pool of 8) for running coding agents and other potentially destructive things in isolation.
+Ephemeral NixOS VMs (pool of 4) for running coding agents and other potentially destructive things in isolation.
 
 ### First-time setup
 

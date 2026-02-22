@@ -1,18 +1,35 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 {
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 10;
   boot.loader.efi.canTouchEfiVariables = true;
 
   networking.hostName = "minix";
-  networking.networkmanager.enable = true;
-  networking.networkmanager.dns = "systemd-resolved";
-  networking.networkmanager.unmanaged = [ "interface-name:vm-*" ];
+  networking.useNetworkd = true;
+  networking.useDHCP = false;
   networking.firewall.enable = false;
 
-  # MicroVM bridge network
   systemd.network.enable = true;
-  systemd.network.wait-online.enable = false;
+  # anyInterface: don't block boot waiting for vm-bridge
+  systemd.network.wait-online.anyInterface = true;
+
+  # static IP for main interface, DHCP as fallback
+  systemd.network.networks."10-lan" = {
+    matchConfig.Name = "enp1s0";
+    addresses = [ { Address = "192.168.1.2/24"; } ];
+    routes = [ { Gateway = "192.168.1.1"; } ];
+    networkConfig = {
+      DHCP = "ipv4";
+      IPv6AcceptRA = false;
+    };
+    dhcpV4Config = {
+      UseRoutes = false;
+      UseDNS = false;
+      RouteMetric = 2048;
+    };
+  };
+
+  # MicroVM bridge network
   systemd.network.netdevs."20-vm-bridge".netdevConfig = {
     Kind = "bridge";
     Name = "vm-bridge";
@@ -47,12 +64,10 @@
   services.tailscale.useRoutingFeatures = "server";
   networking.nameservers = [ "127.0.0.1" ];
 
+  # resolved needed: useNetworkd enables its stub listener on :53 (conflicts with blocky),
+  # and without it tailscale clobbers /etc/resolv.conf via resolvconf (tailscale#9687)
   services.resolved.enable = true;
   services.resolved.settings.Resolve.DNSStubListener = "no";
-  services.resolved.settings.Resolve.FallbackDNS = [
-    "1.1.1.2"
-    "1.0.0.2"
-  ];
 
   services.avahi = {
     enable = true;
@@ -73,6 +88,13 @@
           command = "/run/current-system/sw/bin/systemctl stop microvm@*";
           options = [ "NOPASSWD" ];
         }
+        {
+          command = "/run/current-system/sw/bin/restic snapshots *";
+          options = [
+            "NOPASSWD"
+            "SETENV"
+          ];
+        }
       ];
     }
   ];
@@ -81,6 +103,7 @@
     isNormalUser = true;
     extraGroups = [ "wheel" ];
     shell = pkgs.zsh;
+    linger = true;
   };
 
   programs.zsh.enable = true;
@@ -96,11 +119,13 @@
   ];
   nix.gc.automatic = true;
   nix.gc.dates = "weekly";
-  nix.gc.options = "--delete-older-than 14d";
+  nix.gc.options = "--delete-older-than 30d";
 
   environment.systemPackages = with pkgs; [
     vim
     git
+    restic
+    rclone
   ];
 
   services.mosquitto = {
@@ -117,6 +142,31 @@
     ];
   };
 
+  services.zigbee2mqtt = {
+    enable = true;
+    settings = {
+      permit_join = false;
+      mqtt = {
+        server = "mqtt://localhost:1883";
+        user = "mqtt";
+        password = "mqtt-secure";
+      };
+      serial.port = "/dev/serial/by-id/usb-ITead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_6013b3a3df21ec1194b221c32c86906c-if00-port0";
+      serial.adapter = "zstack";
+      frontend.port = 10003;
+      device_options.retain = true;
+    };
+  };
+
+  systemd.services.blocky = {
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    serviceConfig = {
+      Restart = lib.mkForce "always"; # upstream sets on-failure, whole network depends on blocky
+      RestartSec = "2s";
+    };
+  };
+
   services.blocky = {
     enable = true;
     settings = {
@@ -124,6 +174,8 @@
         dns = 53;
         http = 10002;
       };
+
+      connectIPVersion = "v4";
 
       upstreams.groups.default = [
         "https://security.cloudflare-dns.com/dns-query"
@@ -138,13 +190,20 @@
       };
 
       blocking = {
+        loading = {
+          strategy = "fast";
+          downloads = {
+            attempts = 5;
+            cooldown = "10s";
+          };
+        };
         denylists = {
           ads = [
+            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/dyndns.txt"
+            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/fake.txt"
+            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/gambling.txt"
             "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro.txt"
             "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/tif.txt"
-            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/fake.txt"
-            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/popupads.txt"
-            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/gambling.txt"
           ];
         };
         clientGroupsBlock.default = [ "ads" ];
@@ -193,6 +252,48 @@
         extraOptions = [ "--network=host" ];
       };
     };
+  };
+
+  services.restic.backups.nas = {
+    initialize = true;
+    repository = "rclone:nas:/NAS/Backup/Minix";
+    rcloneConfigFile = "/etc/rclone-nas.conf";
+    passwordFile = "/etc/restic-password";
+
+    paths = [
+      "/home/szymon"
+      "/var/lib/zigbee2mqtt"
+    ];
+
+    exclude = [
+      "**/.direnv"
+      "**/node_modules"
+      "**/result"
+      "/home/szymon/.cache"
+      "/home/szymon/.cargo"
+      "/home/szymon/.dropbox"
+      "/home/szymon/.dropbox-dist"
+      "/home/szymon/.nix-defexpr"
+      "/home/szymon/.nix-profile"
+      "/home/szymon/.npm"
+      "/home/szymon/Dropbox"
+    ];
+
+    timerConfig = {
+      OnCalendar = "daily";
+      Persistent = true;
+    };
+
+    extraBackupArgs = [ "--verbose" ];
+
+    checkOpts = [ "--read-data-subset=5%" ];
+
+    pruneOpts = [
+      "--keep-daily 7"
+      "--keep-weekly 4"
+      "--keep-monthly 6"
+      "--keep-yearly 2"
+    ];
   };
 
   system.stateVersion = "25.11";

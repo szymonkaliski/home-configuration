@@ -85,6 +85,16 @@ compctl -K _comp_p      p
 compctl -K _comp_tm     tm
 
 compctl -g '*.tar.bz2 *.tar.gz *.bz2 *.gz *.jar *.rar *.tar *.tbz2 *.tgz *.zip *.Z' + -g '*(-/)' extract
+
+zstyle ':completion:*:*:git:*' user-commands \
+  minix-clone:'clone a repo from minix' \
+  minix-rm:'remove a repo from minix' \
+  minix-ls:'list repos on minix' \
+  minix-push:'push a repo to minix'
+
+function _git-minix-clone() { compadd $(git minix-ls 2>/dev/null) }
+function _git-minix-rm() { compadd $(git minix-ls 2>/dev/null) }
+
 compctl -f -x "c[-1,retry]" -c -- retry
 compctl -f -x "c[-1,repeatedly]" -c -- repeatedly
 compctl -f -x "c[-1,watchexec]" -c -- watchexec

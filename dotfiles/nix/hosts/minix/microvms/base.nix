@@ -66,13 +66,20 @@
     script = ''
       /bin/sh /mnt/host/setup.sh
     '';
-    serviceConfig.Type = "oneshot";
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
   };
 
   services.tailscale.enable = true;
   systemd.services.tailscale-autoconnect = {
-    after = [ "tailscaled.service" ];
+    after = [
+      "tailscaled.service"
+      "mnt-host.mount"
+    ];
     wants = [ "tailscaled.service" ];
+    requires = [ "mnt-host.mount" ];
     wantedBy = [ "multi-user.target" ];
     script = ''
       for i in $(seq 1 100); do
@@ -87,7 +94,10 @@
           --accept-routes
       fi
     '';
-    serviceConfig.Type = "simple";
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
   };
 
   services.resolved.enable = true;
@@ -112,6 +122,7 @@
 
   zramSwap.enable = true;
   zramSwap.memoryPercent = 200;
+  zramSwap.algorithm = "zstd";
   programs.direnv = {
     enable = true;
     settings.whitelist.prefix = [ "/workspace" ];

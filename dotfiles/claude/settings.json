@@ -20,7 +20,8 @@
       "Read(//tmp/tmux-panes-*)",
       "WebFetch",
       "WebSearch",
-      "mcp__chrome-devtools__*"
+      "mcp__chrome-devtools__*",
+      "mcp__playwright__*"
     ]
   },
   "model": "opus",

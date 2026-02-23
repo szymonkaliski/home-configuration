@@ -275,18 +275,7 @@ in
     Service = {
       Type = "oneshot";
       ExecStart = "${pkgs.bash}/bin/bash %h/.bin/healthcheck";
-      Environment = "PATH=${
-        pkgs.lib.makeBinPath [
-          pkgs.bash
-          pkgs.coreutils
-          pkgs.curl
-          pkgs.dnsutils
-          pkgs.jq
-          pkgs.mosquitto
-          pkgs.systemd
-          pkgs.hostname
-        ]
-      }:%h/.bin";
+      Environment = "PATH=/run/wrappers/bin:/run/current-system/sw/bin:%h/.nix-profile/bin:%h/.bin";
     };
   };
 

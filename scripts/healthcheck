@@ -19,6 +19,7 @@ tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 n=0
 names=()
+declare -A pids
 
 check() {
   local name="$1" idx=$n
@@ -29,9 +30,10 @@ check() {
       echo ok > "$tmpdir/$idx.status"
     else
       echo fail > "$tmpdir/$idx.status"
-      printf '%s' "$output" > "$tmpdir/$idx.output"
+      printf '%s' "${output:-(no output)}" > "$tmpdir/$idx.output"
     fi
   ) &
+  pids[$!]=$n
   n=$((n + 1))
 }
 
@@ -146,13 +148,11 @@ check "xiaomiclock-synced" bash -c '
 '
 
 check "tailscale-online" bash -c '
-  for i in 1 2 3; do
-    online=$(tailscale status --self --json 2>&1 | jq -r ".Self.Online // empty" 2>/dev/null)
-    [[ "$online" == "true" ]] && exit 0
-    (( i < 3 )) && sleep $((i * 5))
-  done
-  echo "node not online"
-  exit 1
+  online=$(tailscale status --self --json 2>&1 | jq -r ".Self.Online // empty" 2>/dev/null)
+  if [[ "$online" != "true" ]]; then
+    echo "node not online"
+    exit 1
+  fi
 '
 
 # system services — OnFailure can't use user-level notify-failure@
@@ -165,10 +165,10 @@ for ctr in mqtt-explorer blocky-ui; do
   "
 done
 
-wait
-
 errors=()
-for i in "${!names[@]}"; do
+for (( _j=0; _j < n; _j++ )); do
+  wait -n -p _pid
+  i=${pids[$_pid]}
   status=$(< "$tmpdir/$i.status")
   if [[ "$status" == "ok" ]]; then
     printf "  %b%4s%b  %s\n" "$green" "ok" "$reset" "${names[$i]}"

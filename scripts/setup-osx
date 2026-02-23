@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# pin hostname to lowercase so scripts don't break when DHCP overrides it
+sudo scutil --set HostName orchid
+
 # disable the "accents" menu on keyboard key held
 defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false
 

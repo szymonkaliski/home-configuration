@@ -67,7 +67,7 @@ ln -sni $DOTFILE_DIR/zshrc ~/.zshrc
 
 ln -sni $(pwd)/scripts ~/.bin
 
-if [[ $HOSTNAME == "Orchid" ]]; then
+if [[ $HOSTNAME == "orchid" ]]; then
   ln -sni $DOTFILE_DIR/hammerspoon ~/.hammerspoon
   ln -sni $DOTFILE_DIR/ghostty ~/.config/ghostty
 
@@ -83,7 +83,7 @@ if command -v nix &> /dev/null; then
     ln -sni $DOTFILE_DIR/nix ~/.config/home-manager
     pushd ~/.config/home-manager
 
-    if [[ $HOSTNAME == "Orchid" ]]; then
+    if [[ $HOSTNAME == "orchid" ]]; then
       home-manager switch --flake .#szymon@orchid
     elif [[ $HOSTNAME == "minix" || $HOSTNAME == "nixos" ]]; then
       if [ -f /etc/nixos/hardware-configuration.nix ]; then

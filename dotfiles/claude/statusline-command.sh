@@ -11,7 +11,7 @@ duration_ms=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
 cwd=$(echo "$input" | jq -r '.workspace.current_dir')
 
 hostname=$(hostname -s)
-if [ "$hostname" = "Orchid" ]; then
+if [ "$hostname" = "orchid" ]; then
   promptcolor="34"
 elif [ "$hostname" = "minix" ]; then
   promptcolor="33"

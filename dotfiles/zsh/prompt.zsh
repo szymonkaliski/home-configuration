@@ -1,4 +1,4 @@
-if [ "$(hostname -s)" = "Orchid" ]; then
+if [ "$(hostname -s)" = "orchid" ]; then
   PROMPTCOLOR=blue
 elif [ "$(hostname -s)" = "minix" ]; then
   PROMPTCOLOR=yellow

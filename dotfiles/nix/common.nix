@@ -30,7 +30,7 @@
     pkgs.watchexec
     pkgs.wget
     pkgs.xmlstarlet
-    pkgs.yt-dlp
+    (pkgs.yt-dlp.override { javascriptSupport = false; })
   ];
 
   programs.nix-index-database.comma.enable = true;

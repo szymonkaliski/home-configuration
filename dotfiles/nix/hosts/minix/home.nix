@@ -126,11 +126,13 @@ in
         "network-online.target"
       ];
       Wants = [ "network-online.target" ];
+      ConditionPathExists = "!/run/user/%U/boot-notify-done";
     };
 
     Service = {
       Type = "oneshot";
       ExecStart = "${pkgs.bash}/bin/bash -c '%h/.bin/notify-pushover \"Booted: $(date +%%Y-%%m-%%d\\ %%H:%%M)\"'";
+      ExecStartPost = "${pkgs.coreutils}/bin/touch /run/user/%U/boot-notify-done";
       Environment = "PATH=${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.curl}/bin";
     };
 

@@ -12,12 +12,17 @@ if [ -z "$*" ]; then
 fi
 
 FORCE=0
+URL=""
 
 while (( "$#" )); do
   case "$1" in
     --force)
       FORCE=1
       shift 1
+      ;;
+    --url)
+      URL="$2"
+      shift 2
       ;;
     *)
       break
@@ -35,7 +40,20 @@ fi
 TINYOCR="$HOME/.bin/tinyocr"
 XML="$HOME/.nix-profile/bin/xml"
 
+# Dropbox has a ~4KB xattr size limit; files exceeding it fail to sync. Binary
+# plist overhead is ~46 bytes, and strings are stored as UTF-16 (2 bytes/char),
+# so 1850 chars ~= 3746 bytes which is safely under the limit.
+MAX_CHARS=1850
+
 CONTENTS=$("$TINYOCR" "$1" | $XML esc)
+if [ -n "$URL" ]; then
+  CONTENTS="$($XML esc <<< "$URL")
+
+$CONTENTS"
+fi
+if [ ${#CONTENTS} -gt $MAX_CHARS ]; then
+  CONTENTS="${CONTENTS:0:$MAX_CHARS}..."
+fi
 
 HEX=$((cat << EOF
 <?xml version="1.0" encoding="UTF-8"?>

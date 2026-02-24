@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+set -e
+
+if [ $# -lt 2 ]; then
+  echo "usage: add-wherefroms-to-image <file> <url>"
+  exit 1
+fi
+
+FILE="$1"
+URL="$2"
+
+echo "adding WhereFroms to: $FILE"
+
+XML="$HOME/.nix-profile/bin/xml"
+
+ESCAPED_URL=$(echo "$URL" | $XML esc)
+
+HEX=$((cat << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<array><string>$ESCAPED_URL</string></array>
+</plist>
+EOF
+) | plutil -convert binary1 - -o - | xxd -p | tr -d '\n')
+
+for attempt in 1 2 3 4 5; do
+  xattr -w -x com.apple.metadata:kMDItemWhereFroms "$HEX" "$FILE"
+  sleep 1
+  if xattr "$FILE" | grep -q kMDItemWhereFroms; then
+    break
+  fi
+  echo "xattr stripped (attempt $attempt), retrying..."
+done
+
+mdimport "$FILE"

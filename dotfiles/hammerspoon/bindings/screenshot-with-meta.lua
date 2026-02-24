@@ -1,15 +1,14 @@
 local windowMetadata = require('ext.window').windowMetadata
-local template       = require('ext.template')
 local log            = hs.logger.new("screenshot-with-meta", "debug")
 
 local cache  = {}
 local module = { cache = cache }
 
-local ADD_OCR_TO_IMAGE_PATH = os.getenv('HOME') .. '/.bin/add-ocr-to-image'
-local SCREENSHOT_PATH       = os.getenv('HOME') .. '/Library/CloudStorage/Dropbox/Screenshots/'
+local ADD_OCR_TO_IMAGE_PATH       = os.getenv('HOME') .. '/.bin/add-ocr-to-image'
+local ADD_WHEREFROMS_TO_IMAGE_PATH = os.getenv('HOME') .. '/.bin/add-wherefroms-to-image'
+local SCREENSHOT_PATH              = os.getenv('HOME') .. '/Library/CloudStorage/Dropbox/Screenshots/'
 
-local SCREENCAPTURE_PATH    = '/usr/sbin/screencapture'
-local XATTR_PATH            = '/usr/bin/xattr'
+local SCREENCAPTURE_PATH           = '/usr/sbin/screencapture'
 
 local genScreenshotPath = function()
   local screenshotName = os.date('Screenshot %Y-%m-%d at %H.%M.%S.png')
@@ -30,18 +29,34 @@ local sendNotification = function(fileName)
 end
 
 local addMetaToScreenshot = function(win, fileName)
-  local title, meta  = windowMetadata(win)
-  local safeFileName = template([["{FILE}"]], { FILE = fileName })
+  local title, meta = windowMetadata(win)
 
-  if meta ~= nil then
-    -- URLs have to be double quoted, hence the `'"{META}"'`
-    local kMDItemWhereFroms = ' -w com.apple.metadata:kMDItemWhereFroms ' .. template([['"{META}"']], { META = meta }) .. ' '
-    local command = XATTR_PATH .. kMDItemWhereFroms .. safeFileName
-    os.execute(command)
+  if meta ~= nil and meta ~= '' then
+    cache['wherefroms:' .. fileName] = hs.task.new(
+      ADD_WHEREFROMS_TO_IMAGE_PATH,
+      function(exitCode, stdOut, stdErr)
+        cache['wherefroms:' .. fileName] = nil
+
+        if stdOut and #stdOut > 0 then log.i(stdOut) end
+        if stdErr and #stdErr > 0 then log.w(stdErr) end
+
+        if exitCode == 0 then
+          log.i("WhereFroms done: " .. fileName)
+          return
+        end
+
+        hs.notify.new({
+          title    = "Screenshot WhereFroms failed",
+          subTitle = "Look into Hammerspoon Console for more info"
+        }):send()
+      end,
+      { fileName, meta }
+    )
+    cache['wherefroms:' .. fileName]:start()
   end
 
-  -- adds OCR to the image
-  -- task must be stored to prevent GC before callback fires
+  -- adds OCR to the image; --url prepends the source URL to kMDItemFinderComment
+  -- because Dropbox only syncs that xattr to Linux (not kMDItemWhereFroms)
   cache[fileName] = hs.task.new(
     ADD_OCR_TO_IMAGE_PATH,
     function(exitCode, stdOut, stdErr)
@@ -60,26 +75,9 @@ local addMetaToScreenshot = function(win, fileName)
         subTitle = "Look into Hammerspoon Console for more info"
       }):send()
     end,
-    { fileName }
+    (meta ~= nil and meta ~= '') and { '--url', meta, fileName } or { fileName }
   )
   cache[fileName]:start()
-
-  -- storing title doesn't seem to work - the metadata is there, but mdfind is not importing it
-  -- another idea would be to store an array in kMDItemWhereFroms, first entry would be the tile, and then the URL:
-  --
-  -- ```bash
-  -- url="http://example.com"
-  -- hexdump=$(echo "<plist><array><string>${url}</string></array></plist>" | /usr/bin/plutil -convert binary1 -o - - | /usr/bin/xxd -p | /usr/bin/tr -d "\n")
-  -- /usr/bin/xattr -w com.apple.metadata:kMDItemWhereFroms "${hexdump}" "${file}"
-  -- ```
-  --
-  -- source: https://github.com/reitermarkus/quarantine/blob/master/commands.md
-  --
-  -- if title ~= nil then
-  --   local kMDItemTitle = ' -w com.apple.metadata:kMDItemTitle ' .. template([["{TITLE}"]], { TITLE = title })
-  --   local command = XATTR_PATH .. kMDItemTitle .. safeFileName
-  --   os.execute(command)
-  -- end
 end
 
 -- screencapture can exit before the file is fully flushed to disk

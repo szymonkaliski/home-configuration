@@ -13,6 +13,7 @@ in
     neolink
     smartbox2mqtt
     lgtv2mqtt2
+    pkgs.chromium
     pkgs.dnsutils
     pkgs.lm_sensors
     pkgs.trash-cli

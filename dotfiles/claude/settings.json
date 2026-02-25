@@ -5,6 +5,11 @@
   },
   "permissions": {
     "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "WebFetch",
+      "WebSearch",
       "Bash(cat:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
@@ -17,9 +22,6 @@
       "Bash(wc:*)",
       "Bash(which:*)",
       "Bash(echo $TMUX_PANE)",
-      "Read(//tmp/tmux-panes-*)",
-      "WebFetch",
-      "WebSearch",
       "mcp__chrome-devtools__*",
       "mcp__playwright__*"
     ]
@@ -64,5 +66,6 @@
     "command": "~/.claude/statusline-command.sh"
   },
   "enabledPlugins": {},
-  "promptSuggestionEnabled": false
+  "promptSuggestionEnabled": false,
+  "spinnerTipsEnabled": false
 }

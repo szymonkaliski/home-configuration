@@ -1,4 +1,14 @@
 { pkgs, lib, ... }:
+let
+  ports = {
+    blockyApi = 10000;
+    blockyPostgresql = 10001;
+    blockyUi = 10002;
+    mqttExplorer = 10003;
+    zigbee2mqtt = 10004;
+    archivistUi = 10005;
+  };
+in
 {
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 10;
@@ -153,14 +163,34 @@
       };
       serial.port = "/dev/serial/by-id/usb-ITead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_6013b3a3df21ec1194b221c32c86906c-if00-port0";
       serial.adapter = "zstack";
-      frontend.port = 10003;
+      frontend.port = ports.zigbee2mqtt;
       device_options.retain = true;
     };
   };
 
+  services.postgresql = {
+    enable = true;
+    enableTCPIP = true;
+    ensureDatabases = [ "blocky" ];
+    ensureUsers = [
+      {
+        name = "blocky";
+        ensureDBOwnership = true;
+      }
+    ];
+    authentication = lib.mkAfter ''
+      host blocky blocky 127.0.0.1/32 trust
+    '';
+    settings.port = ports.blockyPostgresql;
+  };
+
   systemd.services.blocky = {
-    after = [ "network-online.target" ];
+    after = [
+      "network-online.target"
+      "postgresql.service"
+    ];
     wants = [ "network-online.target" ];
+    requires = [ "postgresql.service" ];
     serviceConfig = {
       Restart = lib.mkForce "always"; # upstream sets on-failure, whole network depends on blocky
       RestartSec = "2s";
@@ -172,7 +202,7 @@
     settings = {
       ports = {
         dns = 53;
-        http = 10002;
+        http = ports.blockyApi;
       };
 
       connectIPVersion = "v4";
@@ -216,8 +246,8 @@
       };
 
       queryLog = {
-        type = "csv";
-        target = "/var/lib/blocky";
+        type = "postgresql";
+        target = "postgres://blocky@127.0.0.1:${toString ports.blockyPostgresql}/blocky?sslmode=disable";
         logRetentionDays = 7;
       };
 
@@ -230,28 +260,80 @@
   virtualisation.oci-containers = {
     backend = "podman";
     containers = {
-      mqtt-explorer = {
-        image = "ghcr.io/thomasnordquist/mqtt-explorer:latest";
-        environment = {
-          PORT = "10000";
-          MQTT_EXPLORER_SKIP_AUTH = "true";
-        };
-        extraOptions = [ "--network=host" ];
-      };
-
       blocky-ui = {
         image = "ghcr.io/gabeduartem/blocky-ui:latest";
         environment = {
           TZ = "Europe/Warsaw";
-          PORT = "10001";
-          BLOCKY_API_URL = "http://localhost:10002";
-          QUERY_LOG_TYPE = "csv";
-          QUERY_LOG_TARGET = "/logs";
+          PORT = toString ports.blockyUi;
+          BLOCKY_API_URL = "http://localhost:${toString ports.blockyApi}";
+          QUERY_LOG_TYPE = "postgresql";
+          QUERY_LOG_TARGET = "postgres://blocky@127.0.0.1:${toString ports.blockyPostgresql}/blocky?sslmode=disable";
         };
-        volumes = [ "/var/lib/blocky:/logs:ro" ];
+        extraOptions = [ "--network=host" ];
+      };
+
+      mqtt-explorer = {
+        image = "ghcr.io/thomasnordquist/mqtt-explorer:latest";
+        environment = {
+          PORT = toString ports.mqttExplorer;
+          MQTT_EXPLORER_SKIP_AUTH = "true";
+        };
         extraOptions = [ "--network=host" ];
       };
     };
+  };
+
+  systemd.services.homepage-dashboard.serviceConfig = {
+    AmbientCapabilities = [ "CAP_NET_BIND_SERVICE" ];
+    CapabilityBoundingSet = [ "CAP_NET_BIND_SERVICE" ];
+    PrivateUsers = lib.mkForce false;
+  };
+
+  services.homepage-dashboard = {
+    enable = true;
+    listenPort = 80;
+    allowedHosts = "minix,minix:80,localhost,localhost:80,127.0.0.1,127.0.0.1:80";
+    settings = {
+      title = "minix";
+      theme = "dark";
+      color = "zinc";
+      headerStyle = "clean";
+      useEqualHeights = true;
+      hideVersion = true;
+    };
+    customCSS = ''
+      #footer { display: none; }
+    '';
+    services = [
+      {
+        Services = [
+          {
+            "Blocky UI" = {
+              href = "http://minix:${toString ports.blockyUi}";
+              description = "DNS ad-blocking dashboard";
+            };
+          }
+          {
+            "MQTT Explorer" = {
+              href = "http://minix:${toString ports.mqttExplorer}";
+              description = "MQTT broker inspector";
+            };
+          }
+          {
+            "Zigbee2MQTT" = {
+              href = "http://minix:${toString ports.zigbee2mqtt}";
+              description = "Zigbee device management";
+            };
+          }
+          {
+            "Archivist" = {
+              href = "http://minix:${toString ports.archivistUi}";
+              description = "Media archiver";
+            };
+          }
+        ];
+      }
+    ];
   };
 
   services.restic.backups.nas = {

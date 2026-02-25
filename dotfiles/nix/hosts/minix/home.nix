@@ -268,6 +268,62 @@ in
     };
   };
 
+  systemd.user.services.archivist-fetch = {
+    Unit = {
+      Description = "Archivist fetch";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+      OnFailure = [ "notify-failure@%N.service" ];
+      ConditionPathIsDirectory = "%h/Projects/archivist";
+    };
+
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/archivist --command npx tsx cli.ts fetch";
+      WorkingDirectory = "%h/Projects/archivist/archivist-cli";
+    };
+  };
+
+  systemd.user.timers.archivist-fetch = {
+    Unit = {
+      Description = "Archivist fetch timer";
+    };
+
+    Timer = {
+      OnCalendar = "*-*-* 00/4:00:00";
+      Persistent = true;
+    };
+
+    Install = {
+      WantedBy = [ "timers.target" ];
+    };
+  };
+
+  systemd.user.services.archivist-web-ui = {
+    Unit = {
+      Description = "Archivist web UI";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+      OnFailure = [ "notify-failure@%N.service" ];
+      ConditionPathIsDirectory = "%h/Projects/archivist";
+      StartLimitBurst = 5;
+      StartLimitIntervalSec = 300;
+    };
+
+    Service = {
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/archivist --command bash -c 'npm run build && npm start'";
+      WorkingDirectory = "%h/Projects/archivist/archivist-web-ui";
+      Environment = "PORT=10005";
+      SuccessExitStatus = "143";
+      Restart = "on-failure";
+      RestartSec = 10;
+    };
+
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
   systemd.user.services.healthcheck = {
     Unit = {
       Description = "System healthcheck";

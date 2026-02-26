@@ -10,17 +10,7 @@
       "Glob",
       "WebFetch",
       "WebSearch",
-      "Bash(cat:*)",
-      "Bash(find:*)",
-      "Bash(grep:*)",
-      "Bash(head:*)",
-      "Bash(hostname:*)",
-      "Bash(ls:*)",
-      "Bash(rg:*)",
-      "Bash(tail:*)",
       "Bash(tmux *)",
-      "Bash(wc:*)",
-      "Bash(which:*)",
       "Bash(echo $TMUX_PANE)",
       "mcp__chrome-devtools__*",
       "mcp__playwright__*"
@@ -40,6 +30,15 @@
       }
     ],
     "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/approve-safe-bash.sh"
+          }
+        ]
+      },
       {
         "matcher": "Read",
         "hooks": [

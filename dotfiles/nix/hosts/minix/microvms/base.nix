@@ -28,14 +28,13 @@
   nix.gc.options = "--delete-older-than 7d";
 
   environment.systemPackages = with pkgs; [
+    chromium # for playwright claude mcp
     curl
     difftastic
-    gh
     git
     jq
     nodejs_22
     ripgrep
-    tmux
   ];
 
   users.users.szymon = {

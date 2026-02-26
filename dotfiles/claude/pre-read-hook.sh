@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 file_path=$(jq -r '.tool_input.file_path // ""')
 case "$file_path" in
   /tmp/tmux-panes-*) ;;

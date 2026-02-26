@@ -2,7 +2,6 @@
 name: git-review
 description: Review uncommitted changes for issues, missed items, and improvements. Use when reviewing before commit or when user asks to check their work.
 argument-hint: [range]
-disable-model-invocation: true
 ---
 
 Review the git diff and identify:

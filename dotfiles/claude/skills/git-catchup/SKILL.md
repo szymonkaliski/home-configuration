@@ -2,7 +2,6 @@
 name: git-catchup
 description: Understand current work context from recent changes. Use at session start or when resuming work.
 argument-hint: [range]
-disable-model-invocation: true
 ---
 
 Review recent git activity to understand what we're working on.

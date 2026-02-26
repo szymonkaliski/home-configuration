@@ -11,4 +11,5 @@
   - always run `echo $TMUX_PANE` first to get the actual pane ID, never guess it
   - read the file when you need to see adjacent panes, use `capture-pane` for more context
   - send commands to these panes with `tmux send-keys -t <pane_id> 'command' Enter`
+  - when sending commands to other panes, do NOT pipe through `tail` or truncate output - let the full output show so you can read it back with `capture-pane`
   - for testing commands depending on the environment, running things requiring `sudo` etc. feel free to create new splits - wait for the shell prompt to appear, and then run the command in there

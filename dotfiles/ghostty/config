@@ -29,6 +29,9 @@ resize-overlay            = never
 shell-integration         = none
 macos-titlebar-proxy-icon = hidden
 
+clipboard-read  = allow
+clipboard-write = allow
+
 # these are set from zsh base16 color setting so they match when switching terminal colors
 background = #181818
 foreground = #d8d8d8

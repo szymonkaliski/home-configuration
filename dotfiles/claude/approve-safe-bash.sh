@@ -13,6 +13,6 @@ first_word="${actual%% *}"
 
 case "$first_word" in
   cat|find|grep|head|hostname|ls|rg|tail|wc|which|file|stat|pwd|realpath|dirname|basename|readlink|diff|sort|uniq|tr|cut|less|more|du|df|env|printenv|uname|id|whoami|date)
-    echo '{"hookSpecificOutput":{"permissionDecision":"allow"}}'
+    echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":"safe read-only command"}}'
     ;;
 esac

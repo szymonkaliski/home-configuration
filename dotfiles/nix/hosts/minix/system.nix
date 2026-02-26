@@ -77,7 +77,7 @@ in
   # resolved needed: useNetworkd enables its stub listener on :53 (conflicts with blocky),
   # and without it tailscale clobbers /etc/resolv.conf via resolvconf (tailscale#9687)
   services.resolved.enable = true;
-  services.resolved.settings.Resolve.DNSStubListener = "no";
+  services.resolved.extraConfig = "DNSStubListener=no";
 
   services.avahi = {
     enable = true;

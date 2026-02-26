@@ -3,6 +3,18 @@ let
   neolink = pkgs.callPackage ../../pkgs/neolink.nix { };
   smartbox2mqtt = pkgs.callPackage ../../pkgs/smartbox2mqtt.nix { };
   lgtv2mqtt2 = pkgs.callPackage ../../pkgs/lgtv2mqtt2.nix { };
+  waitForMosquitto = pkgs.writeShellScript "wait-for-mosquitto" ''
+    for i in {1..30}; do
+      ${pkgs.mosquitto}/bin/mosquitto_pub \
+        -h localhost -p 1883 \
+        -u mqtt -P mqtt-secure \
+        -t healthcheck/wait -m ping -q 0 \
+        2>/dev/null && exit 0
+      sleep 1
+    done
+    echo "mosquitto not ready"
+    exit 1
+  '';
 in
 {
   imports = [ ../../common.nix ];
@@ -26,6 +38,9 @@ in
     Unit.Description = "Failure notification for %i";
     Service = {
       Type = "oneshot";
+      # wait for possible restart, skip if service recovered
+      ExecStartPre = "${pkgs.coreutils}/bin/sleep 5";
+      ExecCondition = "${pkgs.bash}/bin/bash -c '! ${pkgs.systemd}/bin/systemctl --user is-active --quiet %i'";
       ExecStart = "${pkgs.bash}/bin/bash -c '%h/.bin/notify-pushover \"Failed: %i\"'";
       Environment = "PATH=${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.curl}/bin";
     };
@@ -37,14 +52,13 @@ in
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
       OnFailure = [ "notify-failure@%N.service" ];
-      StartLimitBurst = 5;
-      StartLimitIntervalSec = 300;
     };
 
     Service = {
+      ExecStartPre = waitForMosquitto;
       ExecStart = "${neolink}/bin/neolink mqtt --config=%h/.config/neolink/config.toml";
       Restart = "on-failure";
-      RestartSec = 10;
+      RestartSec = 30;
     };
 
     Install = {
@@ -58,14 +72,13 @@ in
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
       OnFailure = [ "notify-failure@%N.service" ];
-      StartLimitBurst = 5;
-      StartLimitIntervalSec = 300;
     };
 
     Service = {
+      ExecStartPre = waitForMosquitto;
       ExecStart = "${smartbox2mqtt}/bin/smartbox2mqtt";
       Restart = "on-failure";
-      RestartSec = 10;
+      RestartSec = 30;
     };
 
     Install = {
@@ -79,14 +92,13 @@ in
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
       OnFailure = [ "notify-failure@%N.service" ];
-      StartLimitBurst = 5;
-      StartLimitIntervalSec = 300;
     };
 
     Service = {
+      ExecStartPre = waitForMosquitto;
       ExecStart = "${lgtv2mqtt2}/bin/lgtv2mqtt2";
       Restart = "on-failure";
-      RestartSec = 10;
+      RestartSec = 30;
     };
 
     Install = {
@@ -101,17 +113,20 @@ in
       Wants = [ "network-online.target" ];
       OnFailure = [ "notify-failure@%N.service" ];
       ConditionPathIsDirectory = "%h/Projects/friday-homebridge";
-      StartLimitBurst = 5;
-      StartLimitIntervalSec = 300;
     };
 
     Service = {
-      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/friday-homebridge --command npm start";
+      ExecStartPre = [
+        waitForMosquitto
+        "${pkgs.nix}/bin/nix develop %h/Projects/friday-homebridge --command npm run pre-run"
+      ];
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/friday-homebridge --command npx homebridge -I";
       WorkingDirectory = "%h/Projects/friday-homebridge";
-      # 143 = SIGTERM; normal when stopped/restarted by systemd
+      # homebridge exits 143 (SIGTERM) on clean stop
       SuccessExitStatus = "143";
+      TimeoutStopSec = 10;
       Restart = "on-failure";
-      RestartSec = 10;
+      RestartSec = 30;
     };
 
     Install = {
@@ -149,17 +164,18 @@ in
       Wants = [ "network-online.target" ];
       OnFailure = [ "notify-failure@%N.service" ];
       ConditionPathIsDirectory = "%h/Projects/friday-ruler";
-      StartLimitBurst = 5;
-      StartLimitIntervalSec = 300;
     };
 
     Service = {
-      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/friday-ruler --command npm start";
+      ExecStartPre = [
+        waitForMosquitto
+        "${pkgs.nix}/bin/nix develop %h/Projects/friday-ruler --command npm run build"
+      ];
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/friday-ruler --command node dist/main.js";
       WorkingDirectory = "%h/Projects/friday-ruler";
-      # 143 = SIGTERM; normal when stopped/restarted by systemd
-      SuccessExitStatus = "143";
+      TimeoutStopSec = 10;
       Restart = "on-failure";
-      RestartSec = 10;
+      RestartSec = 30;
     };
 
     Install = {
@@ -174,16 +190,18 @@ in
       Wants = [ "network-online.target" ];
       OnFailure = [ "notify-failure@%N.service" ];
       ConditionPathIsDirectory = "%h/Projects/xiaomiclock2mqtt";
-      StartLimitBurst = 5;
-      StartLimitIntervalSec = 300;
     };
 
     Service = {
-      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/xiaomiclock2mqtt --command npm start";
+      ExecStartPre = [
+        waitForMosquitto
+        "${pkgs.nix}/bin/nix develop %h/Projects/xiaomiclock2mqtt --command npm run build"
+      ];
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/xiaomiclock2mqtt --command node dist/index.js";
       WorkingDirectory = "%h/Projects/xiaomiclock2mqtt";
-      SuccessExitStatus = "143";
+      TimeoutStopSec = 10;
       Restart = "on-failure";
-      RestartSec = 10;
+      RestartSec = 30;
     };
 
     Install = {
@@ -306,17 +324,16 @@ in
       Wants = [ "network-online.target" ];
       OnFailure = [ "notify-failure@%N.service" ];
       ConditionPathIsDirectory = "%h/Projects/archivist";
-      StartLimitBurst = 5;
-      StartLimitIntervalSec = 300;
     };
 
     Service = {
-      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/archivist --command bash -c 'npm run build && npm start'";
+      ExecStartPre = "${pkgs.nix}/bin/nix develop %h/Projects/archivist --command npm run build";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/archivist --command npx tsx server.ts";
       WorkingDirectory = "%h/Projects/archivist/archivist-web-ui";
       Environment = "PORT=10005";
-      SuccessExitStatus = "143";
+      TimeoutStopSec = 10;
       Restart = "on-failure";
-      RestartSec = 10;
+      RestartSec = 30;
     };
 
     Install = {

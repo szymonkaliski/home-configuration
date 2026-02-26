@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-command=$(jq -r '.tool_input.command // ""')
+command=$(jq -r '.tool_input.command // ""' 2>/dev/null) || true
 
 # Strip leading cd ... && chains to get the actual command
 actual="$command"

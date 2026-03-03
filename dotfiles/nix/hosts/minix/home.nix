@@ -41,7 +41,7 @@ in
       # wait for possible restart, skip if service recovered
       ExecStartPre = "${pkgs.coreutils}/bin/sleep 5";
       ExecCondition = "${pkgs.bash}/bin/bash -c '! ${pkgs.systemd}/bin/systemctl --user is-active --quiet %i'";
-      ExecStart = "${pkgs.bash}/bin/bash -c '%h/.bin/notify-pushover \"Failed: %i\"'";
+      ExecStart = "-${pkgs.bash}/bin/bash -c '%h/.bin/notify-pushover \"Failed: %i\"'";
       Environment = "PATH=${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.curl}/bin";
     };
   };
@@ -193,19 +193,28 @@ in
     };
 
     Service = {
+      Type = "oneshot";
       ExecStartPre = [
         waitForMosquitto
         "${pkgs.nix}/bin/nix develop %h/Projects/xiaomiclock2mqtt --command npm run build"
       ];
       ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/xiaomiclock2mqtt --command node dist/index.js";
       WorkingDirectory = "%h/Projects/xiaomiclock2mqtt";
-      TimeoutStopSec = 10;
-      Restart = "on-failure";
-      RestartSec = 30;
+    };
+  };
+
+  systemd.user.timers.xiaomiclock2mqtt = {
+    Unit = {
+      Description = "Xiaomi Clock BLE poll timer";
+    };
+
+    Timer = {
+      OnCalendar = "*:0/30";
+      Persistent = true;
     };
 
     Install = {
-      WantedBy = [ "default.target" ];
+      WantedBy = [ "timers.target" ];
     };
   };
 

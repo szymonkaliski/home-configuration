@@ -292,7 +292,7 @@ in
   services.homepage-dashboard = {
     enable = true;
     listenPort = 80;
-    allowedHosts = "minix,minix:80,localhost,localhost:80,127.0.0.1,127.0.0.1:80";
+    allowedHosts = "minix,minix:80,minix.local,minix.local:80,localhost,localhost:80,127.0.0.1,127.0.0.1:80";
     settings = {
       title = "minix";
       theme = "dark";
@@ -308,15 +308,21 @@ in
       {
         Services = [
           {
-            "Blocky UI" = {
+            "Archivist" = {
+              href = "http://minix:${toString ports.archivistUi}";
+              description = "Media archiver";
+            };
+          }
+          {
+            "Blocky" = {
               href = "http://minix:${toString ports.blockyUi}";
-              description = "DNS ad-blocking dashboard";
+              description = "DNS ad-blocking";
             };
           }
           {
             "MQTT Explorer" = {
               href = "http://minix:${toString ports.mqttExplorer}";
-              description = "MQTT broker inspector";
+              description = "MQTT inspector";
             };
           }
           {
@@ -325,10 +331,20 @@ in
               description = "Zigbee device management";
             };
           }
+        ];
+      }
+      {
+        NAS = [
           {
-            "Archivist" = {
-              href = "http://minix:${toString ports.archivistUi}";
-              description = "Media archiver";
+            "Synology" = {
+              href = "http://nas:5000";
+              description = "NAS management";
+            };
+          }
+          {
+            "Plex" = {
+              href = "http://nas:32400/web/index.html";
+              description = "Media player";
             };
           }
         ];

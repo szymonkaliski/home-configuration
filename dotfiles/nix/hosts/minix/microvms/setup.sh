@@ -37,6 +37,7 @@ npm install -g @anthropic-ai/claude-code@latest
 
 # shell: start in /workspace, alias, etc.
 echo 'cd /workspace 2>/dev/null' > /home/szymon/.bash_profile
+echo 'export NPM_CONFIG_PREFIX="/home/szymon/.npm"' >> /home/szymon/.bash_profile
 echo 'export PATH="/home/szymon/.npm/bin:$PATH"' >> /home/szymon/.bash_profile
 echo "alias claude-dangerously='claude --dangerously-skip-permissions'" >> /home/szymon/.bash_profile
 

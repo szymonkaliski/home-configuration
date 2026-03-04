@@ -26,6 +26,7 @@
    Save the `/etc/restic-password` somewhere safe - it's needed to restore backups.
 6. Restart: `sudo reboot`
 7. Set up Tailscale: `sudo tailscale up --advertise-exit-node`
+8. Set Samba password (for file sharing via Finder): `sudo smbpasswd -a szymon`
 
 `/etc/nixos/` is not used after initial setup - the flake in this repo is the single source of truth.
 

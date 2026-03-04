@@ -247,6 +247,12 @@ in
         "https://security.cloudflare-dns.com/dns-query"
       ];
 
+      conditional.mapping = {
+        "archive.today" = "1.1.1.1";
+        "archive.is" = "1.1.1.1";
+        "archive.ph" = "1.1.1.1";
+      };
+
       bootstrapDns = {
         upstream = "https://security.cloudflare-dns.com/dns-query";
         ips = [

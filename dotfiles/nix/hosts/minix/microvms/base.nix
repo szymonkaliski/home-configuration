@@ -33,6 +33,7 @@
     difftastic
     git
     jq
+    lsof
     nodejs_22
     ripgrep
   ];

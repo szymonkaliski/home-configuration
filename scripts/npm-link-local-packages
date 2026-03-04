@@ -1,17 +1,12 @@
 #!/usr/bin/env bash
 
 PACKAGES=(
-  "ai-grep"
-  "ai-translate"
   "alfred-infinite-clipboard"
-  "archivist/archivist-cli"
   "logger-search"
   "muninn-get-asset"
   "muninn-make-month"
   "muninn-simple"
-  "name-pdfs"
   "timav-cli"
-  "timav-dashboard"
 )
 
 for dir in "${PACKAGES[@]}"; do

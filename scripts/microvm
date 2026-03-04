@@ -4,6 +4,7 @@ set -euo pipefail
 VM_BASE="$HOME/MicroVMs"
 HOST_DIR="$VM_BASE/host"
 SSH_OPTS=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR)
+MAX_VMS=4
 
 REPO_SETUP_SH="$HOME/Projects/home-configuration/dotfiles/nix/hosts/minix/microvms/setup.sh"
 
@@ -25,7 +26,7 @@ sync_host_config() {
 }
 
 find_free_vm() {
-  for i in $(seq 1 4); do
+  for i in $(seq 1 "$MAX_VMS"); do
     local state
     state=$(systemctl is-active "microvm@vm-${i}" 2>/dev/null || true)
     if [ "$state" = "inactive" ] || [ "$state" = "failed" ]; then
@@ -97,8 +98,8 @@ case "$CMD" in
     fi
     ;;
 
-  list)
-    for i in $(seq 1 4); do
+  list|ls)
+    for i in $(seq 1 "$MAX_VMS"); do
       state=$(systemctl is-active "microvm@vm-${i}" 2>/dev/null || true)
       case "$state" in
         active|activating) status="running" ;;
@@ -111,7 +112,7 @@ case "$CMD" in
     ;;
 
   stop-all)
-    for i in $(seq 1 4); do
+    for i in $(seq 1 "$MAX_VMS"); do
       if systemctl is-active "microvm@vm-${i}" &>/dev/null; then
         (
           ssh -o ConnectTimeout=3 "${SSH_OPTS[@]}" "szymon@10.100.0.${i}" "sudo tailscale logout" 2>/dev/null || true
@@ -135,7 +136,7 @@ case "$CMD" in
     ;;
 
   clean-all)
-    for i in $(seq 1 4); do
+    for i in $(seq 1 "$MAX_VMS"); do
       if systemctl is-active "microvm@vm-${i}" &>/dev/null; then
         echo "skipping vm-${i} (running)"
         continue
@@ -151,7 +152,7 @@ case "$CMD" in
     cat <<EOF
 usage: microvm <command> [args]
 
-  list                     show all VMs
+  list, ls                 show all VMs
   start [N] [--dir path]   start VM (default: current dir, auto-picks VM)
   ssh N                    ssh into running VM
   stop N                   stop VM

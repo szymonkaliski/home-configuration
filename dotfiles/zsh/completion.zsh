@@ -101,7 +101,8 @@ compctl -f -x "c[-1,watchexec]" -c -- watchexec
 
 if (( $+commands[microvm] )); then
   function _microvm() {
-    local -a subcmds=(start stop ssh list stop-all clean clean-all)
+    local -a subcmds=(start stop ssh list ls stop-all clean clean-all)
+    local max_vms=$(sed -n 's/^MAX_VMS=//p' "$(command -v microvm)")
     if (( CURRENT == 2 )); then
       _describe 'command' subcmds
       return
@@ -114,7 +115,7 @@ if (( $+commands[microvm] )); then
           _arguments '*:option:(--dir)'
         else
           local -a vms
-          for i in {1..8}; do
+          for i in $(seq 1 $max_vms); do
             local state=$(systemctl is-active "microvm@vm-${i}" 2>/dev/null)
             [[ "$state" != "active" ]] && vms+=("$i")
           done
@@ -123,14 +124,14 @@ if (( $+commands[microvm] )); then
         ;;
       stop|ssh)
         local -a vms
-        for i in {1..8}; do
+        for i in $(seq 1 $max_vms); do
           [[ "$(systemctl is-active "microvm@vm-${i}" 2>/dev/null)" == "active" ]] && vms+=("$i")
         done
         compadd -a vms
         ;;
       clean)
         local -a vms
-        for i in {1..8}; do
+        for i in $(seq 1 $max_vms); do
           [[ "$(systemctl is-active "microvm@vm-${i}" 2>/dev/null)" != "active" ]] && vms+=("$i")
         done
         compadd -a vms

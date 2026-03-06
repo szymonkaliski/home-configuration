@@ -317,7 +317,7 @@ in
     };
 
     Timer = {
-      OnCalendar = "*-*-* 00/4:00:00";
+      OnCalendar = "*-*-* 00/2:00:00";
       Persistent = true;
     };
 

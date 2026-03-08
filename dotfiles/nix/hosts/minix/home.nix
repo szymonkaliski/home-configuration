@@ -2,7 +2,6 @@
 let
   neolink = pkgs.callPackage ../../pkgs/neolink.nix { };
   smartbox2mqtt = pkgs.callPackage ../../pkgs/smartbox2mqtt.nix { };
-  lgtv2mqtt2 = pkgs.callPackage ../../pkgs/lgtv2mqtt2.nix { };
   waitForMosquitto = pkgs.writeShellScript "wait-for-mosquitto" ''
     for i in {1..30}; do
       ${pkgs.mosquitto}/bin/mosquitto_pub \
@@ -24,7 +23,6 @@ in
   home.packages = [
     neolink
     smartbox2mqtt
-    lgtv2mqtt2
     pkgs.chromium
     pkgs.dnsutils
     pkgs.lm_sensors
@@ -92,11 +90,13 @@ in
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
       OnFailure = [ "notify-failure@%N.service" ];
+      ConditionPathIsDirectory = "%h/Projects/lgtv2mqtt2";
     };
 
     Service = {
       ExecStartPre = waitForMosquitto;
-      ExecStart = "${lgtv2mqtt2}/bin/lgtv2mqtt2";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/lgtv2mqtt2 --command node cli.js";
+      WorkingDirectory = "%h/Projects/lgtv2mqtt2";
       Restart = "on-failure";
       RestartSec = 30;
     };
@@ -317,7 +317,7 @@ in
     };
 
     Timer = {
-      OnCalendar = "*-*-* 00/2:00:00";
+      OnCalendar = "hourly";
       Persistent = true;
     };
 

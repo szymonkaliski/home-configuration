@@ -18,8 +18,10 @@ if [ -z "$OUTPUT" ]; then
 fi
 
 DROPBOX_WIKI_PATH="$HOME/Library/CloudStorage/Dropbox/Wiki"
+LOGS_PATH="$HOME/Library/Logs"
 
 sed -e "s|LAUNCHCTL_SCRIPTS_PATH|$LAUNCHCTL_SCRIPTS_PATH|g" \
     -e "s|DROPBOX_WIKI_PATH|$DROPBOX_WIKI_PATH|g" \
+    -e "s|LOGS_PATH|$LOGS_PATH|g" \
     "$TEMPLATE" > "$OUTPUT"
 

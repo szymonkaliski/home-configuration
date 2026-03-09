@@ -3,24 +3,22 @@
 <plist version="1.0">
     <dict>
         <key>Label</key>
-        <string>com.szymonkaliski.alfred-infinite-clipboard-backup</string>
+        <string>com.szymonkaliski.nix-gc</string>
         <key>ProgramArguments</key>
         <array>
             <string>/bin/bash</string>
-            <string>LAUNCHCTL_SCRIPTS_PATH/alfred-infinite-clipboard-backup.sh</string>
+            <string>LAUNCHCTL_SCRIPTS_PATH/nix-gc.sh</string>
         </array>
-        <key>RunAtLoad</key>
-        <true/>
         <key>StartCalendarInterval</key>
         <dict>
-            <key>Hour</key>
-            <integer>3</integer>
-            <key>Minute</key>
+            <key>Weekday</key>
             <integer>0</integer>
+            <key>Hour</key>
+            <integer>10</integer>
         </dict>
         <key>StandardErrorPath</key>
-        <string>LOGS_PATH/com.szymonkaliski.alfred-infinite-clipboard-backup.log</string>
+        <string>LOGS_PATH/com.szymonkaliski.nix-gc.log</string>
         <key>StandardOutPath</key>
-        <string>LOGS_PATH/com.szymonkaliski.alfred-infinite-clipboard-backup.log</string>
+        <string>LOGS_PATH/com.szymonkaliski.nix-gc.log</string>
     </dict>
 </plist>

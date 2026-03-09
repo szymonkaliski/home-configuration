@@ -45,15 +45,17 @@ XML="$HOME/.nix-profile/bin/xml"
 # so 1850 chars ~= 3746 bytes which is safely under the limit.
 MAX_CHARS=1850
 
-CONTENTS=$("$TINYOCR" "$1" | $XML esc)
+RAW=$("$TINYOCR" "$1")
 if [ -n "$URL" ]; then
-  CONTENTS="$($XML esc <<< "$URL")
+  RAW="$URL
 
-$CONTENTS"
+$RAW"
 fi
-if [ ${#CONTENTS} -gt $MAX_CHARS ]; then
-  CONTENTS="${CONTENTS:0:$MAX_CHARS}..."
+if [ ${#RAW} -gt $MAX_CHARS ]; then
+  RAW="${RAW:0:$MAX_CHARS}..."
 fi
+
+CONTENTS=$($XML esc <<< "$RAW")
 
 HEX=$((cat << EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -64,16 +66,26 @@ HEX=$((cat << EOF
 EOF
 ) | plutil -convert binary1 - -o - | xxd -p | tr -d '\n')
 
-# Spotlight's mdworker indexes new files asynchronously (~1-2s after creation)
-# and can overwrite xattrs when it finishes. Write the xattr, verify it stuck,
-# and retry if Spotlight stripped it.
+# Finder comments live in TWO places: the xattr and .DS_Store. Spotlight's
+# mdworker treats .DS_Store as authoritative — if the comment isn't there,
+# mdworker clears the xattr on reindex. Register in .DS_Store first via Finder,
+# then overwrite the xattr with our controlled binary plist (for Dropbox compat).
+osascript \
+  -e 'on run argv' \
+  -e 'tell application "Finder" to set comment of (POSIX file (item 1 of argv) as alias) to (item 2 of argv)' \
+  -e 'end run' -- "$1" "$RAW" \
+  || echo "warning: osascript failed to set Finder comment in .DS_Store"
+
+xattr -w -x com.apple.metadata:kMDItemFinderComment "$HEX" "$1"
+
+mdimport "$1"
+
+# Verify the xattr survived mdimport and any async Spotlight/Dropbox processing.
 for attempt in 1 2 3 4 5; do
-  xattr -w -x com.apple.metadata:kMDItemFinderComment "$HEX" "$1"
-  sleep 1
+  sleep 2
   if xattr "$1" | grep -q kMDItemFinderComment; then
     break
   fi
-  echo "xattr stripped (attempt $attempt), retrying..."
+  echo "xattr stripped after mdimport (attempt $attempt), re-writing..."
+  xattr -w -x com.apple.metadata:kMDItemFinderComment "$HEX" "$1"
 done
-
-mdimport "$1"

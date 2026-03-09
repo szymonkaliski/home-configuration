@@ -340,6 +340,7 @@ in
       ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/archivist --command npx tsx server.ts";
       WorkingDirectory = "%h/Projects/archivist/archivist-web-ui";
       Environment = "PORT=10005";
+      SuccessExitStatus = "143";
       TimeoutStopSec = 10;
       Restart = "on-failure";
       RestartSec = 30;

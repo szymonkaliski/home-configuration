@@ -1,5 +1,13 @@
-{ pkgs, ... }:
+{
+  config,
+  pkgs,
+  repoRoot,
+  ...
+}:
 let
+  dotfileDir = "${repoRoot}/dotfiles";
+  link = config.lib.file.mkOutOfStoreSymlink;
+
   tnotify = pkgs.buildGoModule rec {
     pname = "tnotify";
     version = "0.1.6";
@@ -29,4 +37,8 @@ in
 
     pkgs.unixtools.watch
   ];
+
+  home.file.".hammerspoon".source = link "${dotfileDir}/hammerspoon";
+
+  xdg.configFile."ghostty".source = link "${dotfileDir}/ghostty";
 }

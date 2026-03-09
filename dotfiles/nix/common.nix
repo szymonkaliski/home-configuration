@@ -1,4 +1,13 @@
-{ pkgs, ... }:
+{
+  config,
+  pkgs,
+  repoRoot,
+  ...
+}:
+let
+  dotfileDir = "${repoRoot}/dotfiles";
+  link = config.lib.file.mkOutOfStoreSymlink;
+in
 {
   home.username = "szymon";
   home.stateVersion = "25.11";
@@ -38,5 +47,32 @@
   programs.direnv = {
     enable = true;
     nix-direnv.enable = true;
+  };
+
+  home.file = {
+    ".hushlogin".text = "";
+    ".dircolors".source = link "${dotfileDir}/dircolors";
+    ".gitconfig".source = link "${dotfileDir}/gitconfig";
+    ".gitignore_global".source = link "${dotfileDir}/gitignore_global";
+    ".ignore".source = link "${dotfileDir}/ignore";
+    ".tmux.conf".source = link "${dotfileDir}/tmux.conf";
+    ".vale.ini".source = link "${dotfileDir}/vale.ini";
+    ".vim".source = link "${dotfileDir}/vim";
+    ".vimrc".source = link "${dotfileDir}/vimrc";
+    ".zprofile".source = link "${dotfileDir}/zprofile";
+    ".zsh".source = link "${dotfileDir}/zsh";
+    ".zshrc".source = link "${dotfileDir}/zshrc";
+    ".bin".source = link "${repoRoot}/scripts";
+    ".claude/CLAUDE.md".source = link "${dotfileDir}/claude/CLAUDE.md";
+    ".claude/settings.json".source = link "${dotfileDir}/claude/settings.json";
+    ".claude/approve-safe-bash.sh".source = link "${dotfileDir}/claude/approve-safe-bash.sh";
+    ".claude/pre-read-hook.sh".source = link "${dotfileDir}/claude/pre-read-hook.sh";
+    ".claude/notify.js".source = link "${dotfileDir}/claude/notify.js";
+    ".claude/statusline-command.sh".source = link "${dotfileDir}/claude/statusline-command.sh";
+    ".claude/skills".source = link "${dotfileDir}/claude/skills";
+  };
+
+  xdg.configFile = {
+    "nvim".source = link "${dotfileDir}/vim";
   };
 }

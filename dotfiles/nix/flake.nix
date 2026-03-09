@@ -34,6 +34,9 @@
       homeConfigurations = {
         "szymon@orchid" = home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages.aarch64-darwin;
+          extraSpecialArgs = {
+            repoRoot = "/Users/szymon/Documents/Projects/home-configuration";
+          };
 
           modules = [
             ./hosts/orchid/home.nix
@@ -43,6 +46,9 @@
 
         "szymon@minix" = home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          extraSpecialArgs = {
+            repoRoot = "/home/szymon/Projects/home-configuration";
+          };
 
           modules = [
             ./hosts/minix/home.nix
@@ -64,6 +70,9 @@
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
+            home-manager.extraSpecialArgs = {
+              repoRoot = "/home/szymon/Projects/home-configuration";
+            };
             home-manager.users.szymon = {
               imports = [
                 ./hosts/minix/home.nix

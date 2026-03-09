@@ -27,20 +27,11 @@ config.projects["/workspace"].hasTrustDialogAccepted = true;
 require("fs").writeFileSync(path, JSON.stringify(config, null, 2));
 EOF
 
-# git config (no SSH keys, VMs can pull public repos but not push by design)
-cp /mnt/host/gitconfig /home/szymon/.gitconfig
-cp /mnt/host/gitignore_global /home/szymon/.gitignore_global
-
 # install/update claude-code via npm (nixpkgs version lags behind)
 export NPM_CONFIG_PREFIX=/home/szymon/.npm
 npm install -g @anthropic-ai/claude-code@latest
 
-# shell: start in /workspace, alias, etc.
-echo 'cd /workspace 2>/dev/null' > /home/szymon/.bash_profile
-echo 'export NPM_CONFIG_PREFIX="/home/szymon/.npm"' >> /home/szymon/.bash_profile
-echo 'export PATH="/home/szymon/.npm/bin:$PATH"' >> /home/szymon/.bash_profile
-echo "alias claude='claude --dangerously-skip-permissions'" >> /home/szymon/.bash_profile
-
+echo "" > /home/szymon/.bash_profile
 if [ -f /mnt/host/claude-oauth-token ]; then
   echo "export CLAUDE_CODE_OAUTH_TOKEN=$(cat /mnt/host/claude-oauth-token)" >> /home/szymon/.bash_profile
 fi

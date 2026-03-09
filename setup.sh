@@ -33,45 +33,7 @@ function askBeforeRunning() {
   fi
 }
 
-function claudeSetup() {
-  if [ ! -d ~/.claude ]; then
-    mkdir ~/.claude
-  fi
-
-  ln -sni $DOTFILE_DIR/claude/CLAUDE.md ~/.claude/CLAUDE.md
-  ln -sni $DOTFILE_DIR/claude/settings.json ~/.claude/settings.json
-  ln -sni $DOTFILE_DIR/claude/approve-safe-bash.sh ~/.claude/approve-safe-bash.sh
-  ln -sni $DOTFILE_DIR/claude/pre-read-hook.sh ~/.claude/pre-read-hook.sh
-  ln -sni $DOTFILE_DIR/claude/notify.js ~/.claude/notify.js
-  ln -sni $DOTFILE_DIR/claude/statusline-command.sh ~/.claude/statusline-command.sh
-  ln -sni $DOTFILE_DIR/claude/skills ~/.claude/skills
-}
-
-if [ ! -d ~/.config ]; then
-  mkdir ~/.config
-fi
-
-touch ~/.hushlogin
-
-ln -sni $DOTFILE_DIR/dircolors ~/.dircolors
-ln -sni $DOTFILE_DIR/gitconfig ~/.gitconfig
-ln -sni $DOTFILE_DIR/gitignore_global ~/.gitignore_global
-ln -sni $DOTFILE_DIR/ignore ~/.ignore
-ln -sni $DOTFILE_DIR/tmux.conf ~/.tmux.conf
-ln -sni $DOTFILE_DIR/vale.ini ~/.vale.ini
-ln -sni $DOTFILE_DIR/vim ~/.vim
-ln -sni $DOTFILE_DIR/vim ~/.config/nvim
-ln -sni $DOTFILE_DIR/vimrc ~/.vimrc
-ln -sni $DOTFILE_DIR/zprofile ~/.zprofile
-ln -sni $DOTFILE_DIR/zsh ~/.zsh
-ln -sni $DOTFILE_DIR/zshrc ~/.zshrc
-
-ln -sni $(pwd)/scripts ~/.bin
-
 if [[ $HOSTNAME == "orchid" ]]; then
-  ln -sni $DOTFILE_DIR/hammerspoon ~/.hammerspoon
-  ln -sni $DOTFILE_DIR/ghostty ~/.config/ghostty
-
   askBeforeRunning ./launchctls/reinstall-launchctls.sh
   askBeforeRunning ./terminfos/generate-terminfos.sh
   askBeforeRunning ./scripts/setup-osx
@@ -121,8 +83,6 @@ if [ -d ~/.zsh/ ]; then
 
   popd > /dev/null
 fi
-
-claudeSetup
 
 if command -v npm &> /dev/null; then
   askBeforeRunning ./scripts/npm-install-global-packages

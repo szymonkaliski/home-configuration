@@ -14,6 +14,9 @@
   ...
 }:
 
+let
+  dotfileDir = ../../../../.;
+in
 {
   networking.hostName = hostName;
   system.stateVersion = "25.11";
@@ -27,13 +30,15 @@
   nix.gc.dates = "daily";
   nix.gc.options = "--delete-older-than 7d";
 
+  environment.variables.EDITOR = "nvim";
+
   environment.systemPackages = with pkgs; [
     chromium # for playwright claude mcp
     curl
-    difftastic
     git
     jq
     lsof
+    neovim
     nodejs_22
     ripgrep
   ];
@@ -111,6 +116,51 @@
   };
   networking.nameservers = [ "10.100.0.254" ];
   networking.firewall.enable = false;
+
+  programs.git = {
+    enable = true;
+    config = {
+      user = {
+        name = "Szymon Kaliski";
+        email = "hi@szymonkaliski.com";
+      };
+      core = {
+        quotepath = false;
+        pager = "less -x2";
+        safecrlf = false;
+        autocrlf = false;
+        editor = "nvim";
+        excludesfile = "/etc/gitignore_global";
+      };
+      diff.algorithm = "histogram";
+      push = {
+        default = "current";
+        autoSetupRemote = true;
+        followTags = true;
+      };
+      pull.ff = "only";
+      rerere.enabled = true;
+      init.defaultBranch = "main";
+      fetch = {
+        prune = true;
+        pruneTags = true;
+      };
+      merge.conflictstyle = "zdiff3";
+      status.showUntrackedFiles = "all";
+      log.date = "iso";
+    };
+  };
+
+  environment.etc."gitignore_global".source = "${dotfileDir}/gitignore_global";
+
+  environment.variables.NPM_CONFIG_PREFIX = "/home/szymon/.npm";
+  environment.shellAliases.claude = "claude --dangerously-skip-permissions";
+  environment.extraInit = ''
+    export PATH="/home/szymon/.npm/bin:$PATH"
+  '';
+  programs.bash.loginShellInit = ''
+    cd /workspace 2>/dev/null
+  '';
 
   fileSystems."/home" = {
     device = "/mnt/data/home";

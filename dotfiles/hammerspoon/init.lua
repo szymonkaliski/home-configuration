@@ -2,6 +2,7 @@
 local flatten = require('ext.table').flatten
 
 -- global stuff
+require('hs.ipc')
 require('console').init()
 require('overrides').init()
 

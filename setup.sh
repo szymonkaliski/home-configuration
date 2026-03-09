@@ -5,15 +5,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 DOTFILE_DIR="$(pwd)/dotfiles"
 HOSTNAME="$(hostname -s)"
 
-if [[ $HOSTNAME == "nixos" ]]; then
-  read -p "$(tput setaf 3)Hostname is 'nixos' (fresh install?). Set up as minix?$(tput sgr0) (y/n) " RESP
-  if [ "$RESP" != "y" ]; then
-    echo "Aborting."
-    exit 0
-  fi
-fi
-
-function gitwrapped() {
+function gitWrapped() {
   if command -v git &> /dev/null; then
     git "$@"
   elif command -v nix &> /dev/null; then
@@ -33,10 +25,12 @@ function askBeforeRunning() {
   fi
 }
 
-if [[ $HOSTNAME == "orchid" ]]; then
-  askBeforeRunning ./launchctls/reinstall-launchctls.sh
-  askBeforeRunning ./terminfos/generate-terminfos.sh
-  askBeforeRunning ./scripts/setup-osx
+if [[ $HOSTNAME == "nixos" ]]; then
+  read -p "$(tput setaf 3)Hostname is 'nixos' (fresh install?). Set up as minix?$(tput sgr0) (y/n) " RESP
+  if [ "$RESP" != "y" ]; then
+    echo "Aborting."
+    exit 0
+  fi
 fi
 
 if command -v nix &> /dev/null; then
@@ -47,13 +41,14 @@ if command -v nix &> /dev/null; then
     pushd ~/.config/home-manager
 
     if [[ $HOSTNAME == "orchid" ]]; then
-      home-manager switch --flake .#szymon@orchid
+      nix run home-manager -- switch --flake .#szymon@orchid
     elif [[ $HOSTNAME == "minix" || $HOSTNAME == "nixos" ]]; then
       if [ -f /etc/nixos/hardware-configuration.nix ]; then
         cp /etc/nixos/hardware-configuration.nix $DOTFILE_DIR/nix/hosts/minix/hardware-configuration.nix
-        gitwrapped add $DOTFILE_DIR/nix/hosts/minix/hardware-configuration.nix
+        gitWrapped add $DOTFILE_DIR/nix/hosts/minix/hardware-configuration.nix
         echo "Copied hardware-configuration.nix from /etc/nixos/"
       fi
+
       sudo nixos-rebuild switch --flake .#minix
     else
       echo
@@ -74,18 +69,24 @@ if [ -d ~/.zsh/ ]; then
   mkdir -p ~/.zsh/plugins/
   pushd ~/.zsh/plugins/ > /dev/null
 
-  gitwrapped clone https://github.com/mafredri/z -b zsh-flock
-  gitwrapped clone https://github.com/chriskempson/base16-shell
-  gitwrapped clone https://github.com/hlissner/zsh-autopair
-  gitwrapped clone https://github.com/romkatv/gitstatus
-  gitwrapped clone https://github.com/zdharma-continuum/fast-syntax-highlighting
-  gitwrapped clone https://github.com/romkatv/zsh-defer
+  gitWrapped clone https://github.com/mafredri/z -b zsh-flock
+  gitWrapped clone https://github.com/chriskempson/base16-shell
+  gitWrapped clone https://github.com/hlissner/zsh-autopair
+  gitWrapped clone https://github.com/romkatv/gitstatus
+  gitWrapped clone https://github.com/zdharma-continuum/fast-syntax-highlighting
+  gitWrapped clone https://github.com/romkatv/zsh-defer
 
   popd > /dev/null
 fi
 
 if command -v npm &> /dev/null; then
   askBeforeRunning ./scripts/npm-install-global-packages
+fi
+
+if [[ $HOSTNAME == "orchid" ]]; then
+  askBeforeRunning ./launchctls/reinstall-launchctls.sh
+  askBeforeRunning ./terminfos/generate-terminfos.sh
+  askBeforeRunning ./scripts/setup-osx
   askBeforeRunning ./scripts/npm-link-global-packages
 fi
 

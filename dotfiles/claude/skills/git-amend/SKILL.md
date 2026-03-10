@@ -2,6 +2,8 @@
 name: git-amend
 description: Format, lint, test, and amend the current commit. Detects repo tooling automatically.
 argument-hint: [message]
+allowed-tools: Bash(git *), Read, Glob, Grep
+disable-model-invocation: true
 ---
 
 Amend the current commit with all changes, after formatting, linting, and testing.
@@ -31,7 +33,7 @@ Based on what you found:
 1. **Format**: Run formatter if available (prettier, black, gofmt, cargo fmt, nixfmt, etc.)
 2. **Lint**: Run linter if available (eslint, tsc --noEmit, clippy, etc.)
 3. **Test**: Run tests related to changed files if test runner exists
-4. **Stage**: `git add -A`
+4. **Stage**: `git add` changed files by path (skip `.env`, credentials, large binaries)
 5. **Amend**: `git commit --amend` - if `$ARGUMENTS` provided, use as new message; otherwise keep existing message with `--no-edit`
 
 Fix any formatting/lint issues automatically. If tests fail, report and stop.

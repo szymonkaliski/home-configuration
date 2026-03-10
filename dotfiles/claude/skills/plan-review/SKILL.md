@@ -1,7 +1,8 @@
 ---
 name: plan-review
 description: Open the current plan file in nvim for user review
-allowed-tools: Bash(tmux *), Bash(basename *), Read
+allowed-tools: Bash(tmux *), Read
+disable-model-invocation: true
 ---
 
 Open the plan file in nvim (in a tmux split) so the user can review, edit, and add inline annotations. After the user closes nvim, re-read the file and extract any annotations.
@@ -10,11 +11,16 @@ Open the plan file in nvim (in a tmux split) so the user can review, edit, and a
 
 `$ARGUMENTS` is the path to the plan file. If empty, determine it from conversation context.
 
+## Context
+
+Pane width: !`tmux display-message -p '#{pane_width}' 2>/dev/null || echo 0`
+TMUX: !`echo ${TMUX:-not_set}`
+
 ## Steps
 
 1. Verify preconditions:
 
-   - Confirm `$TMUX` is set (abort with a message if not in tmux)
+   - If TMUX context above is `not_set`, abort with a message
    - Confirm the plan file exists
 
 2. Derive a unique signal name from the plan file basename:
@@ -23,11 +29,7 @@ Open the plan file in nvim (in a tmux split) so the user can review, edit, and a
    plan-review-{basename_without_extension}
    ```
 
-3. Choose split direction based on pane width:
-
-   ```bash
-   WIDTH=$(tmux display-message -p '#{pane_width}')
-   ```
+3. Choose split direction based on pane width from context above:
 
    - If width >= 120: split right (`-h`)
    - Otherwise: split below (`-v`)

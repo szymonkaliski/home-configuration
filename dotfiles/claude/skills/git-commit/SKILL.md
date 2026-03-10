@@ -2,6 +2,8 @@
 name: git-commit
 description: Format, lint, test, and commit changes. Detects repo tooling automatically.
 argument-hint: [message]
+allowed-tools: Bash(git *), Read, Glob, Grep
+disable-model-invocation: true
 ---
 
 Commit all changes in the repo with proper formatting, linting, and testing.
@@ -36,7 +38,7 @@ Based on what you found:
 2. **Lint**: Run linter if available (eslint, tsc --noEmit, clippy, etc.)
 3. **Test**: Run tests related to changed files if test runner exists
 4. **Plan commits**: Look at the git log style. If the repo favors small, focused commits (one logical change each), split the staged/unstaged changes into multiple commits — group related files together by logical change. If the repo uses larger commits, a single commit is fine.
-5. **Stage & commit**: For each logical group, `git add` the relevant files and commit with a message matching the repo's style. Go from most independent change to most dependent.
+5. **Stage & commit**: For each logical group, `git add` the relevant files by path (never `git add -A` — avoid staging `.env`, credentials, or large binaries) and commit with a message matching the repo's style. Go from most independent change to most dependent.
 
 If `$ARGUMENTS` is provided, use it as the commit message for a single commit of all changes. Otherwise, generate messages matching the repo's commit style, splitting into multiple commits when it matches the repo's pattern.
 

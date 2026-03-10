@@ -1,7 +1,6 @@
 { pkgs, ... }:
 let
   neolink = pkgs.callPackage ../../pkgs/neolink.nix { };
-  smartbox2mqtt = pkgs.callPackage ../../pkgs/smartbox2mqtt.nix { };
   waitForMosquitto = pkgs.writeShellScript "wait-for-mosquitto" ''
     for i in {1..30}; do
       ${pkgs.mosquitto}/bin/mosquitto_pub \
@@ -22,7 +21,6 @@ in
 
   home.packages = [
     neolink
-    smartbox2mqtt
     pkgs.chromium
     pkgs.dnsutils
     pkgs.lm_sensors
@@ -70,11 +68,13 @@ in
       After = [ "network-online.target" ];
       Wants = [ "network-online.target" ];
       OnFailure = [ "notify-failure@%N.service" ];
+      ConditionPathIsDirectory = "%h/Projects/smartbox2mqtt";
     };
 
     Service = {
       ExecStartPre = waitForMosquitto;
-      ExecStart = "${smartbox2mqtt}/bin/smartbox2mqtt";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/smartbox2mqtt --command node src/index.js";
+      WorkingDirectory = "%h/Projects/smartbox2mqtt";
       Restart = "on-failure";
       RestartSec = 30;
     };

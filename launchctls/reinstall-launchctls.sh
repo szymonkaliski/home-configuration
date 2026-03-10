@@ -22,6 +22,7 @@ function reinstall {
 
 PLISTS=(
   "com.szymonkaliski.alfred-infinite-clipboard-backup.plist"
+  "com.szymonkaliski.log-truncate.plist"
   "com.szymonkaliski.muninn-autocommit.plist"
   "com.szymonkaliski.nix-gc.plist"
   "com.szymonkaliski.timav-cache.plist"

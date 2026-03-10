@@ -1,15 +1,18 @@
 - don't add comments to code you didn't write; in code you write, only comment non-obvious logic
 - prefer discriminated unions over optional fields; make illegal states unrepresentable
 - for running shell commands you have access to nix-comma: `, something` (for example: `, pdfinfo [...]`); prefer it over trying to do ad-hoc code
-  - in microvms (vm-*), comma is not available; use `nix run nixpkgs#<pkg> -- <args>` or `nix shell nixpkgs#<pkg>` instead
+  - in microvms (vm-*), comma is not available; use `nix run nixpkgs#<pkg> -- <args>`
 - if writing ad-hoc code, use `node` instead of `python`
 - use `trash` instead of `rm` if available
-- when fixing a bug in a project with a test suite, first write a failing test that reproduces the bug, then fix the bug, then confirm the test passes
+- when fixing a bug, use `/tdd` - isolate, write a failing test/repro, fix, verify
+- use `./tmp/` in the project root for any temporary/scratch files (repro scripts, test fixtures, debug output, etc.) - it should be gitignored
+  - create it if it doesn't exist; add `tmp/` to `.gitignore` if it's not already there
+  - when struggling to understand a library, git clone it into `./tmp/` and review the code there
 - in planning stages, use web search to check documentation and recent GitHub issues before committing to an approach
-- when struggling to understand a library, just git clone it into `/tmp/` and review the code there
 - when running in `tmux`, other pane contents are captured to `/tmp/tmux-panes-$TMUX_PANE.txt` before each prompt
   - always run `echo $TMUX_PANE` first to get the actual pane ID, never guess it
   - read the file when you need to see adjacent panes, use `capture-pane` for more context
   - send commands to these panes with `tmux send-keys -t <pane_id> 'command' Enter`
   - when sending commands to other panes, do NOT pipe through `tail` or truncate output - let the full output show so you can read it back with `capture-pane`
   - for testing commands depending on the environment, running things requiring `sudo` etc. feel free to create new splits - wait for the shell prompt to appear, and then run the command in there
+

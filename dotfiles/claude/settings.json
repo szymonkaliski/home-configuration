@@ -66,6 +66,7 @@
   },
   "enabledPlugins": {},
   "spinnerTipsEnabled": false,
+  "spinnerVerbs": ["Thinking", "Working", "Processing", "Analyzing", "Reading", "Writing", "Searching"],
   "promptSuggestionEnabled": false,
   "effortLevel": "high"
 }

@@ -145,7 +145,7 @@ case "$CMD" in
       echo "error: vm-${1} is running, stop it first" >&2; exit 1
     fi
     sudo rm -f "/var/lib/microvms/vm-${1}/nix-store-overlay.img"
-    rm -rf "$VM_BASE/vm-${1}/data"
+    sudo rm -rf "$VM_BASE/vm-${1}/data"
     rm -f "$VM_BASE/vm-${1}/workspace"
     echo "vm-${1} cleaned"
     ;;
@@ -157,7 +157,7 @@ case "$CMD" in
         continue
       fi
       sudo rm -f "/var/lib/microvms/vm-${i}/nix-store-overlay.img"
-      rm -rf "$VM_BASE/vm-${i}/data"
+      sudo rm -rf "$VM_BASE/vm-${i}/data"
       rm -f "$VM_BASE/vm-${i}/workspace"
       echo "vm-${i} cleaned"
     done

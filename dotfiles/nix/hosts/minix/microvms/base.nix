@@ -20,6 +20,7 @@ in
 {
   networking.hostName = hostName;
   system.stateVersion = "25.11";
+  time.timeZone = "Europe/Warsaw";
 
   nix.settings.download-buffer-size = 536870912;
   nix.settings.experimental-features = [

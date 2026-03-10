@@ -2,65 +2,46 @@ local activeScreen      = require('ext.screen').activeScreen
 local cycleWindowFocus  = require('ext.window').cycleWindowFocus
 local focusAndHighlight = require('ext.window').focusAndHighlight
 
+local ANIMATION_DURATION = 0.2
+local MARGIN = 8
+
 local cache  = {}
 local module = { cache = cache }
 
-local getWindowMenuItems = function()
-  local win = hs.window.frontmostWindow()
-  if not win then return false end
-
-  local app = win:application()
+local selectMenuItem = function(path)
+  local app = hs.application.frontmostApplication()
   if not app then return false end
-
-  local appElement = hs.axuielement.applicationElement(app)
-
-  local appMenuBar = hs.fnutils.find(appElement:attributeValue('AXChildren'), function(childElement)
-    return childElement:attributeValue('AXRole') == 'AXMenuBar'
-  end)
-  if not appMenuBar then return false end
-
-  local menuItems = appMenuBar:attributeValue('AXChildren')
-
-  local windowMenu = hs.fnutils.find(menuItems, function(menuItem)
-    return menuItem:attributeValue('AXTitle') == 'Window'
-  end)
-  if not windowMenu then return false end
-
-  local windowMenuItems = windowMenu:attributeValue('AXChildren')[1]:attributeValue('AXChildren')
-
-  return windowMenuItems
+  return app:selectMenuItem(path)
 end
 
-local pressWindowMenuItem = function(title)
-  local windowMenuItems = getWindowMenuItems()
-  if not windowMenuItems then return false end
+local previousFrames = {}
 
-  local match = hs.fnutils.find(windowMenuItems, function(menuItem)
-    return menuItem:attributeValue('AXTitle') == title
-  end)
-  if not match then return false end
-
-  match:doAXPress()
-  return true
+local setFrameWithUndo = function(win, frame)
+  previousFrames[win:id()] = win:frame()
+  win:setFrame(frame, ANIMATION_DURATION)
 end
 
-local pressWindowMoveResizeMenuItem = function(title)
-  local windowMenuItems = getWindowMenuItems()
-  if not windowMenuItems then return false end
+local snapHalf = function(win, side)
+  local screenFrame = win:screen():frame()
+  local x = side == 'left'
+    and screenFrame.x + MARGIN
+    or  screenFrame.x + screenFrame.w / 2 + MARGIN / 2
 
-  local moveAndResizeMenu = hs.fnutils.find(windowMenuItems, function(menuItem)
-    return menuItem:attributeValue('AXTitle') == 'Move & Resize'
-  end)
+  setFrameWithUndo(win, hs.geometry.rect(
+    x,
+    screenFrame.y + MARGIN,
+    screenFrame.w / 2 - MARGIN * 1.5,
+    screenFrame.h - MARGIN * 2
+  ))
+end
 
-  local moveAndResizeMenuItems = moveAndResizeMenu:attributeValue('AXChildren')[1]:attributeValue('AXChildren')
+local windowIsOnRight = function(win)
+  local screenFrame = win:screen():frame()
+  local winFrame = win:frame()
+  local screenCenter = screenFrame.x + screenFrame.w / 2
+  local winCenter = winFrame.x + winFrame.w / 2
 
-  local match = hs.fnutils.find(moveAndResizeMenuItems, function(menuItem)
-    return menuItem:attributeValue('AXTitle') == title
-  end)
-  if not match then return false end
-
-  match:doAXPress()
-  return true
+  return winCenter > screenCenter
 end
 
 local getSpacesIdsTable = function()
@@ -128,21 +109,53 @@ module.start = function()
   end
 
   bind('z', function()
-    local success = pressWindowMenuItem('Fill')
+    local success = selectMenuItem({ 'Window', 'Fill' })
     if not success then
-      hs.grid.maximizeWindow(hs.window.frontmostWindow())
+      local win = hs.window.frontmostWindow()
+      if not win then return end
+
+      local screenFrame = win:screen():frame()
+
+      setFrameWithUndo(win, hs.geometry.rect(
+        screenFrame.x + MARGIN,
+        screenFrame.y + MARGIN,
+        screenFrame.w - MARGIN * 2,
+        screenFrame.h - MARGIN * 2
+      ))
     end
   end)
 
   bind('c', function()
-    local success = pressWindowMenuItem('Center')
+    local success = selectMenuItem({ 'Window', 'Center' })
     if not success then
-      hs.grid.center(hs.window.frontmostWindow())
+      local win = hs.window.frontmostWindow()
+      if not win then return end
+
+      local screenFrame = win:screen():frame()
+      local winFrame = win:frame()
+
+      setFrameWithUndo(win, hs.geometry.rect(
+        screenFrame.x + (screenFrame.w - winFrame.w) / 2,
+        screenFrame.y + (screenFrame.h - winFrame.h) / 2,
+        winFrame.w,
+        winFrame.h
+      ))
     end
   end)
 
   bind('u', function()
-    pressWindowMoveResizeMenuItem('Return to Previous Size')
+    local success = selectMenuItem({ 'Window', 'Move & Resize', 'Return to Previous Size' })
+    if not success then
+      local win = hs.window.frontmostWindow()
+      if not win then return end
+
+      local prevFrame = previousFrames[win:id()]
+
+      if prevFrame then
+        win:setFrame(prevFrame, ANIMATION_DURATION)
+        previousFrames[win:id()] = nil
+      end
+    end
   end)
 
   bind('s', function()
@@ -154,11 +167,27 @@ module.start = function()
 
     if (#windowsOnScreen == 0) then
       return
-    elseif (#windowsOnScreen == 1) then
-      pressWindowMoveResizeMenuItem('Right')
+    end
+
+    local win = hs.window.frontmostWindow()
+    if not win then return end
+
+    local isOnRight = windowIsOnRight(win)
+
+    if (#windowsOnScreen == 1) then
+      local menuItem = isOnRight and 'Left' or 'Right'
+      local success = selectMenuItem({ 'Window', 'Move & Resize', menuItem })
+
+      if not success then
+        snapHalf(win, isOnRight and 'left' or 'right')
+      end
     else
-      -- pressWindowMoveResizeMenuItem('Left & Right')
-      pressWindowMoveResizeMenuItem('Right & Left')
+      local menuItem = isOnRight and 'Left & Right' or 'Right & Left'
+      local success = selectMenuItem({ 'Window', 'Move & Resize', menuItem })
+
+      if not success then
+        snapHalf(win, isOnRight and 'left' or 'right')
+      end
     end
   end)
 

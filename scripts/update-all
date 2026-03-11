@@ -16,6 +16,10 @@ function gitUpdate {
 
 HOSTNAME=$(hostname -s)
 
+# pull the home-configuration repo first (resolve symlink to find repo root)
+REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
+gitUpdate "$(dirname "$(dirname "$REAL_SCRIPT")")"
+
 if [[ $HOSTNAME == "orchid" ]]; then
   echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"
 

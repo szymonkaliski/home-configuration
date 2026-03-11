@@ -5,8 +5,8 @@
 - if writing ad-hoc code, use `node` instead of `python`
 - use `trash` instead of `rm` if available
 - when fixing a bug, use `/tdd` - isolate, write a failing test/repro, fix, verify
-- use `./tmp/` in the project root for any temporary/scratch files (repro scripts, test fixtures, debug output, etc.) - it should be gitignored
-  - create it if it doesn't exist; add `tmp/` to `.gitignore` if it's not already there
+- use `./tmp/` in the project root for any temporary/scratch files (repro scripts, test fixtures, debug output, etc.) - it's globally gitignored
+  - create it if it doesn't exist
   - when struggling to understand a library, git clone it into `./tmp/` and review the code there
 - in planning stages, use web search to check documentation and recent GitHub issues before committing to an approach
 - when running in `tmux`, other pane contents are captured to `/tmp/tmux-panes-$TMUX_PANE.txt` before each prompt

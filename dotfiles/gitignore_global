@@ -1,11 +1,10 @@
 *~
 .DS_Store
-session.vim
 
-yarn-error.log
 npm-debug.log
-
 node_modules/
-.direnv/
 
 .claude/
+
+.direnv/
+tmp/

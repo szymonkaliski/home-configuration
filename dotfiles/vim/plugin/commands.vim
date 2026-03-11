@@ -22,10 +22,6 @@ command! SpellEN :setlocal spelllang=en | setlocal spell
 " code TODO / FIXME in cwindow
 command! Todo :call utils#find_todo()
 
-" simple session.vim save/load
-command! SaveSession :call session#save()
-command! LoadSession :call session#load()
-
 " plug
 command! PlugUp :PlugUpdate | PlugUpgrade | CocUpdate
 

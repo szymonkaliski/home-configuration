@@ -131,7 +131,15 @@ in
           options = [ "NOPASSWD" ];
         }
         {
+          command = "/run/current-system/sw/bin/systemctl start --no-block microvm@*";
+          options = [ "NOPASSWD" ];
+        }
+        {
           command = "/run/current-system/sw/bin/systemctl stop microvm@*";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/systemctl kill microvm@*";
           options = [ "NOPASSWD" ];
         }
         {
@@ -147,7 +155,7 @@ in
 
   users.users.szymon = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = [ "wheel" "systemd-journal" ];
     shell = pkgs.zsh;
     linger = true;
   };

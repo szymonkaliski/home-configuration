@@ -36,148 +36,199 @@ find_free_vm() {
   exit 1
 }
 
-wait_for_ssh() {
-  local vm="$1"
-  while ! ssh -o ConnectTimeout=1 "${SSH_OPTS[@]}" "szymon@10.100.0.${vm}" true 2>/dev/null; do
+cmd_start() {
+  local VM="" PROJECT="."
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --dir) PROJECT="$2"; shift 2 ;;
+      *) VM="$1"; shift ;;
+    esac
+  done
+  [ -z "$VM" ] && VM=$(find_free_vm)
+  PROJECT=$(realpath "$PROJECT")
+  mkdir -p "$VM_BASE/vm-${VM}/data/home"
+  rm -rf "$VM_BASE/vm-${VM}/workspace"
+  ln -s "$PROJECT" "$VM_BASE/vm-${VM}/workspace"
+  sync_host_config
+  t0=$SECONDS
+  printf "vm-${VM} (10.100.0.${VM}) ${PROJECT}\n"
+  printf "starting..."
+  sudo systemctl start --no-block "microvm@vm-${VM}"
+  printf " booting..."
+  while true; do
+    if ssh -o ConnectTimeout=1 "${SSH_OPTS[@]}" "szymon@10.100.0.${VM}" true 2>/dev/null; then
+      break
+    fi
+    local svc_state
+    svc_state=$(systemctl is-active "microvm@vm-${VM}" 2>/dev/null || true)
+    if [ "$svc_state" = "failed" ]; then
+      echo " failed"
+      echo "error: microvm@vm-${VM} failed to start" >&2
+      exit 1
+    fi
     sleep 0.5
   done
+  elapsed=$(( SECONDS - t0 ))
+  failed=$(ssh "${SSH_OPTS[@]}" "szymon@10.100.0.${VM}" "systemctl --failed --no-legend --no-pager" 2>/dev/null || true)
+  if [ -n "$failed" ]; then
+    echo " ready (${elapsed}s, with failures)"
+    echo "$failed"
+  else
+    echo " ready (${elapsed}s)"
+  fi
+  notify-pushover "vm-${VM} ready (${elapsed}s) ${PROJECT##*/}" 2>/dev/null || true
+  exec ssh -t "${SSH_OPTS[@]}" "szymon@10.100.0.${VM}"
+}
+
+stop_vm() {
+  local VM="$1"
+  ssh -o ConnectTimeout=3 "${SSH_OPTS[@]}" "szymon@10.100.0.${VM}" "sudo tailscale logout" 2>/dev/null || true
+  sudo systemctl stop "microvm@vm-${VM}"
+}
+
+cmd_stop() {
+  [ $# -lt 1 ] && echo "usage: microvm stop <N>" && exit 1
+  echo "stopping vm-${1}..."
+  stop_vm "$1"
+  echo "vm-${1} stopped"
+}
+
+cmd_ssh() {
+  [ $# -lt 1 ] && echo "usage: microvm ssh <N>" && exit 1
+  if ! systemctl is-active "microvm@vm-${1}" &>/dev/null; then
+    echo "error: vm-${1} is not running" >&2; exit 1
+  fi
+  ssh -t "${SSH_OPTS[@]}" "szymon@10.100.0.${1}"
+}
+
+cmd_list() {
+  for i in $(seq 1 "$MAX_VMS"); do
+    state=$(systemctl is-active "microvm@vm-${i}" 2>/dev/null || true)
+    case "$state" in
+      active|activating) status="running" ;;
+      deactivating) status="stopping" ;;
+      *) status="stopped" ;;
+    esac
+    ws=$(readlink "$VM_BASE/vm-${i}/workspace" 2>/dev/null || echo "(none)")
+    printf "vm-%-2d %-8s  %s\n" "$i" "$status" "$ws"
+  done
+}
+
+cmd_stop_all() {
+  local pids=()
+  for i in $(seq 1 "$MAX_VMS"); do
+    if systemctl is-active "microvm@vm-${i}" &>/dev/null; then
+      echo "stopping vm-${i}..."
+      stop_vm "$i" &
+      pids+=($!)
+    fi
+  done
+  wait "${pids[@]}" 2>/dev/null
+  echo "all stopped"
+}
+
+kill_vm() {
+  local VM="$1"
+  sudo systemctl kill "microvm@vm-${VM}"
+  sudo systemctl stop "microvm@vm-${VM}" 2>/dev/null || true
+}
+
+cmd_kill() {
+  [ $# -lt 1 ] && echo "usage: microvm kill <N>" && exit 1
+  kill_vm "$1"
+  echo "killed vm-${1}"
+}
+
+cmd_kill_all() {
+  local pids=()
+  for i in $(seq 1 "$MAX_VMS"); do
+    if systemctl is-active "microvm@vm-${i}" &>/dev/null; then
+      echo "killing vm-${i}..."
+      kill_vm "$i" &
+      pids+=($!)
+    fi
+  done
+  wait "${pids[@]}" 2>/dev/null
+  echo "all killed"
+}
+
+clean_vm() {
+  local VM="$1"
+  sudo rm -f "/var/lib/microvms/vm-${VM}/nix-store-overlay.img"
+  sudo rm -rf "$VM_BASE/vm-${VM}/data"
+  rm -f "$VM_BASE/vm-${VM}/workspace"
+}
+
+cmd_clean() {
+  [ $# -lt 1 ] && echo "usage: microvm clean <N>" && exit 1
+  if systemctl is-active "microvm@vm-${1}" &>/dev/null; then
+    echo "error: vm-${1} is running, stop it first" >&2; exit 1
+  fi
+  clean_vm "$1"
+  echo "vm-${1} cleaned"
+}
+
+cmd_clean_all() {
+  local pids=()
+  for i in $(seq 1 "$MAX_VMS"); do
+    if systemctl is-active "microvm@vm-${i}" &>/dev/null; then
+      echo "skipping vm-${i} (running)"
+      continue
+    fi
+    clean_vm "$i" &
+    pids+=($!)
+  done
+  wait "${pids[@]}" 2>/dev/null
+  echo "all cleaned"
+}
+
+cmd_restart() {
+  [ $# -lt 1 ] && echo "usage: microvm restart <N>" && exit 1
+  local VM="$1"
+  if ! systemctl is-active "microvm@vm-${VM}" &>/dev/null; then
+    echo "error: vm-${VM} is not running" >&2; exit 1
+  fi
+  local ws
+  ws=$(readlink "$VM_BASE/vm-${VM}/workspace" 2>/dev/null || true)
+  [ -z "$ws" ] && echo "error: no workspace for vm-${VM}" >&2 && exit 1
+  echo "stopping vm-${VM}..."
+  stop_vm "$VM"
+  echo "restarting..."
+  cmd_start "$VM" --dir "$ws"
+}
+
+cmd_usage() {
+  cat <<EOF
+usage: microvm <command> [args]
+
+  list, ls                 show all VMs
+
+  start   [N] [--dir path] start VM (default: current dir, auto-picks VM)
+  ssh     N                ssh into running VM
+  stop    N                stop VM
+  restart N                restart VM (preserves workspace)
+  kill    N                kill VM
+  clean   N                clean all ephemeral data for VM
+
+  stop-all                 stop all VMs
+  kill-all                 kill all VMs
+  clean-all                clean all stopped VMs
+EOF
 }
 
 CMD="${1:-help}"
 shift || true
 
 case "$CMD" in
-  start)
-    VM=""; PROJECT="."
-    while [ $# -gt 0 ]; do
-      case "$1" in
-        --dir) PROJECT="$2"; shift 2 ;;
-        *) VM="$1"; shift ;;
-      esac
-    done
-    [ -z "$VM" ] && VM=$(find_free_vm)
-    PROJECT=$(realpath "$PROJECT")
-    mkdir -p "$VM_BASE/vm-${VM}/data/home"
-    rm -rf "$VM_BASE/vm-${VM}/workspace"
-    ln -s "$PROJECT" "$VM_BASE/vm-${VM}/workspace"
-    sync_host_config
-    t0=$SECONDS
-    printf "vm-${VM} (10.100.0.${VM}) ${PROJECT}\nstarting..."
-    sudo systemctl start "microvm@vm-${VM}"
-    printf " booting..."
-    wait_for_ssh "$VM"
-    elapsed=$(( SECONDS - t0 ))
-    failed=$(ssh "${SSH_OPTS[@]}" "szymon@10.100.0.${VM}" "systemctl --failed --no-legend --no-pager" 2>/dev/null || true)
-    if [ -n "$failed" ]; then
-      echo " ready (${elapsed}s, with failures)"
-      echo "$failed"
-    else
-      echo " ready (${elapsed}s)"
-    fi
-    exec ssh -t "${SSH_OPTS[@]}" "szymon@10.100.0.${VM}"
-    ;;
-
-  stop)
-    [ $# -lt 1 ] && echo "usage: microvm stop <N>" && exit 1
-    (
-      ssh -o ConnectTimeout=3 "${SSH_OPTS[@]}" "szymon@10.100.0.${1}" "sudo tailscale logout" 2>/dev/null || true
-      sudo systemctl stop "microvm@vm-${1}"
-    ) &
-    disown
-    echo "stopping vm-${1} in background"
-    ;;
-
-  ssh)
-    [ $# -lt 1 ] && echo "usage: microvm ssh <N>" && exit 1
-    if command -v systemctl &>/dev/null && systemctl list-units "microvm@vm-${1}.service" &>/dev/null; then
-      ssh -t "${SSH_OPTS[@]}" "szymon@10.100.0.${1}"
-    else
-      ssh -t "${SSH_OPTS[@]}" "szymon@vm-${1}"
-    fi
-    ;;
-
-  list|ls)
-    for i in $(seq 1 "$MAX_VMS"); do
-      state=$(systemctl is-active "microvm@vm-${i}" 2>/dev/null || true)
-      case "$state" in
-        active|activating) status="running" ;;
-        deactivating) status="stopping" ;;
-        *) status="stopped" ;;
-      esac
-      ws=$(readlink "$VM_BASE/vm-${i}/workspace" 2>/dev/null || echo "(none)")
-      printf "vm-%-2d %-8s  %s\n" "$i" "$status" "$ws"
-    done
-    ;;
-
-  stop-all)
-    for i in $(seq 1 "$MAX_VMS"); do
-      if systemctl is-active "microvm@vm-${i}" &>/dev/null; then
-        (
-          ssh -o ConnectTimeout=3 "${SSH_OPTS[@]}" "szymon@10.100.0.${i}" "sudo tailscale logout" 2>/dev/null || true
-          sudo systemctl stop "microvm@vm-${i}" 2>/dev/null || true
-        ) &
-        disown
-        echo "stopping vm-${i} in background"
-      fi
-    done
-    ;;
-
-  kill)
-    [ $# -lt 1 ] && echo "usage: microvm kill <N>" && exit 1
-    sudo systemctl kill "microvm@vm-${1}"
-    sudo systemctl stop "microvm@vm-${1}" 2>/dev/null || true
-    echo "killed vm-${1}"
-    ;;
-
-  kill-all)
-    for i in $(seq 1 "$MAX_VMS"); do
-      if systemctl is-active "microvm@vm-${i}" &>/dev/null; then
-        sudo systemctl kill "microvm@vm-${i}"
-        sudo systemctl stop "microvm@vm-${i}" 2>/dev/null || true
-        echo "killed vm-${i}"
-      fi
-    done
-    ;;
-
-  clean)
-    [ $# -lt 1 ] && echo "usage: microvm clean <N>" && exit 1
-    if systemctl is-active "microvm@vm-${1}" &>/dev/null; then
-      echo "error: vm-${1} is running, stop it first" >&2; exit 1
-    fi
-    sudo rm -f "/var/lib/microvms/vm-${1}/nix-store-overlay.img"
-    sudo rm -rf "$VM_BASE/vm-${1}/data"
-    rm -f "$VM_BASE/vm-${1}/workspace"
-    echo "vm-${1} cleaned"
-    ;;
-
-  clean-all)
-    for i in $(seq 1 "$MAX_VMS"); do
-      if systemctl is-active "microvm@vm-${i}" &>/dev/null; then
-        echo "skipping vm-${i} (running)"
-        continue
-      fi
-      sudo rm -f "/var/lib/microvms/vm-${i}/nix-store-overlay.img"
-      sudo rm -rf "$VM_BASE/vm-${i}/data"
-      rm -f "$VM_BASE/vm-${i}/workspace"
-      echo "vm-${i} cleaned"
-    done
-    ;;
-
-  *)
-    cat <<EOF
-usage: microvm <command> [args]
-
-  list, ls                 show all VMs
-
-  start [N] [--dir path]   start VM (default: current dir, auto-picks VM)
-  ssh    N                 ssh into running VM
-  stop   N                 stop VM
-  kill   N                 kill VM
-  clean  N                 clean all ephemeral data for VM
-
-  stop-all                 stop all VMs
-  kill-all                 kill all VMs
-  clean-all                clean all stopped VMs
-EOF
-    ;;
+  start)     cmd_start "$@" ;;
+  stop)      cmd_stop "$@" ;;
+  ssh)       cmd_ssh "$@" ;;
+  list|ls)   cmd_list ;;
+  stop-all)  cmd_stop_all ;;
+  kill)      cmd_kill "$@" ;;
+  kill-all)  cmd_kill_all ;;
+  clean)     cmd_clean "$@" ;;
+  clean-all) cmd_clean_all ;;
+  restart)   cmd_restart "$@" ;;
+  *)         cmd_usage ;;
 esac

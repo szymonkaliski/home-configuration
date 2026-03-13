@@ -68,6 +68,7 @@ in
       "mnt-host.mount"
       "home.mount"
     ];
+    conflicts = [ "shutdown.target" ];
     path = [ pkgs.nodejs_22 ];
     script = ''
       /bin/sh /mnt/host/setup.sh
@@ -80,13 +81,14 @@ in
 
   services.tailscale.enable = true;
   systemd.services.tailscale-autoconnect = {
+    wantedBy = [ "multi-user.target" ];
     after = [
       "tailscaled.service"
       "mnt-host.mount"
     ];
     wants = [ "tailscaled.service" ];
     requires = [ "mnt-host.mount" ];
-    wantedBy = [ "multi-user.target" ];
+    conflicts = [ "shutdown.target" ];
     script = ''
       for i in $(seq 1 100); do
         ${pkgs.tailscale}/bin/tailscale status &>/dev/null && break
@@ -190,7 +192,7 @@ in
       {
         image = "nix-store-overlay.img";
         mountPoint = config.microvm.writableStoreOverlay;
-        size = 16384;
+        size = 4096;
       }
     ];
 

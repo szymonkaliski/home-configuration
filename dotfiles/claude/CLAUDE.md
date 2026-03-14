@@ -1,7 +1,6 @@
 - don't add comments to code you didn't write; in code you write, only comment non-obvious logic
 - prefer discriminated unions over optional fields; make illegal states unrepresentable
-- for running shell commands you have access to nix-comma: `, something` (for example: `, pdfinfo [...]`); prefer it over trying to do ad-hoc code
-  - in microvms (vm-*), comma is not available; use `nix run nixpkgs#<pkg> -- <args>`
+- for running ad-hoc shell commands from nixpkgs, use `nix run nixpkgs#<pkg> -- <args>` (for example: `nix run nixpkgs#poppler_utils -- pdfinfo [...]`); prefer it over trying to write ad-hoc code
 - if writing ad-hoc code, use `node` instead of `python`
 - use `trash` instead of `rm` if available
 - when fixing a bug, use `/tdd` - isolate, write a failing test/repro, fix, verify

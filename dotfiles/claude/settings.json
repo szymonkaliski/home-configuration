@@ -16,7 +16,6 @@
       "mcp__playwright__*"
     ]
   },
-  "model": "opus",
   "hooks": {
     "Notification": [
       {
@@ -68,8 +67,16 @@
   "spinnerTipsEnabled": false,
   "spinnerVerbs": {
     "mode": "replace",
-    "verbs": ["Thinking", "Working", "Processing", "Analyzing", "Reading", "Writing", "Searching"]
+    "verbs": [
+      "Thinking",
+      "Working",
+      "Processing",
+      "Analyzing",
+      "Reading",
+      "Writing",
+      "Searching"
+    ]
   },
-  "promptSuggestionEnabled": false,
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "promptSuggestionEnabled": false
 }

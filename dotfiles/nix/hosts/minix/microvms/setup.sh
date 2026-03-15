@@ -34,6 +34,7 @@ npm install -g @anthropic-ai/claude-code@latest
 echo "" > /home/szymon/.bash_profile
 if [ -f /mnt/host/claude-oauth-token ]; then
   echo "export CLAUDE_CODE_OAUTH_TOKEN=$(cat /mnt/host/claude-oauth-token)" >> /home/szymon/.bash_profile
+  echo 'export ANTHROPIC_MODEL="claude-opus-4-6[1m]"' >> /home/szymon/.bash_profile
 fi
 
 # for pushover notifications

@@ -3,7 +3,6 @@
   ipAddress,
   tapId,
   mac,
-  vsockCid,
   mem,
 }:
 
@@ -185,7 +184,6 @@ in
     hypervisor = "cloud-hypervisor";
     vcpu = 4;
     inherit mem;
-    vsock.cid = vsockCid;
     writableStoreOverlay = "/nix/.rw-store";
 
     volumes = [

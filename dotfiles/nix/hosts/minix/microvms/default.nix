@@ -1,4 +1,9 @@
-{ lib, pkgs, microvm, ... }:
+{
+  lib,
+  pkgs,
+  microvm,
+  ...
+}:
 
 let
   microvmBase = import ./base.nix;
@@ -16,7 +21,6 @@ let
             ipAddress = "10.100.0.${toString index}";
             tapId = "vm-tap${toString index}";
             mac = "02:00:00:00:00:0${toString index}";
-            vsockCid = index + 2;
             mem = 2048;
           })
         ];

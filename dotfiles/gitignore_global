@@ -5,6 +5,7 @@ npm-debug.log
 node_modules/
 
 .claude/
+.playwright-mcp/
 
 .direnv/
 tmp/

@@ -155,6 +155,21 @@ check "tailscale-online" bash -c '
   fi
 '
 
+check "archivist-completed-fetch-recently" bash -c '
+  ts=$(systemctl --user show archivist-fetch.service --property=InactiveEnterTimestamp --value 2>/dev/null)
+  if [[ -z "$ts" ]]; then
+    echo "never finished"
+    exit 1
+  fi
+  ts_epoch=$(date -d "$ts" +%s 2>/dev/null)
+  now_epoch=$(date +%s)
+  age_h=$(( (now_epoch - ts_epoch) / 3600 ))
+  if (( age_h >= 3 )); then
+    echo "last finished ${age_h}h ago"
+    exit 1
+  fi
+'
+
 # system services — OnFailure can't use user-level notify-failure@
 for ctr in mqtt-explorer blocky-ui; do
   check "podman-${ctr}-running" bash -c "

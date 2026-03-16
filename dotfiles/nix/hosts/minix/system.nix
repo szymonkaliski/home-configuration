@@ -8,7 +8,6 @@ let
     mqttExplorer = 10003;
     zigbee2mqtt = 10004;
     archivistUi = 10005;
-    ttyd = 10006;
   };
 in
 {
@@ -168,16 +167,6 @@ in
   programs.zsh.enable = true;
 
   nixpkgs.config.allowUnfree = true;
-
-  nixpkgs.overlays = [
-    (final: prev: {
-      ttyd = prev.ttyd.overrideAttrs (old: {
-        postPatch = (old.postPatch or "") + ''
-          sed -i 's|<head>|<head><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">|' html/src/template.html
-        '';
-      });
-    })
-  ];
 
   zramSwap.enable = true;
 
@@ -390,13 +379,7 @@ in
               description = "MQTT inspector";
             };
           }
-          {
-            "Terminal" = {
-              href = "http://minix:${toString ports.ttyd}";
-              description = "Web terminal";
-            };
-          }
-          {
+{
             "Zigbee2MQTT" = {
               href = "http://minix:${toString ports.zigbee2mqtt}";
               description = "Zigbee device management";
@@ -422,24 +405,6 @@ in
       }
     ];
   };
-
-  services.ttyd = {
-    enable = true;
-    port = ports.ttyd;
-    writeable = true;
-    user = "szymon";
-    entrypoint = [
-      "${pkgs.zsh}/bin/zsh"
-      "-c"
-      "~/.bin/motd; exec zsh -li"
-    ];
-    clientOptions = {
-      fontFamily = "monospace";
-      fontSize = "13";
-    };
-  };
-
-  systemd.services.ttyd.serviceConfig.WorkingDirectory = "~";
 
   services.restic.backups.nas = {
     initialize = true;

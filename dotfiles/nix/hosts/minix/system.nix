@@ -8,6 +8,7 @@ let
     mqttExplorer = 10003;
     zigbee2mqtt = 10004;
     archivistUi = 10005;
+    webTty = 10006;
   };
 in
 {
@@ -379,10 +380,16 @@ in
               description = "MQTT inspector";
             };
           }
-{
+          {
             "Zigbee2MQTT" = {
               href = "http://minix:${toString ports.zigbee2mqtt}";
               description = "Zigbee device management";
+            };
+          }
+          {
+            "Web TTY" = {
+              href = "http://minix:${toString ports.webTty}";
+              description = "Web terminal";
             };
           }
         ];

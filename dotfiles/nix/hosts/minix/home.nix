@@ -351,6 +351,31 @@ in
     };
   };
 
+  systemd.user.services.web-tty = {
+    Unit = {
+      Description = "Web TTY terminal";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+      OnFailure = [ "notify-failure@%N.service" ];
+      ConditionPathIsDirectory = "%h/Projects/web-tty";
+    };
+
+    Service = {
+      ExecStartPre = "${pkgs.nix}/bin/nix develop %h/Projects/web-tty --command npm run build";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/web-tty --command ${pkgs.bash}/bin/bash -c 'SHELL=${pkgs.zsh}/bin/zsh PATH=%h/.bin:$PATH exec node dist/server/server.js motd'";
+      WorkingDirectory = "%h/Projects/web-tty";
+      Environment = "PORT=10006";
+      SuccessExitStatus = "143";
+      TimeoutStopSec = 10;
+      Restart = "on-failure";
+      RestartSec = 30;
+    };
+
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
   systemd.user.services.healthcheck = {
     Unit = {
       Description = "System healthcheck";

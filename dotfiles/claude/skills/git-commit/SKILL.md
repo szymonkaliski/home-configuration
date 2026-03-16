@@ -18,7 +18,7 @@ Check what tooling exists:
 
 Study the repo's commit message style:
 
-!`git log --oneline -20`
+!`git log --oneline -20 2>/dev/null || true`
 
 Note the pattern: conventional commits? imperative mood? lowercase? prefix? scope? Look at casing, punctuation, length, and structure. Your commit message MUST follow this pattern.
 

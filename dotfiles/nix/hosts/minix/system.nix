@@ -364,6 +364,10 @@ in
     };
     customCSS = ''
       #footer { display: none; }
+      *, *::before, *::after {
+        animation-duration: 0s !important;
+        transition-duration: 0s !important;
+      }
     '';
     services = [
       {

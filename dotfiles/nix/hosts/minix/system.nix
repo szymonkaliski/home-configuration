@@ -333,10 +333,16 @@ in
           PORT = toString ports.mqttExplorer;
           MQTT_EXPLORER_SKIP_AUTH = "true";
         };
+        volumes = [ "/var/lib/mqtt-explorer:/app/data" ];
         extraOptions = [ "--network=host" ];
       };
     };
   };
+
+  systemd.tmpfiles.rules = [
+    "d /var/lib/mqtt-explorer 0755 root root -"
+    "C /var/lib/mqtt-explorer/settings.json 0644 root root - ${./mqtt-explorer-settings.json}"
+  ];
 
   systemd.services.homepage-dashboard.serviceConfig = {
     AmbientCapabilities = [ "CAP_NET_BIND_SERVICE" ];

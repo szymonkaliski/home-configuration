@@ -13,6 +13,7 @@ in
   home.stateVersion = "25.11";
 
   home.packages = [
+    pkgs.bat
     pkgs.difftastic
     pkgs.fd
     pkgs.ffmpeg

@@ -170,6 +170,13 @@ in
   nixpkgs.config.allowUnfree = true;
 
   zramSwap.enable = true;
+  zramSwap.algorithm = "zstd";
+
+  services.earlyoom = {
+    enable = true;
+    freeMemThreshold = 5;
+    freeSwapThreshold = 5;
+  };
 
   nix.settings.download-buffer-size = 536870912;
   nix.settings.experimental-features = [

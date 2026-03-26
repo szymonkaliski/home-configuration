@@ -44,6 +44,7 @@ in
   ];
 
   programs.nix-index-database.comma.enable = true;
+  programs.nix-index.enableZshIntegration = false;
 
   programs.direnv = {
     enable = true;

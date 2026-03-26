@@ -1,3 +1,7 @@
+command_not_found_handler() {
+  comma --ask "$@"
+}
+
 # history
 h() {
   if [ "$#" -eq 0 ]; then

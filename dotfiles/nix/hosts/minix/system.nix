@@ -405,7 +405,7 @@ in
           }
           {
             "Web TTY" = {
-              href = "http://minix:${toString ports.webTty}";
+              href = "https://minix.golden-minor.ts.net:${toString ports.webTty}";
               description = "Web terminal";
             };
           }

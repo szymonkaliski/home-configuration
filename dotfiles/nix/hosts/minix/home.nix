@@ -373,6 +373,8 @@ in
     Service = {
       ExecStartPre = "${pkgs.nix}/bin/nix develop %h/Projects/web-tty --command npm run build";
       ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/web-tty --command ${pkgs.bash}/bin/bash -c 'SHELL=${pkgs.zsh}/bin/zsh PATH=%h/.bin:$PATH exec node dist/server/server.js motd'";
+      ExecStartPost = "${pkgs.tailscale}/bin/tailscale serve --bg --https=10006 10006";
+      ExecStopPost = "${pkgs.tailscale}/bin/tailscale serve --https=10006 off";
       WorkingDirectory = "%h/Projects/web-tty";
       Environment = "PORT=10006";
       SuccessExitStatus = "143";

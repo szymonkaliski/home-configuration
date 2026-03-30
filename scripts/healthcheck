@@ -147,6 +147,14 @@ check "xiaomiclock-synced" bash -c '
   fi
 '
 
+check "web-tty-serves-https" bash -c '
+  status=$(curl -so /dev/null -w "%{http_code}" --max-time 10 https://minix.golden-minor.ts.net:10006/ 2>&1)
+  if [[ "$status" != "200" ]]; then
+    echo "got HTTP $status"
+    exit 1
+  fi
+'
+
 check "tailscale-online" bash -c '
   online=$(tailscale status --self --json 2>&1 | jq -r ".Self.Online // empty" 2>/dev/null)
   if [[ "$online" != "true" ]]; then

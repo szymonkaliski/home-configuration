@@ -1,5 +1,12 @@
-{ pkgs, ... }:
+{
+  config,
+  pkgs,
+  repoRoot,
+  ...
+}:
 let
+  dotfileDir = "${repoRoot}/dotfiles";
+  link = config.lib.file.mkOutOfStoreSymlink;
   neolink = pkgs.callPackage ../../pkgs/neolink.nix { };
   waitForMosquitto = pkgs.writeShellScript "wait-for-mosquitto" ''
     for i in {1..30}; do
@@ -13,6 +20,7 @@ let
     echo "mosquitto not ready"
     exit 1
   '';
+
 in
 {
   imports = [ ../../common.nix ];
@@ -26,6 +34,8 @@ in
     pkgs.lm_sensors
     pkgs.trash-cli
   ];
+
+  home.file.".config/rss2email.cfg".source = link "${dotfileDir}/rss2email.cfg";
 
   services.dropbox.enable = true;
   systemd.user.services.dropbox.Unit.OnFailure = [ "notify-failure@%N.service" ];
@@ -397,6 +407,35 @@ in
 
     Timer = {
       OnCalendar = "*-*-* 08:00:00";
+      Persistent = true;
+    };
+
+    Install = {
+      WantedBy = [ "timers.target" ];
+    };
+  };
+
+  systemd.user.services.rss2email = {
+    Unit = {
+      Description = "RSS to email";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+    };
+
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.rss2email}/bin/r2e run";
+      Environment = "PATH=${pkgs.msmtp}/bin";
+    };
+  };
+
+  systemd.user.timers.rss2email = {
+    Unit = {
+      Description = "RSS to email check";
+    };
+
+    Timer = {
+      OnCalendar = "*-*-* 00/6:00:00";
       Persistent = true;
     };
 

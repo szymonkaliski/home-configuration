@@ -1,6 +1,5 @@
 { pkgs, lib, ... }:
 let
-
   ports = {
     blockyApi = 10000;
     blockyPostgresql = 10001;
@@ -9,6 +8,10 @@ let
     zigbee2mqtt = 10004;
     archivistUi = 10005;
     webTty = 10006;
+  };
+  dns = {
+    quad9 = "https://dns.quad9.net/dns-query";
+    cloudflare = "https://security.cloudflare-dns.com/dns-query";
   };
 in
 {
@@ -264,22 +267,26 @@ in
       connectIPVersion = "v4";
 
       upstreams.groups.default = [
-        "https://security.cloudflare-dns.com/dns-query"
+        dns.quad9
+        dns.cloudflare
       ];
 
-      conditional.mapping = {
-        "archive.today" = "1.1.1.1";
-        "archive.is" = "1.1.1.1";
-        "archive.ph" = "1.1.1.1";
-      };
-
-      bootstrapDns = {
-        upstream = "https://security.cloudflare-dns.com/dns-query";
-        ips = [
-          "1.1.1.2"
-          "1.0.0.2"
-        ];
-      };
+      bootstrapDns = [
+        {
+          upstream = dns.quad9;
+          ips = [
+            "9.9.9.9"
+            "149.112.112.112"
+          ];
+        }
+        {
+          upstream = dns.cloudflare;
+          ips = [
+            "1.1.1.2"
+            "1.0.0.2"
+          ];
+        }
+      ];
 
       blocking = {
         loading = {
@@ -291,11 +298,11 @@ in
         };
         denylists = {
           ads = [
-            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/dyndns.txt"
-            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/fake.txt"
-            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/gambling.txt"
-            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro.txt"
-            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/tif.txt"
+            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/dyndns.txt"
+            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/fake.txt"
+            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/gambling.txt"
+            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt"
+            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.txt"
           ];
         };
         clientGroupsBlock.default = [ "ads" ];

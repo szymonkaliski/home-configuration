@@ -316,8 +316,8 @@ in
 
     Service = {
       Type = "oneshot";
-      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/archivist --command npx tsx cli.ts fetch";
-      WorkingDirectory = "%h/Projects/archivist/archivist-cli";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/archivist --command node dist/cli/index.js fetch";
+      WorkingDirectory = "%h/Projects/archivist";
     };
   };
 
@@ -347,8 +347,8 @@ in
 
     Service = {
       ExecStartPre = "${pkgs.nix}/bin/nix develop %h/Projects/archivist --command npm run build";
-      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/archivist --command npx tsx server.ts";
-      WorkingDirectory = "%h/Projects/archivist/archivist-web-ui";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/archivist --command node dist/server/index.js";
+      WorkingDirectory = "%h/Projects/archivist";
       Environment = "PORT=10005";
       SuccessExitStatus = "143";
       TimeoutStopSec = 10;

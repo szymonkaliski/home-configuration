@@ -6,6 +6,7 @@ node_modules/
 
 .claude/
 .playwright-mcp/
+CLAUDE.local.md
 
 .direnv/
 tmp/

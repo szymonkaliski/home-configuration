@@ -181,7 +181,7 @@ in
     freeSwapThreshold = 5;
   };
 
-  nix.settings.download-buffer-size = 536870912;
+  nix.settings.download-buffer-size = 512 * 1024 * 1024; # 512 MiB
   nix.settings.experimental-features = [
     "nix-command"
     "flakes"

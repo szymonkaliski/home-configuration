@@ -21,7 +21,9 @@ in
   system.stateVersion = "25.11";
   time.timeZone = "Europe/Warsaw";
 
-  nix.settings.download-buffer-size = 536870912;
+  nix.settings.download-buffer-size = 512 * 1024 * 1024; # 512 MiB
+  nix.settings.min-free = 512 * 1024 * 1024; # 512 MiB
+  nix.settings.max-free = 2 * 1024 * 1024 * 1024; # 2 GiB
   nix.settings.experimental-features = [
     "nix-command"
     "flakes"

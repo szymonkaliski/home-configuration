@@ -446,4 +446,30 @@ in
     };
   };
 
+  systemd.user.services.trash-empty = {
+    Unit = {
+      Description = "Purge trashed files older than 90 days";
+    };
+
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.trash-cli}/bin/trash-empty 90";
+    };
+  };
+
+  systemd.user.timers.trash-empty = {
+    Unit = {
+      Description = "Daily trash cleanup";
+    };
+
+    Timer = {
+      OnCalendar = "daily";
+      Persistent = true;
+    };
+
+    Install = {
+      WantedBy = [ "timers.target" ];
+    };
+  };
+
 }

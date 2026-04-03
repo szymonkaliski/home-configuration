@@ -59,10 +59,8 @@ serve() {
     port="$@"
   fi
 
-  if hash serve-http 2> /dev/null; then
-    serve-http -p $port -public
-  elif hash caddy 2> /dev/null; then
-    caddy file-server -browse -listen :$port
+  if hash live-server 2> /dev/null; then
+    live-server --index -p $port .
   else
     local command=""
     if [ "$(uname)" = "Darwin" ]; then

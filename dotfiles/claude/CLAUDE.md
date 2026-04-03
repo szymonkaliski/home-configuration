@@ -28,3 +28,5 @@
 
 - do not use em-dashes
 
+- when using the playground skill, write HTML files to `./tmp/` and serve with `serve` (zsh function) from `./tmp/` instead of using `open`
+

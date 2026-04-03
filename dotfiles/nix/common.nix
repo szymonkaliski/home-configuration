@@ -25,6 +25,7 @@ in
     pkgs.htop
     pkgs.imagemagick
     pkgs.jq
+    pkgs.live-server
     pkgs.mosquitto
     pkgs.neovim
     pkgs.nil

@@ -6,7 +6,6 @@ PACKAGES=(
   neovim
   npm-check-updates
   prettier
-  serve-http
   vim-node-rpc
 )
 

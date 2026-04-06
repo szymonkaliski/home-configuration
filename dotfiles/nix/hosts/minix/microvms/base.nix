@@ -158,9 +158,8 @@ in
   environment.etc."gitignore_global".source = "${dotfileDir}/gitignore_global";
 
   environment.variables.NPM_CONFIG_PREFIX = "/home/szymon/.npm";
-  environment.shellAliases.claude = "claude --dangerously-skip-permissions";
   environment.extraInit = ''
-    export PATH="/home/szymon/.npm/bin:$PATH"
+    export PATH="/home/szymon/.local/bin:/home/szymon/.npm/bin:$PATH"
   '';
   programs.bash.loginShellInit = ''
     cd /workspace 2>/dev/null

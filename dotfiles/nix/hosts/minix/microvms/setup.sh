@@ -8,28 +8,50 @@ mkdir -p /home/szymon
 cp -rT /mnt/host/claude /home/szymon/.claude
 cp /mnt/host/claude.json /home/szymon/.claude.json
 
-# patch .claude.json for VM environment:
+# gemini-cli config
+cp -rT /mnt/host/gemini /home/szymon/.gemini
+
+# patch .claude.json and .gemini/settings.json for VM environment:
 # - chromium path differs (nix-profile on host vs system package in VM)
 # - trust /workspace so claude doesn't prompt on every boot
 node << 'EOF'
-const path = "/home/szymon/.claude.json";
-const raw = require("fs").readFileSync(path, "utf8");
-const patched = raw.replaceAll(
-  "/home/szymon/.nix-profile/bin/chromium",
-  "/run/current-system/sw/bin/chromium"
+const fs = require("fs");
+
+// patch Claude Code
+const claudePath = "/home/szymon/.claude.json";
+if (fs.existsSync(claudePath)) {
+  let raw = fs.readFileSync(claudePath, "utf8");
+  raw = raw.replaceAll(
+    "/home/szymon/.nix-profile/bin/chromium",
+    "/run/current-system/sw/bin/chromium"
+  );
+
+  const config = JSON.parse(raw);
+  config.projects = config.projects || {};
+  config.projects["/workspace"] = config.projects["/workspace"] || {};
+  config.projects["/workspace"].hasTrustDialogAccepted = true;
+
+  fs.writeFileSync(claudePath, JSON.stringify(config, null, 2));
+}
+
+// patch Gemini CLI settings
+const geminiPath = "/home/szymon/.gemini/settings.json";
+if (fs.existsSync(geminiPath)) {
+  let raw = fs.readFileSync(geminiPath, "utf8");
+  raw = raw.replaceAll(
+    "/home/szymon/.nix-profile/bin/chromium",
+    "/run/current-system/sw/bin/chromium"
+  );
+
+  fs.writeFileSync(geminiPath, raw);
+}
+
+// trust /workspace in Gemini CLI
+fs.writeFileSync(
+  "/home/szymon/.gemini/trustedFolders.json",
+  JSON.stringify({ "/workspace": "TRUST_FOLDER" }, null, 2)
 );
-
-const config = JSON.parse(patched);
-config.projects = config.projects || {};
-config.projects["/workspace"] = config.projects["/workspace"] || {};
-config.projects["/workspace"].hasTrustDialogAccepted = true;
-
-require("fs").writeFileSync(path, JSON.stringify(config, null, 2));
 EOF
-
-# install/update claude-code via npm (nixpkgs version lags behind)
-export NPM_CONFIG_PREFIX=/home/szymon/.npm
-npm install -g @anthropic-ai/claude-code@latest
 
 echo "" > /home/szymon/.bash_profile
 if [ -f /mnt/host/claude-oauth-token ]; then
@@ -37,10 +59,29 @@ if [ -f /mnt/host/claude-oauth-token ]; then
   echo 'export ANTHROPIC_MODEL="claude-opus-4-6[1m]"' >> /home/szymon/.bash_profile
 fi
 
+if [ -f /mnt/host/gemini-api-key ]; then
+  echo "export GEMINI_API_KEY=$(cat /mnt/host/gemini-api-key)" >> /home/szymon/.bash_profile
+fi
+
 # for pushover notifications
 if [ -f /mnt/host/pushoverrc ]; then
   cp /mnt/host/pushoverrc /home/szymon/.pushoverrc
 fi
+
+# create executable wrappers for claude and gemini
+mkdir -p /home/szymon/.local/bin
+cat << 'EOF' > /home/szymon/.local/bin/claude
+#!/bin/sh
+export PATH="/home/szymon/.npm/bin:$PATH"
+exec npx -y @anthropic-ai/claude-code@latest --dangerously-skip-permissions "$@"
+EOF
+
+cat << 'EOF' > /home/szymon/.local/bin/gemini
+#!/bin/sh
+export PATH="/home/szymon/.npm/bin:$PATH"
+exec npx -y @google/gemini-cli@latest --yolo "$@"
+EOF
+chmod +x /home/szymon/.local/bin/claude /home/szymon/.local/bin/gemini
 
 chown -R szymon:users /home/szymon
 

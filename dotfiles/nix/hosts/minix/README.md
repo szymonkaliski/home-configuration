@@ -95,7 +95,13 @@ Ephemeral NixOS VMs (pool of 4) for running coding agents and other potentially 
    EOF
    ```
 
-5. Add to `~/.ssh/config`:
+5. Add Gemini API key (generate at https://aistudio.google.com/apikey):
+
+   ```bash
+   echo "your-gemini-api-key" > ~/MicroVMs/host/gemini-api-key
+   ```
+
+6. Add to `~/.ssh/config`:
 
    ```
    Host vm-?

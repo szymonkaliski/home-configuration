@@ -12,6 +12,17 @@
       "WebSearch",
       "Bash(tmux *)",
       "Bash(echo $TMUX_PANE)",
+      "Bash(cat *)",
+      "Bash(cut *)",
+      "Bash(date *)",
+      "Bash(diff *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(hostname *)",
+      "Bash(ls *)",
+      "Bash(rg *)",
+      "Bash(uname *)",
+      "Bash(which *)",
       "mcp__chrome-devtools__*",
       "mcp__playwright__*"
     ]
@@ -29,15 +40,6 @@
       }
     ],
     "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/approve-safe-bash.sh"
-          }
-        ]
-      },
       {
         "matcher": "Read",
         "hooks": [

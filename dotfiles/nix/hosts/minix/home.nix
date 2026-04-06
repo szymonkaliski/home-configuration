@@ -461,6 +461,64 @@ in
     };
   };
 
+  systemd.user.services.property-search = {
+    Unit = {
+      Description = "Property Search web UI";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+      OnFailure = [ "notify-failure@%N.service" ];
+      ConditionPathIsDirectory = "%h/Projects/property-search";
+    };
+
+    Service = {
+      ExecStartPre = "${pkgs.nix}/bin/nix develop %h/Projects/property-search --command npm run build";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/property-search --command node dist/index.js";
+      WorkingDirectory = "%h/Projects/property-search";
+      Environment = "PORT=10007";
+      EnvironmentFile = "%h/Projects/property-search/.env";
+      SuccessExitStatus = "143";
+      TimeoutStopSec = 10;
+      Restart = "on-failure";
+      RestartSec = 30;
+    };
+
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
+  systemd.user.services.property-search-scrape = {
+    Unit = {
+      Description = "Property search scraper";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+      OnFailure = [ "notify-failure@%N.service" ];
+      ConditionPathIsDirectory = "%h/Projects/property-search";
+    };
+
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/property-search --command npm run scrape";
+      WorkingDirectory = "%h/Projects/property-search";
+      EnvironmentFile = "%h/Projects/property-search/.env";
+    };
+  };
+
+  systemd.user.timers.property-search-scrape = {
+    Unit = {
+      Description = "Nightly property search scrape";
+    };
+
+    Timer = {
+      OnCalendar = "*-*-* 01:00:00";
+      Persistent = true;
+    };
+
+    Install = {
+      WantedBy = [ "timers.target" ];
+    };
+  };
+
   systemd.user.services.trash-empty = {
     Unit = {
       Description = "Purge trashed files older than 90 days";

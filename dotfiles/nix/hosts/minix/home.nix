@@ -38,6 +38,21 @@ in
   home.file.".config/rss2email.cfg".source = link "${dotfileDir}/rss2email.cfg";
 
   services.dropbox.enable = true;
+  systemd.user.services.tmux = {
+    Unit = {
+      Description = "tmux default session";
+    };
+    Service = {
+      Type = "forking";
+      ExecStart = "${pkgs.zsh}/bin/zsh -lc '${pkgs.tmux}/bin/tmux new-session -s home -d'";
+      ExecStop = "${pkgs.tmux}/bin/tmux kill-server";
+      Restart = "always";
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
   systemd.user.services.dropbox.Unit.OnFailure = [ "notify-failure@%N.service" ];
 
   systemd.user.services."notify-failure@" = {

@@ -1,0 +1,42 @@
+{
+  "context": {
+    "fileName": ["AGENTS.md", "GEMINI.md"]
+  },
+  "security": {
+    "auth": {
+      "selectedType": "gemini-api-key"
+    }
+  },
+  "general": {
+    "plan": {
+      "modelRouting": false
+    }
+  },
+  "ui": {
+    "hideTips": true,
+    "showShortcutsHint": false,
+    "hideBanner": true,
+    "footer": {
+      "hideSandboxStatus": true
+    },
+    "loadingPhrases": "off"
+  },
+  "model": {
+    "name": "gemini-3.1-pro-preview",
+    "disableLoopDetection": true
+  },
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--executable-path",
+        "/home/szymon/.nix-profile/bin/chromium"
+      ],
+      "env": {
+        "PLAYWRIGHT_BROWSERS_PATH": ""
+      },
+      "trust": true
+    }
+  }
+}

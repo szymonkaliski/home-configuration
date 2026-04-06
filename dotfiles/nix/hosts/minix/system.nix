@@ -4,10 +4,10 @@ let
     blockyApi = 10000;
     blockyPostgresql = 10001;
     blockyUi = 10002;
-    mqttExplorer = 10003;
     zigbee2mqtt = 10004;
     archivistUi = 10005;
     webTty = 10006;
+    propertySearch = 10007;
   };
   dns = {
     quad9 = "https://dns.quad9.net/dns-query";
@@ -340,23 +340,8 @@ in
         };
         extraOptions = [ "--network=host" ];
       };
-
-      mqtt-explorer = {
-        image = "ghcr.io/thomasnordquist/mqtt-explorer:latest";
-        environment = {
-          PORT = toString ports.mqttExplorer;
-          MQTT_EXPLORER_SKIP_AUTH = "true";
-        };
-        volumes = [ "/var/lib/mqtt-explorer:/app/data" ];
-        extraOptions = [ "--network=host" ];
-      };
     };
   };
-
-  systemd.tmpfiles.rules = [
-    "d /var/lib/mqtt-explorer 0755 root root -"
-    "C /var/lib/mqtt-explorer/settings.json 0644 root root - ${./mqtt-explorer-settings.json}"
-  ];
 
   systemd.services.homepage-dashboard.serviceConfig = {
     AmbientCapabilities = [ "CAP_NET_BIND_SERVICE" ];
@@ -385,7 +370,7 @@ in
     '';
     services = [
       {
-        Services = [
+        Apps = [
           {
             "Archivist" = {
               href = "http://minix:${toString ports.archivistUi}";
@@ -393,15 +378,19 @@ in
             };
           }
           {
+            "Property Search" = {
+              href = "http://minix:${toString ports.propertySearch}";
+              description = "Property listings";
+            };
+          }
+        ];
+      }
+      {
+        Infra = [
+          {
             "Blocky" = {
               href = "http://minix:${toString ports.blockyUi}";
               description = "DNS ad-blocking";
-            };
-          }
-          {
-            "MQTT Explorer" = {
-              href = "http://minix:${toString ports.mqttExplorer}";
-              description = "MQTT inspector";
             };
           }
           {

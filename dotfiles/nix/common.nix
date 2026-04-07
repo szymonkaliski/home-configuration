@@ -16,7 +16,7 @@ in
     pkgs.bat
     pkgs.difftastic
     pkgs.fd
-    pkgs.ffmpeg
+    pkgs.ffmpeg_7
     pkgs.fzf
     pkgs.gh
     pkgs.go

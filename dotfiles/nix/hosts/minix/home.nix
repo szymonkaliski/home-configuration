@@ -41,6 +41,8 @@ in
   systemd.user.services.tmux = {
     Unit = {
       Description = "tmux default session";
+      # don't restart on rebuild (kills running sessions)
+      X-SwitchMethod = "keep-old";
     };
     Service = {
       Type = "forking";

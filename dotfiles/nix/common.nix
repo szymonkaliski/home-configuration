@@ -35,6 +35,7 @@ in
     pkgs.parallel
     pkgs.ripgrep
     pkgs.rsync
+    pkgs.timg
     pkgs.tmux
     pkgs.tree
     pkgs.vale

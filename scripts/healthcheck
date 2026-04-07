@@ -178,16 +178,6 @@ check "archivist-completed-fetch-recently" bash -c '
   fi
 '
 
-# system services — OnFailure can't use user-level notify-failure@
-for ctr in mqtt-explorer blocky-ui; do
-  check "podman-${ctr}-running" bash -c "
-    if ! systemctl is-active --quiet podman-$ctr 2>/dev/null; then
-      echo 'not running'
-      exit 1
-    fi
-  "
-done
-
 errors=()
 for (( _j=0; _j < n; _j++ )); do
   wait -n -p _pid

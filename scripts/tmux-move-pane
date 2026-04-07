@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+#
+# Move the current tmux pane to the far edge of the window,
+# like Vim's Ctrl-W H/J/K/L.
+
+set -euo pipefail
+
+direction="${1:-}"
+
+if [ -z "$direction" ]; then
+  echo "Usage: tmux-move-pane left|down|up|right" >&2
+  exit 1
+fi
+
+pane_count=$(tmux list-panes | wc -l)
+if [ "$pane_count" -le 1 ]; then
+  exit 0
+fi
+
+current_pane=$(tmux display-message -p '#{pane_id}')
+current_window=$(tmux display-message -p '#{window_id}')
+
+# break-pane -d: detach current pane into a new temporary window without
+# switching focus. This guarantees source != target for the subsequent join.
+# -P prints the new pane identifier so we can reference it.
+tmp_pane=$(tmux break-pane -d -s "$current_pane" -P -F '#{pane_id}')
+
+# After breaking, the original window still exists (it had >1 panes).
+# Pick any remaining pane in that window as the join target.
+target_pane=$(tmux list-panes -t "$current_window" -F '#{pane_id}' | head -1)
+
+case "$direction" in
+  left)
+    # full-height column on the left: -fhb (full, horizontal, before)
+    tmux join-pane -fhb -s "$tmp_pane" -t "$target_pane"
+    ;;
+  right)
+    # full-height column on the right: -fh (full, horizontal)
+    tmux join-pane -fh -s "$tmp_pane" -t "$target_pane"
+    ;;
+  up)
+    # full-width row on top: -fvb (full, vertical, before)
+    tmux join-pane -fvb -s "$tmp_pane" -t "$target_pane"
+    ;;
+  down)
+    # full-width row on bottom: -fv (full, vertical)
+    tmux join-pane -fv -s "$tmp_pane" -t "$target_pane"
+    ;;
+  *)
+    # join it back so we don't leave an orphan window
+    tmux join-pane -s "$tmp_pane" -t "$target_pane"
+    echo "Unknown direction: $direction (use left|down|up|right)" >&2
+    exit 1
+    ;;
+esac

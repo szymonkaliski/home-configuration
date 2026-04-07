@@ -12,16 +12,18 @@ REPO_SETUP_SH="$HOME/Projects/home-configuration/dotfiles/nix/hosts/minix/microv
 sync_host_config() {
   mkdir -p "$HOST_DIR"
   rm -rf "$HOST_DIR/claude" "$HOST_DIR/ssh" "$HOST_DIR/claude.json" "$HOST_DIR/gemini"
-  command cp -rL "$HOME/.claude" "$HOST_DIR/claude"
-  command cp -L "$HOME/.claude.json" "$HOST_DIR/claude.json"
-  command cp -rL "$HOME/.ssh" "$HOST_DIR/ssh"
-  command cp -rL "$HOME/.gemini" "$HOST_DIR/gemini"
-  
+
+  command cp -rL "$HOME/.claude" "$HOST_DIR/claude" 2>/dev/null || true
+  command cp -L "$HOME/.claude.json" "$HOST_DIR/claude.json" 2>/dev/null || true
+  command cp -rL "$HOME/.ssh" "$HOST_DIR/ssh" 2>/dev/null || true
+  command cp -rL "$HOME/.gemini" "$HOST_DIR/gemini" 2>/dev/null || true
+
   {
     echo "#!/usr/bin/env bash"
     echo "# DO NOT EDIT - copied from dotfiles/nix/hosts/minix/microvms/setup.sh"
     tail -n +2 "$REPO_SETUP_SH"
   } > "$HOST_DIR/setup.sh"
+
   chmod +x "$HOST_DIR/setup.sh"
 }
 

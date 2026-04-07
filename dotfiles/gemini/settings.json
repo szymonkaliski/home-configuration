@@ -30,6 +30,7 @@
       "command": "npx",
       "args": [
         "@playwright/mcp@latest",
+        "--isolated",
         "--executable-path",
         "/home/szymon/.nix-profile/bin/chromium"
       ],

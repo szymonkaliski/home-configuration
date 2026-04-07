@@ -33,7 +33,16 @@
 
       homeConfigurations = {
         "szymon@orchid" = home-manager.lib.homeManagerConfiguration {
-          pkgs = nixpkgs.legacyPackages.aarch64-darwin;
+          pkgs = import nixpkgs {
+            system = "aarch64-darwin";
+            overlays = [
+              (final: prev: {
+                # skipping tests, as fish ones are flaky on darwin:
+                # https://github.com/NixOS/nixpkgs/issues/475999
+                direnv = prev.direnv.overrideAttrs { doCheck = false; };
+              })
+            ];
+          };
           extraSpecialArgs = {
             repoRoot = "/Users/szymon/Documents/Projects/home-configuration";
           };

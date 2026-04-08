@@ -148,6 +148,10 @@ in
           options = [ "NOPASSWD" ];
         }
         {
+          command = "/run/current-system/sw/bin/systemctl reset-failed microvm@*";
+          options = [ "NOPASSWD" ];
+        }
+        {
           command = "/run/current-system/sw/bin/restic snapshots *";
           options = [
             "NOPASSWD"

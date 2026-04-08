@@ -57,6 +57,7 @@ cmd_start() {
   t0=$SECONDS
   printf "vm-${VM} (10.100.0.${VM}) ${PROJECT}\n"
   printf "starting..."
+  sudo systemctl reset-failed "microvm@vm-${VM}" 2>/dev/null || true
   sudo systemctl start --no-block "microvm@vm-${VM}"
   printf " booting..."
   while true; do

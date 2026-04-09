@@ -27,6 +27,7 @@
       "mcp__playwright__*"
     ]
   },
+  "model": "opus",
   "hooks": {
     "Notification": [
       {

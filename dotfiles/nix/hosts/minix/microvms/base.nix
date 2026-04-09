@@ -28,9 +28,9 @@ in
     "nix-command"
     "flakes"
   ];
-  nix.gc.automatic = true;
-  nix.gc.dates = "daily";
-  nix.gc.options = "--delete-older-than 7d";
+  # GC disabled: overlayfs over host's read-only store means GC creates
+  # whiteout entries that hide host paths, breaking flake devShell deps overnight
+  nix.gc.automatic = false;
 
   environment.variables.EDITOR = "nvim";
 

@@ -83,7 +83,8 @@ Ephemeral NixOS VMs (pool of 4) for running coding agents and other potentially 
    ```bash
    claude setup-token
    # complete the browser auth, then copy the printed token:
-   echo 'sk-ant-oat01-...' > ~/MicroVMs/host/claude-oauth-token
+   echo 'sk-ant-oat01-...' > ~/.claude/long-lived-oauth-token
+   chmod 600 ~/.claude/long-lived-oauth-token
    ```
 
 4. Add Pushover credentials for notifications:

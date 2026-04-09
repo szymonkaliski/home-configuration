@@ -35,3 +35,7 @@ if [ -n "$DROPBOX_PATH" ]; then
   export WIKI_PATH="$DROPBOX_PATH/Wiki"
   export SCREENSHOTS_PATH="$DROPBOX_PATH/Screenshots"
 fi
+
+if [ -f "$HOME/.claude/long-lived-oauth-token" ]; then
+  export CLAUDE_CODE_OAUTH_TOKEN="$(cat "$HOME/.claude/long-lived-oauth-token")"
+fi

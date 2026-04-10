@@ -321,7 +321,7 @@ in
       queryLog = {
         type = "postgresql";
         target = "postgres://blocky@127.0.0.1:${toString ports.blockyPostgresql}/blocky?sslmode=disable";
-        logRetentionDays = 7;
+        logRetentionDays = 30;
       };
 
       prometheus.enable = true;

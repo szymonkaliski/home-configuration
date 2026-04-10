@@ -37,7 +37,6 @@ alias td="tree -adC --dirsfirst -I '.git|node_modules|bower_components'"
 alias tl="tmux ls | sed 's/:/;/' | sed 's/\[.*\]//g' | column -t -s ';' | sed 's/(.*) //'"
 
 alias bat="bat --theme=base16"
-alias timg="timg -p kitty"
 
 alias timestamp="date +%Y%m%d-%H%M"
 alias datestamp="date +%Y-%m-%d"

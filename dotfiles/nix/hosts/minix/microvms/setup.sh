@@ -12,19 +12,18 @@ cp /mnt/host/claude.json /home/szymon/.claude.json
 cp -rT /mnt/host/gemini /home/szymon/.gemini
 
 # patch .claude.json and .gemini/settings.json for VM environment:
-# - chromium path differs (nix-profile on host vs system package in VM)
+# - inject chromium path for playwright mcp (system package in VM)
 # - trust /workspace so claude doesn't prompt on every boot
 node << 'EOF'
 const fs = require("fs");
+
+const vmChromium = "/run/current-system/sw/bin/chromium";
 
 // patch Claude Code
 const claudePath = "/home/szymon/.claude.json";
 if (fs.existsSync(claudePath)) {
   let raw = fs.readFileSync(claudePath, "utf8");
-  raw = raw.replaceAll(
-    "/home/szymon/.nix-profile/bin/chromium",
-    "/run/current-system/sw/bin/chromium"
-  );
+  raw = raw.replaceAll("/home/szymon/.nix-profile/bin/chromium", vmChromium);
 
   const config = JSON.parse(raw);
   config.projects = config.projects || {};
@@ -37,13 +36,17 @@ if (fs.existsSync(claudePath)) {
 // patch Gemini CLI settings
 const geminiPath = "/home/szymon/.gemini/settings.json";
 if (fs.existsSync(geminiPath)) {
-  let raw = fs.readFileSync(geminiPath, "utf8");
-  raw = raw.replaceAll(
-    "/home/szymon/.nix-profile/bin/chromium",
-    "/run/current-system/sw/bin/chromium"
-  );
-
-  fs.writeFileSync(geminiPath, raw);
+  const config = JSON.parse(fs.readFileSync(geminiPath, "utf8"));
+  if (config.mcpServers?.playwright) {
+    config.mcpServers.playwright.args = [
+      "@playwright/mcp@latest",
+      "--isolated",
+      "--executable-path",
+      vmChromium,
+    ];
+    config.mcpServers.playwright.env = { PLAYWRIGHT_BROWSERS_PATH: "" };
+  }
+  fs.writeFileSync(geminiPath, JSON.stringify(config, null, 2));
 }
 
 // trust /workspace in Gemini CLI

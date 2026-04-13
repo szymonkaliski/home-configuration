@@ -28,16 +28,9 @@
   "mcpServers": {
     "playwright": {
       "command": "npx",
-      "args": [
-        "@playwright/mcp@latest",
-        "--isolated",
-        "--executable-path",
-        "/home/szymon/.nix-profile/bin/chromium"
-      ],
-      "env": {
-        "PLAYWRIGHT_BROWSERS_PATH": ""
-      },
+      "args": ["@playwright/mcp@latest", "--isolated"],
       "trust": true
     }
   }
 }
+

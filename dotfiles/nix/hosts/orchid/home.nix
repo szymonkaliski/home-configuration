@@ -34,11 +34,13 @@ in
     pkgs.coreutils
     pkgs.darwin.trash
     pkgs.git
-
     pkgs.unixtools.watch
   ];
 
   home.file.".hammerspoon".source = link "${dotfileDir}/hammerspoon";
 
   xdg.configFile."ghostty".source = link "${dotfileDir}/ghostty";
+
+  sops.defaultSopsFile = ../../secrets/shared.yaml;
+  sops.age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
 }

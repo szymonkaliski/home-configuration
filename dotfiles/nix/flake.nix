@@ -17,6 +17,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
   };
 
   outputs =
@@ -25,6 +30,7 @@
       home-manager,
       nix-index-database,
       microvm,
+      sops-nix,
       ...
     }:
     {
@@ -50,6 +56,7 @@
           modules = [
             ./hosts/orchid/home.nix
             nix-index-database.homeModules.nix-index
+            sops-nix.homeManagerModules.sops
           ];
         };
 
@@ -62,6 +69,7 @@
           modules = [
             ./hosts/minix/home.nix
             nix-index-database.homeModules.nix-index
+            sops-nix.homeManagerModules.sops
             { nixpkgs.config.allowUnfree = true; }
           ];
         };
@@ -75,6 +83,7 @@
           ./hosts/minix/hardware-configuration.nix
           ./hosts/minix/microvms
           microvm.nixosModules.host
+          sops-nix.nixosModules.sops
 
           home-manager.nixosModules.home-manager
           {
@@ -82,6 +91,7 @@
             home-manager.extraSpecialArgs = {
               repoRoot = "/home/szymon/Projects/home-configuration";
             };
+            home-manager.sharedModules = [ sops-nix.homeManagerModules.sops ];
             home-manager.users.szymon = {
               imports = [
                 ./hosts/minix/home.nix

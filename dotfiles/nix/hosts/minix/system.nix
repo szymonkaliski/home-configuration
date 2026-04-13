@@ -1,5 +1,11 @@
-{ pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 let
+  mqtt = import ../../mqtt.nix;
   ports = {
     blockyApi = 10000;
     blockyPostgresql = 10001;
@@ -75,8 +81,13 @@ in
   hardware.bluetooth.powerOnBoot = true;
 
   services.openssh.enable = true;
+
+  # tailscale with exit node
   services.tailscale.enable = true;
   services.tailscale.useRoutingFeatures = "server";
+  services.tailscale.authKeyFile = config.sops.secrets.tailscale_authkey.path;
+  services.tailscale.extraUpFlags = [ "--advertise-exit-node" ];
+
   networking.nameservers = [ "127.0.0.1" ];
 
   # resolved needed: useNetworkd enables its stub listener on :53 (conflicts with blocky),
@@ -205,9 +216,9 @@ in
     enable = true;
     listeners = [
       {
-        port = 1883;
-        users.mqtt = {
-          password = "mqtt-secure";
+        port = mqtt.port;
+        users.${mqtt.username} = {
+          password = mqtt.password;
           acl = [ "readwrite #" ];
         };
         settings.allow_anonymous = false;
@@ -220,9 +231,9 @@ in
     settings = {
       permit_join = false;
       mqtt = {
-        server = "mqtt://localhost:1883";
-        user = "mqtt";
-        password = "mqtt-secure";
+        server = "mqtt://${mqtt.host}:${toString mqtt.port}";
+        user = mqtt.username;
+        password = mqtt.password;
       };
       serial.port = "/dev/serial/by-id/usb-ITead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_6013b3a3df21ec1194b221c32c86906c-if00-port0";
       serial.adapter = "zstack";
@@ -430,14 +441,46 @@ in
     ];
   };
 
+  sops.defaultSopsFile = ../../secrets/minix.yaml;
+  sops.age.keyFile = "${config.users.users.szymon.home}/.config/sops/age/keys.txt";
+
+  sops.secrets.restic_password = { };
+  sops.secrets.rclone_nas_config = { };
+  sops.secrets.samba_password = { };
+  sops.secrets.tailscale_authkey = { };
+  sops.secrets.pushover_token_vm = { };
+  sops.secrets.pushover_user = { };
+  sops.secrets.gemini_api_key_vm = { };
+
+  system.activationScripts.samba-password = lib.stringAfter [ "setupSecrets" ] ''
+    SMB_PASS=$(cat ${config.sops.secrets.samba_password.path})
+    (echo "$SMB_PASS"; echo "$SMB_PASS") | ${pkgs.samba}/bin/smbpasswd -a -s szymon 2>/dev/null
+  '';
+
+  system.activationScripts.microvm-secrets = lib.stringAfter [ "setupSecrets" ] ''
+    dir=${config.users.users.szymon.home}/MicroVMs/host
+    mkdir -p "$dir"
+
+    cp ${config.sops.secrets.tailscale_authkey.path} "$dir/ts-authkey"
+    cp ${config.sops.secrets.gemini_api_key_vm.path} "$dir/gemini-api-key"
+
+    printf 'PUSHOVER_TOKEN=%s\nPUSHOVER_USER=%s\n' \
+      "$(cat ${config.sops.secrets.pushover_token_vm.path})" \
+      "$(cat ${config.sops.secrets.pushover_user.path})" \
+      > "$dir/pushoverrc"
+
+    chown -R szymon:users "$dir"
+    chmod 600 "$dir"/{ts-authkey,gemini-api-key,pushoverrc}
+  '';
+
   services.restic.backups.nas = {
     initialize = true;
     repository = "rclone:nas:/NAS/Backup/Minix";
-    rcloneConfigFile = "/etc/rclone-nas.conf";
-    passwordFile = "/etc/restic-password";
+    rcloneConfigFile = config.sops.secrets.rclone_nas_config.path;
+    passwordFile = config.sops.secrets.restic_password.path;
 
     paths = [
-      "/home/szymon"
+      "${config.users.users.szymon.home}"
       "/var/lib/zigbee2mqtt"
     ];
 
@@ -445,14 +488,15 @@ in
       "**/.direnv"
       "**/node_modules"
       "**/result"
-      "/home/szymon/.cache"
-      "/home/szymon/.cargo"
-      "/home/szymon/.dropbox"
-      "/home/szymon/.dropbox-dist"
-      "/home/szymon/.nix-defexpr"
-      "/home/szymon/.nix-profile"
-      "/home/szymon/.npm"
-      "/home/szymon/Dropbox"
+      "${config.users.users.szymon.home}/.cache"
+      "${config.users.users.szymon.home}/.cargo"
+      "${config.users.users.szymon.home}/.config/sops/age"
+      "${config.users.users.szymon.home}/.dropbox"
+      "${config.users.users.szymon.home}/.dropbox-dist"
+      "${config.users.users.szymon.home}/.nix-defexpr"
+      "${config.users.users.szymon.home}/.nix-profile"
+      "${config.users.users.szymon.home}/.npm"
+      "${config.users.users.szymon.home}/Dropbox"
     ];
 
     timerConfig = {

@@ -1,0 +1,17 @@
+keys:
+  - &minix age17h0mzdph62vced4wdzv9sd5ut945lu6mjp00rhvy3a77drwzzgyq7523a0
+  - &orchid age1fpzarpw64a67qs6pgkh3ltjgry2zkrcvkl65w2jchdyu03ndpd3qjt9nmu
+    # recovery key - private half is in password manager
+  - &recovery age18l05zmkgk3s4vwrjjc9lcdzwgd8hk95t4q2aawnksfxyhdzrpgkqttsphs
+creation_rules:
+  - path_regex: secrets/minix\.yaml$
+    key_groups:
+      - age:
+          - *minix
+          - *recovery
+  - path_regex: secrets/shared\.yaml$
+    key_groups:
+      - age:
+          - *minix
+          - *orchid
+          - *recovery

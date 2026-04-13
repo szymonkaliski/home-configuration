@@ -82,34 +82,5 @@ in
 
   xdg.configFile = {
     "nvim".source = link "${dotfileDir}/vim";
-    "timav-nodejs/config.json".source = link "${dotfileDir}/timav/config.json";
-  };
-
-  sops.secrets.timav_google_client_id = {
-    sopsFile = ./secrets/shared.yaml;
-  };
-  sops.secrets.timav_google_client_secret = {
-    sopsFile = ./secrets/shared.yaml;
-  };
-  sops.secrets.timav_google_project_id = {
-    sopsFile = ./secrets/shared.yaml;
-  };
-
-  sops.templates."timav-credentials.json" = {
-    path = "${config.home.homeDirectory}/.config/timav-nodejs/credentials.json";
-    content = builtins.toJSON {
-      installed = {
-        client_id = config.sops.placeholder.timav_google_client_id;
-        project_id = config.sops.placeholder.timav_google_project_id;
-        auth_uri = "https://accounts.google.com/o/oauth2/auth";
-        token_uri = "https://oauth2.googleapis.com/token";
-        auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs";
-        client_secret = config.sops.placeholder.timav_google_client_secret;
-        redirect_uris = [
-          "urn:ietf:wg:oauth:2.0:oob"
-          "http://localhost"
-        ];
-      };
-    };
   };
 }

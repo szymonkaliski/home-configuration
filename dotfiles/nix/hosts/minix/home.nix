@@ -70,7 +70,6 @@ in
         username = config.sops.placeholder.smartbox_email;
         password = config.sops.placeholder.smartbox_password;
         apiName = "api-hjm";
-        reconnectInterval = 1800000;
       };
       mqtt = {
         host = mqtt.host;

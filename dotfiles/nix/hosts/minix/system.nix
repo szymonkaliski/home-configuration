@@ -281,6 +281,10 @@ in
 
       connectIPVersion = "v4";
 
+      # IPv4-only network; drop AAAA so clients don't try unreachable v6 via
+      # tailscale's ULA and fail with ENETUNREACH
+      filtering.queryTypes = [ "AAAA" ];
+
       upstreams.groups.default = [
         dns.quad9
         dns.cloudflare

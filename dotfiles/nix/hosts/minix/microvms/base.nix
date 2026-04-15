@@ -22,14 +22,17 @@ in
   time.timeZone = "Europe/Warsaw";
 
   nix.settings.download-buffer-size = 512 * 1024 * 1024; # 512 MiB
-  nix.settings.min-free = 512 * 1024 * 1024; # 512 MiB
-  nix.settings.max-free = 2 * 1024 * 1024 * 1024; # 2 GiB
   nix.settings.experimental-features = [
     "nix-command"
     "flakes"
   ];
+
   # GC disabled: overlayfs over host's read-only store means GC creates
-  # whiteout entries that hide host paths, breaking flake devShell deps overnight
+  # whiteout entries that hide host paths, breaking lookups for libs still in
+  # the host store. `gc.automatic = false` disables the timer; min-free/max-free
+  # are left unset so nix-daemon doesn't auto-GC during builds when the 4GiB
+  # overlay fills up (disk-full surfaces as a build failure instead,
+  # recoverable via `microvm clean N`).
   nix.gc.automatic = false;
 
   environment.variables.EDITOR = "nvim";

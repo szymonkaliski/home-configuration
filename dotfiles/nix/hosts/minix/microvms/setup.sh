@@ -59,7 +59,7 @@ EOF
 echo "" > /home/szymon/.bash_profile
 if [ -f /mnt/host/claude/long-lived-oauth-token ]; then
   echo "export CLAUDE_CODE_OAUTH_TOKEN=$(cat /mnt/host/claude/long-lived-oauth-token)" >> /home/szymon/.bash_profile
-  echo 'export ANTHROPIC_MODEL="claude-opus-4-6[1m]"' >> /home/szymon/.bash_profile
+  echo 'export ANTHROPIC_MODEL="opus[1m]"' >> /home/szymon/.bash_profile
 fi
 
 if [ -f /mnt/host/gemini-api-key ]; then

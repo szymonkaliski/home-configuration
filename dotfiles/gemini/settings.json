@@ -1,6 +1,9 @@
 {
   "context": {
-    "fileName": ["AGENTS.md", "GEMINI.md"]
+    "fileName": [
+      "AGENTS.md",
+      "GEMINI.md"
+    ]
   },
   "security": {
     "auth": {
@@ -19,7 +22,8 @@
     "footer": {
       "hideSandboxStatus": true
     },
-    "loadingPhrases": "off"
+    "loadingPhrases": "off",
+    "inlineThinkingMode": "full"
   },
   "model": {
     "name": "gemini-3.1-pro-preview",
@@ -28,9 +32,11 @@
   "mcpServers": {
     "playwright": {
       "command": "npx",
-      "args": ["@playwright/mcp@latest", "--isolated"],
+      "args": [
+        "@playwright/mcp@latest",
+        "--isolated"
+      ],
       "trust": true
     }
   }
 }
-

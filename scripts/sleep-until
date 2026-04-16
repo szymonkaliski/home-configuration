@@ -1,0 +1,78 @@
+#!/usr/bin/env node
+
+const input = process.argv.slice(2).join(" ");
+
+if (!input) {
+  process.stderr.write(
+    "Usage: sleep-until <time>\nExample: sleep-until 18:00\n",
+  );
+  process.exit(1);
+}
+
+const timeMatch = input.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+
+if (!timeMatch) {
+  process.stderr.write(
+    "Error: Could not parse time format. Use HH:mm or HH:mm:ss.\n",
+  );
+  process.exit(1);
+}
+
+const now = new Date();
+let [_, h, m, s] = timeMatch;
+
+h = parseInt(h, 10);
+m = parseInt(m, 10);
+s = parseInt(s || "0", 10);
+
+if (h > 23 || m > 59 || s > 59) {
+  process.stderr.write(
+    "Error: Invalid time. Use 24h clock (00:00 to 23:59).\n",
+  );
+  process.exit(1);
+}
+
+const target = new Date(now);
+target.setHours(h, m, s, 0);
+
+if (target <= now) {
+  target.setDate(target.getDate() + 1);
+}
+
+const pad = (n) => n.toString().padStart(2, "0");
+
+const formatMs = (ms) => {
+  const totalSeconds = Math.ceil(ms / 1000);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+
+  const parts = [];
+  if (h > 0) {
+    parts.push(`${pad(h)}h`);
+  }
+  if (m > 0 || h > 0) {
+    parts.push(`${pad(m)}m`);
+  }
+  parts.push(`${pad(s)}s`);
+
+  return parts.join(" ");
+};
+
+const targetStr = `${pad(target.getHours())}:${pad(target.getMinutes())}:${pad(target.getSeconds())}`;
+
+const update = () => {
+  const currentDiff = target.getTime() - Date.now();
+
+  if (currentDiff <= 0) {
+    process.stdout.write(`\r\x1b[KSleeping for 0s (until ${targetStr})\n`);
+    process.exit(0);
+  } else {
+    process.stdout.write(
+      `\r\x1b[KSleeping for ${formatMs(currentDiff)} (until ${targetStr})`,
+    );
+  }
+};
+
+update();
+setInterval(update, 200);

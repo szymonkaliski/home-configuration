@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+width=$(tmux display-message -p '#{pane_width}')
+height=$(tmux display-message -p '#{pane_height}')
+
+# terminal characters are roughly 1:2 aspect ratio, a ratio of 2.8 means the
+# pane is significantly wider than it is tall
+if [ $(( width * 10 )) -gt $(( height * 28 )) ]; then
+  # Split left/right
+  tmux split-window -h "$@"
+else
+  # Split top/bottom
+  tmux split-window -v "$@"
+fi

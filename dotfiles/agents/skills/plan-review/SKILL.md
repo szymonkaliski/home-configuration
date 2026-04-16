@@ -1,7 +1,7 @@
 ---
 name: plan-review
 description: Open the current plan file in nvim for user review
-allowed-tools: Bash(tmux *), Read
+allowed-tools: Bash(tmux *), Bash(tmux-smart-split), Read
 disable-model-invocation: true
 ---
 
@@ -13,26 +13,16 @@ Open the plan file in nvim (in a tmux split) so the user can review, edit, and a
 
 ## Steps
 
-1. Verify preconditions:
-
-   - Run `tmux display-message -p '#{pane_width}'` to get the pane width. If this fails (not in tmux), abort with a message.
-   - Confirm the plan file exists
-
-2. Derive a unique signal name from the plan file basename:
+1. Derive a unique signal name from the plan file basename:
 
    ```
    plan-review-{basename_without_extension}
    ```
 
-3. Choose split direction based on pane width:
-
-   - If width >= 120: split right (`-h`)
-   - Otherwise: split below (`-v`)
-
-   Open nvim in the split:
+2. Open up a split with nvim:
 
    ```bash
-   tmux split-window {-h or -v} "nvim '$PLAN_PATH'; tmux wait-for -S plan-review-{basename}"
+   tmux-smart-split "nvim '$PLAN_PATH'; tmux wait-for -S plan-review-{basename}"
    ```
 
    Then wait (this blocks until the user quits nvim):
@@ -41,12 +31,12 @@ Open the plan file in nvim (in a tmux split) so the user can review, edit, and a
    tmux wait-for plan-review-{basename}
    ```
 
-   Use `run_in_background: true` on the wait command. Then poll with `TaskOutput` using `block: true, timeout: 600000`. If it times out, keep polling — never give up.
+   Use `run_in_background: true` on the wait command. Then poll with `TaskOutput` using `block: true, timeout: 600000`. If it times out, keep polling - never give up.
 
-4. After nvim closes, `Read` the plan file.
+3. After nvim closes, `Read` the plan file.
 
-5. Scan for lines containing `TODO:`, `FIXME:`, or `COMMENT:` annotations.
+4. Scan for lines containing `TODO:`, `FIXME:`, or `COMMENT:` annotations.
 
-6. Present results:
+5. Present results:
    - **Annotations found**: list each annotation with its line number and content, then ask how to proceed.
    - **No annotations**: report the plan is approved as-is.

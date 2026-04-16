@@ -24,7 +24,7 @@
   - read the file when you need to see adjacent panes, use `capture-pane` for more context
   - send commands to these panes with `tmux send-keys -t <pane_id> 'command' Enter`
   - when sending commands to other panes, do NOT pipe through `tail` or truncate output - let the full output show so you can read it back with `capture-pane`
-  - create new `tmux` splits for testing commands depending on the environment, running things requiring `sudo` etc. - wait for the shell prompt to appear, and then run the command
+  - create new `tmux` splits for testing commands depending on the environment, running things requiring `sudo` etc. using `tmux-smart-split` instead of standard `tmux split-window` to automatically choose between vertical and horizontal based on pane dimensions - wait for the shell prompt to appear, and then run the command
 
 - do not use em-dashes
 

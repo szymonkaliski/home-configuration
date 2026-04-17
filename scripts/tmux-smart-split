@@ -1,5 +1,19 @@
 #!/usr/bin/env bash
 
+args=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -d)
+      args+=(-c "$2")
+      shift 2
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+
 width=$(tmux display-message -p '#{pane_width}')
 height=$(tmux display-message -p '#{pane_height}')
 
@@ -7,8 +21,8 @@ height=$(tmux display-message -p '#{pane_height}')
 # pane is significantly wider than it is tall
 if [ $(( width * 10 )) -gt $(( height * 28 )) ]; then
   # Split left/right
-  tmux split-window -h "$@"
+  tmux split-window -h "${args[@]}"
 else
   # Split top/bottom
-  tmux split-window -v "$@"
+  tmux split-window -v "${args[@]}"
 fi

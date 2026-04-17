@@ -24,7 +24,10 @@ if (process.env.TMUX) {
   } catch {}
 }
 
-function readLastAssistantText(filePath) {
+// Extended thinking streams as two jsonl entries sharing one msg_id: a thinking-only
+// entry first, then a paired text entry up to ~15s later. The Stop hook fires on the
+// first entry, so callers must poll until kind === "text" to avoid spurious "Waiting".
+function readLastAssistantState(filePath) {
   const fd = fs.openSync(filePath, "r");
   try {
     const stat = fs.fstatSync(fd);
@@ -33,7 +36,6 @@ function readLastAssistantText(filePath) {
     fs.readSync(fd, buf, 0, readSize, stat.size - readSize);
     const chunk = buf.toString("utf8");
 
-    // find complete JSONL lines (skip possible partial first line)
     const firstNewline = chunk.indexOf("\n");
     const lines = chunk
       .slice(firstNewline + 1)
@@ -49,22 +51,21 @@ function readLastAssistantText(filePath) {
       }
       if (entry.type === "progress" || entry.type === "system") continue;
 
-      if (entry.type === "assistant") {
-        const contents = entry.message?.content;
-        if (!Array.isArray(contents)) return null;
-        for (let j = contents.length - 1; j >= 0; j--) {
-          if (contents[j].type === "text" && contents[j].text?.trim()) {
-            return contents[j].text.trim().slice(0, 200);
-          }
+      if (entry.type !== "assistant") return { kind: "not_assistant" };
+      const contents = entry.message?.content;
+      if (!Array.isArray(contents)) return { kind: "not_assistant" };
+
+      for (let j = contents.length - 1; j >= 0; j--) {
+        if (contents[j].type === "text" && contents[j].text?.trim()) {
+          return { kind: "text", text: contents[j].text.trim().slice(0, 200) };
         }
       }
-      // last meaningful entry is not assistant text — race condition
-      return null;
+      return { kind: "assistant_without_text" };
     }
+    return { kind: "not_assistant" };
   } finally {
     fs.closeSync(fd);
   }
-  return null;
 }
 
 function readLastToolUse(filePath) {
@@ -133,24 +134,19 @@ function formatToolUse(toolUse) {
 let body;
 
 if (event === "Stop") {
-  body = "Waiting";
-  if (transcriptPath && fs.existsSync(transcriptPath)) {
-    let text = readLastAssistantText(transcriptPath);
+  if (!transcriptPath || !fs.existsSync(transcriptPath)) process.exit(0);
 
-    if (!text) {
-      // race condition: poll until assistant text appears
-      const sab = new SharedArrayBuffer(4);
-      const view = new Int32Array(sab);
-      const deadline = Date.now() + 2000;
-      while (Date.now() < deadline) {
-        Atomics.wait(view, 0, 0, 50);
-        text = readLastAssistantText(transcriptPath);
-        if (text) break;
-      }
-    }
-
-    if (text) body = text;
+  const sab = new SharedArrayBuffer(4);
+  const view = new Int32Array(sab);
+  const deadline = Date.now() + 30000;
+  let state = readLastAssistantState(transcriptPath);
+  while (state.kind !== "text" && Date.now() < deadline) {
+    Atomics.wait(view, 0, 0, 200);
+    state = readLastAssistantState(transcriptPath);
   }
+
+  if (state.kind !== "text") process.exit(0);
+  body = state.text;
 } else {
   body = input.message || "Notification";
 

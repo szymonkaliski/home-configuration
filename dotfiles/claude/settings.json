@@ -85,5 +85,6 @@
     ]
   },
   "effortLevel": "xhigh",
-  "promptSuggestionEnabled": false
+  "promptSuggestionEnabled": false,
+  "skipAutoPermissionPrompt": true
 }

@@ -14,6 +14,8 @@ adjust-cell-height            = 4
 adjust-font-baseline          = 0
 adjust-strikethrough-position = 2
 
+window-width           = 100
+window-height          = 40
 window-padding-x       = 9
 window-padding-y       = 9
 window-padding-balance = true

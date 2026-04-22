@@ -17,6 +17,11 @@ if [ -d $HOME/.npm/bin ]; then
   export PATH="$HOME/.npm/bin:$PATH"
 fi
 
+# claude code's native installer drops its launcher here
+if [ -d $HOME/.local/bin ]; then
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+
 # scripts and stuff symlinked from dotfiles
 if [ -d $HOME/.bin ]; then
   export PATH="$HOME/.bin:$PATH"

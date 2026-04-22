@@ -17,6 +17,8 @@ let
   dotfileDir = ../../../../.;
 in
 {
+  imports = [ ../claude-env.nix ];
+
   networking.hostName = hostName;
   system.stateVersion = "25.11";
   time.timeZone = "Europe/Warsaw";
@@ -35,7 +37,9 @@ in
   # recoverable via `microvm clean N`).
   nix.gc.automatic = false;
 
-  environment.variables.EDITOR = "nvim";
+  environment.variables = {
+    EDITOR = "nvim";
+  };
 
   environment.systemPackages = with pkgs; [
     chromium # for playwright claude mcp
@@ -162,7 +166,7 @@ in
 
   environment.variables.NPM_CONFIG_PREFIX = "/home/szymon/.npm";
   environment.extraInit = ''
-    export PATH="/home/szymon/.local/bin:/home/szymon/.npm/bin:$PATH"
+    export PATH="/home/szymon/.bin:/home/szymon/.local/bin:/home/szymon/.npm/bin:$PATH"
   '';
   programs.bash.loginShellInit = ''
     cd /workspace 2>/dev/null

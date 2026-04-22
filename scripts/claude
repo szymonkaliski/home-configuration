@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+# Claude Code 2.x stopped being a JS package under Node and ships a native
+# Linux ELF binary (~240 MB, via postinstall on a platform-specific optional
+# dep). That binary hard-codes the FHS dynamic-linker path
+# /lib64/ld-linux-x86-64.so.2 - a path NixOS does not have. The usual fix is
+# programs.nix-ld.enable, but that installs a system-wide shim used by *every*
+# dynamically linked binary on the machine. Instead, we scope the workaround to
+# claude alone: this wrapper invokes the Nix-store's ld-linux.so.2 directly
+# with an explicit --library-path.
+#
+# $CLAUDE_LD and $CLAUDE_LD_LIBPATH are set by the Nix config on Linux hosts
+
+set -e
+
+# macOS: no workaround needed - find the next claude in PATH that isn't this
+# script, and exec it
+if [ "$(uname)" != "Linux" ]; then
+  for candidate in $(command -v -a claude); do
+    if [ "$candidate" != "$0" ] && [ -x "$candidate" ]; then
+      exec "$candidate" "$@"
+    fi
+  done
+
+  echo "claude: no downstream claude binary found in PATH" >&2
+  exit 1
+fi
+
+CLAUDE_EXE="$HOME/.local/bin/claude"
+if [ ! -x "$CLAUDE_EXE" ]; then
+  NPM_EXE="$HOME/.npm/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe"
+  if [ ! -x "$NPM_EXE" ]; then
+    npm install -g @anthropic-ai/claude-code@latest
+  fi
+  CLAUDE_EXE="$NPM_EXE"
+fi
+
+if [ -z "${CLAUDE_LD:-}" ] || [ -z "${CLAUDE_LD_LIBPATH:-}" ]; then
+  echo "claude: CLAUDE_LD / CLAUDE_LD_LIBPATH not set" >&2
+  exit 1
+fi
+
+exec "$CLAUDE_LD" --library-path "$CLAUDE_LD_LIBPATH" "$CLAUDE_EXE" "$@"
+

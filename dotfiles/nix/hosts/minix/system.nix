@@ -165,6 +165,14 @@ in
           options = [ "NOPASSWD" ];
         }
         {
+          command = "/run/current-system/sw/bin/rm -f /var/lib/microvms/vm-*/nix-store-overlay.img";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/rm -rf /home/szymon/MicroVMs/vm-*/data";
+          options = [ "NOPASSWD" ];
+        }
+        {
           command = "/run/current-system/sw/bin/restic snapshots *";
           options = [
             "NOPASSWD"

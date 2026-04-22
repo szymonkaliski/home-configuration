@@ -68,6 +68,41 @@ function readLastAssistantState(filePath) {
   }
 }
 
+// task-notification user turns (e.g. Monitor events) spam Stop. Opus sometimes
+// echoes the notification as assistant text, producing nonsense pushovers.
+function lastUserOriginIsTaskNotification(filePath) {
+  const fd = fs.openSync(filePath, "r");
+  try {
+    const stat = fs.fstatSync(fd);
+    const readSize = Math.min(stat.size, 65536);
+    const buf = Buffer.alloc(readSize);
+    fs.readSync(fd, buf, 0, readSize, stat.size - readSize);
+    const chunk = buf.toString("utf8");
+
+    const firstNewline = chunk.indexOf("\n");
+    const lines = chunk
+      .slice(firstNewline + 1)
+      .split("\n")
+      .filter(Boolean);
+
+    for (let i = lines.length - 1; i >= 0; i--) {
+      let entry;
+      try {
+        entry = JSON.parse(lines[i]);
+      } catch {
+        continue;
+      }
+      if (entry.type !== "user") continue;
+      const content = entry.message?.content;
+      if (Array.isArray(content) && content.some((c) => c.type === "tool_result")) continue;
+      return entry.origin?.kind === "task-notification";
+    }
+  } finally {
+    fs.closeSync(fd);
+  }
+  return false;
+}
+
 function readLastToolUse(filePath) {
   const fd = fs.openSync(filePath, "r");
   try {
@@ -135,6 +170,7 @@ let body;
 
 if (event === "Stop") {
   if (!transcriptPath || !fs.existsSync(transcriptPath)) process.exit(0);
+  if (lastUserOriginIsTaskNotification(transcriptPath)) process.exit(0);
 
   const sab = new SharedArrayBuffer(4);
   const view = new Int32Array(sab);

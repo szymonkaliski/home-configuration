@@ -1,4 +1,8 @@
 {
+  "env": {
+    "DISABLE_INSTALLATION_CHECKS": "1",
+    "CLAUDE_CODE_NO_FLICKER": "1"
+  },
   "attribution": {
     "commit": "",
     "pr": ""
@@ -28,10 +32,6 @@
     ]
   },
   "model": "opus[1m]",
-  "env": {
-    "DISABLE_INSTALLATION_CHECKS": "1",
-    "CLAUDE_CODE_NO_FLICKER": "1"
-  },
   "hooks": {
     "Notification": [
       {

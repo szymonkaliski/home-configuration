@@ -422,7 +422,7 @@ in
 
     Service = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -c '%h/.bin/notify-pushover \"Booted: $(date +%%Y-%%m-%%d\\ %%H:%%M)\"'";
+      ExecStart = "${pkgs.bash}/bin/bash -c '%h/.bin/notify-pushover \"Booted: $(date +%%Y-%%m-%%dT%%H:%%M)\"'";
       ExecStartPost = "${pkgs.coreutils}/bin/touch /run/user/%U/boot-notify-done";
       Environment = "PATH=${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.curl}/bin";
     };

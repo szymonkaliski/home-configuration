@@ -16,11 +16,15 @@ set -e
 # macOS: no workaround needed - find the next claude in PATH that isn't this
 # script, and exec it
 if [ "$(uname)" != "Linux" ]; then
-  for candidate in $(command -v -a claude); do
-    if [ "$candidate" != "$0" ] && [ -x "$candidate" ]; then
+  self="${BASH_SOURCE[0]}"
+  IFS=:
+  for dir in $PATH; do
+    candidate="$dir/claude"
+    if [ -x "$candidate" ] && ! [ "$candidate" -ef "$self" ]; then
       exec "$candidate" "$@"
     fi
   done
+  unset IFS
 
   echo "claude: no downstream claude binary found in PATH" >&2
   exit 1

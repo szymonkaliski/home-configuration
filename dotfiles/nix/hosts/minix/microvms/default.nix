@@ -1,5 +1,4 @@
 {
-  lib,
   pkgs,
   microvm,
   ...
@@ -8,7 +7,19 @@
 let
   microvmBase = import ./base.nix;
 
-  mkVm = index: {
+  # per-VM sizing to fit into 16GB of host memory
+  sizes = {
+    lg = 4096;
+    sm = 2048;
+  };
+  vms = [
+    { index = 1; size = "lg"; }
+    { index = 2; size = "lg"; }
+    { index = 3; size = "sm"; }
+    { index = 4; size = "sm"; }
+  ];
+
+  mkVm = { index, size }: {
     name = "vm-${toString index}";
     value = {
       autostart = false;
@@ -21,7 +32,7 @@ let
             ipAddress = "10.100.0.${toString index}";
             tapId = "vm-tap${toString index}";
             mac = "02:00:00:00:00:0${toString index}";
-            mem = 2048;
+            mem = sizes.${size};
           })
         ];
       };
@@ -29,7 +40,7 @@ let
   };
 in
 {
-  microvm.vms = builtins.listToAttrs (map mkVm (lib.range 1 4));
+  microvm.vms = builtins.listToAttrs (map mkVm vms);
 
   systemd.services."microvm@" = {
     serviceConfig.TimeoutStartSec = "5min";

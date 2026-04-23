@@ -6,6 +6,14 @@ HOST_DIR="$VM_BASE/host"
 SSH_OPTS=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR)
 MAX_VMS=4
 
+# mirror of sizing in dotfiles/nix/hosts/minix/microvms/default.nix
+vm_size() {
+  case "$1" in
+    1|2) echo "lg" ;;
+    *)   echo "sm" ;;
+  esac
+}
+
 REPO_SETUP_SH="$HOME/Projects/home-configuration/dotfiles/nix/hosts/minix/microvms/setup.sh"
 
 
@@ -28,7 +36,9 @@ sync_host_config() {
 }
 
 find_free_vm() {
+  local want_size="${1:-}"
   for i in $(seq 1 "$MAX_VMS"); do
+    [ -n "$want_size" ] && [ "$(vm_size "$i")" != "$want_size" ] && continue
     local state
     state=$(systemctl is-active "microvm@vm-${i}" 2>/dev/null || true)
     if [ "$state" = "inactive" ] || [ "$state" = "failed" ]; then
@@ -36,19 +46,25 @@ find_free_vm() {
       return
     fi
   done
-  echo "error: all VMs in use" >&2
+  if [ -n "$want_size" ]; then
+    echo "error: no free ${want_size} VMs" >&2
+  else
+    echo "error: all VMs in use" >&2
+  fi
   exit 1
 }
 
 cmd_start() {
-  local VM="" PROJECT="."
+  local VM="" PROJECT="." SIZE=""
   while [ $# -gt 0 ]; do
     case "$1" in
       --dir) PROJECT="$2"; shift 2 ;;
+      --size) SIZE="$2"; shift 2 ;;
+      lg|sm) SIZE="$1"; shift ;;
       *) VM="$1"; shift ;;
     esac
   done
-  [ -z "$VM" ] && VM=$(find_free_vm)
+  [ -z "$VM" ] && VM=$(find_free_vm "$SIZE")
   PROJECT=$(realpath "$PROJECT")
   mkdir -p "$VM_BASE/vm-${VM}/data/home"
   rm -rf "$VM_BASE/vm-${VM}/workspace"
@@ -123,7 +139,7 @@ cmd_list() {
       *) status="stopped" ;;
     esac
     ws=$(readlink "$VM_BASE/vm-${i}/workspace" 2>/dev/null || echo "(none)")
-    printf "vm-%-2d %-8s  %s\n" "$i" "$status" "$ws"
+    printf "vm-%-2d %-2s  %-8s  %s\n" "$i" "$(vm_size "$i")" "$status" "$ws"
   done
 }
 
@@ -216,7 +232,9 @@ usage: microvm <command> [args]
 
   list, ls                 show all VMs
 
-  start   [N] [--dir path] start VM (default: current dir, auto-picks VM)
+  start   [N|lg|sm] [--dir path]
+                           start VM (default: current dir, auto-picks VM;
+                           lg/sm filters the auto-pick by size)
   ssh     N                ssh into running VM
   stop    N                stop VM
   restart N                restart VM (preserves workspace)

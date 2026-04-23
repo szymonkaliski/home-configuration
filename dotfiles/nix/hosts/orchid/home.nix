@@ -57,6 +57,19 @@ in
     sopsFile = ../../secrets/shared.yaml;
   };
 
+  sops.secrets.pushover_token_orchid = {
+    sopsFile = ../../secrets/orchid.yaml;
+  };
+  sops.secrets.pushover_user = { };
+
+  sops.templates."pushoverrc" = {
+    path = "${config.home.homeDirectory}/.pushoverrc";
+    content = ''
+      PUSHOVER_TOKEN=${config.sops.placeholder.pushover_token_orchid}
+      PUSHOVER_USER=${config.sops.placeholder.pushover_user}
+    '';
+  };
+
   sops.templates."timav-credentials.json" = {
     path = "${config.home.homeDirectory}/Library/Preferences/timav-nodejs/credentials.json";
     content = builtins.toJSON {

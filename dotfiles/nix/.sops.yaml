@@ -9,6 +9,11 @@ creation_rules:
       - age:
           - *minix
           - *recovery
+  - path_regex: secrets/orchid\.yaml$
+    key_groups:
+      - age:
+          - *orchid
+          - *recovery
   - path_regex: secrets/shared\.yaml$
     key_groups:
       - age:

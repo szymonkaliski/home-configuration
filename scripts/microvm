@@ -183,8 +183,8 @@ cmd_kill_all() {
 
 clean_vm() {
   local VM="$1"
-  sudo rm -f "/var/lib/microvms/vm-${VM}/nix-store-overlay.img"
-  sudo rm -rf "$VM_BASE/vm-${VM}/data"
+  sudo /run/current-system/sw/bin/rm -f "/var/lib/microvms/vm-${VM}/nix-store-overlay.img"
+  sudo /run/current-system/sw/bin/rm -rf "$VM_BASE/vm-${VM}/data"
   rm -f "$VM_BASE/vm-${VM}/workspace"
 }
 

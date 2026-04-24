@@ -90,5 +90,8 @@
   },
   "effortLevel": "xhigh",
   "promptSuggestionEnabled": false,
+  "verbose": true,
+  "fileCheckpointingEnabled": false,
+  "terminalProgressBarEnabled": false,
   "skipAutoPermissionPrompt": true
 }

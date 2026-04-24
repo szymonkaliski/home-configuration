@@ -463,7 +463,9 @@ in
   sops.secrets.samba_password = { };
   sops.secrets.tailscale_authkey = { };
   sops.secrets.pushover_token_vm = { };
-  sops.secrets.pushover_user = { };
+  sops.secrets.pushover_user = {
+    sopsFile = ../../secrets/shared.yaml;
+  };
   sops.secrets.gemini_api_key_vm = { };
 
   system.activationScripts.samba-password = lib.stringAfter [ "setupSecrets" ] ''

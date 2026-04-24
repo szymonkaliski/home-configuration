@@ -27,6 +27,12 @@ cp /mnt/host/claude.json /home/szymon/.claude.json
 # gemini-cli config
 cp -rT /mnt/host/gemini /home/szymon/.gemini
 
+# gcloud config
+if [ -d /mnt/host/gcloud ]; then
+  mkdir -p /home/szymon/.config
+  cp -rT /mnt/host/gcloud /home/szymon/.config/gcloud
+fi
+
 # patch .claude.json and .gemini/settings.json for VM environment:
 # - inject chromium path for playwright mcp (system package in VM)
 # - trust /workspace so claude doesn't prompt on every boot

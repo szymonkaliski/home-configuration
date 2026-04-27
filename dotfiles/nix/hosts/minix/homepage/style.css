@@ -1,0 +1,98 @@
+:root {
+  --base00: #181818;
+  --base01: #282828;
+  --base03: #585858;
+  --base05: #d8d8d8;
+  --base0a: #f7ca88;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background: var(--base00);
+  color: var(--base05);
+  min-height: 100%;
+}
+
+body {
+  font:
+    15px/1.6 ui-monospace,
+    "SF Mono",
+    Menlo,
+    monospace;
+  padding: 32px 0;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.host {
+  color: var(--base0a);
+  font-size: 18px;
+  margin: 0 24px 24px;
+}
+
+section {
+  margin-bottom: 24px;
+}
+
+.label {
+  color: var(--base03);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 24px 6px;
+}
+
+a.row {
+  display: block;
+  padding: 12px 24px;
+  line-height: 1.2;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a.row:hover,
+a.row:active {
+  background: var(--base01);
+  color: var(--base0a);
+}
+
+.stats {
+  margin: 0 24px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+  font-size: 14px;
+}
+
+.stats .k {
+  color: var(--base03);
+}
+.stats .v.dim {
+  color: var(--base03);
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 24px 0;
+  }
+  a.row {
+    padding: 14px 20px;
+    font-size: 16px;
+  }
+  .label,
+  .host,
+  .stats {
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+}

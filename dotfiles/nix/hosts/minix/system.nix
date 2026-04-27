@@ -14,6 +14,57 @@ let
     archivistUi = 10005;
     webTty = 10006;
     propertySearch = 10007;
+    glances = 10003;
+  };
+  homepageRoot = import ./homepage {
+    inherit pkgs lib;
+    title = "minix";
+    glancesPort = ports.glances;
+    sections = [
+      {
+        label = "apps";
+        items = [
+          {
+            name = "archivist";
+            url = "http://minix:${toString ports.archivistUi}";
+          }
+          {
+            name = "property search";
+            url = "http://minix:${toString ports.propertySearch}";
+          }
+        ];
+      }
+      {
+        label = "infra";
+        items = [
+          {
+            name = "blocky";
+            url = "http://minix:${toString ports.blockyUi}";
+          }
+          {
+            name = "zigbee2mqtt";
+            url = "http://minix:${toString ports.zigbee2mqtt}";
+          }
+          {
+            name = "web tty";
+            url = "https://minix.golden-minor.ts.net:${toString ports.webTty}";
+          }
+        ];
+      }
+      {
+        label = "nas";
+        items = [
+          {
+            name = "synology";
+            url = "http://nas:5000";
+          }
+          {
+            name = "plex";
+            url = "http://nas:32400/web/index.html";
+          }
+        ];
+      }
+    ];
   };
   dns = {
     quad9 = "https://dns.quad9.net/dns-query";
@@ -372,87 +423,16 @@ in
     };
   };
 
-  systemd.services.homepage-dashboard.serviceConfig = {
-    AmbientCapabilities = [ "CAP_NET_BIND_SERVICE" ];
-    CapabilityBoundingSet = [ "CAP_NET_BIND_SERVICE" ];
-    PrivateUsers = lib.mkForce false;
+  services.glances = {
+    enable = true;
+    port = ports.glances;
   };
 
-  services.homepage-dashboard = {
+  services.darkhttpd = {
     enable = true;
-    listenPort = 80;
-    allowedHosts = "minix,minix:80,minix.local,minix.local:80,localhost,localhost:80,127.0.0.1,127.0.0.1:80";
-    settings = {
-      title = "minix";
-      theme = "dark";
-      color = "zinc";
-      headerStyle = "clean";
-      useEqualHeights = true;
-      hideVersion = true;
-    };
-    customCSS = ''
-      #footer { display: none; }
-      *, *::before, *::after {
-        animation-duration: 0s !important;
-        transition-duration: 0s !important;
-      }
-    '';
-    services = [
-      {
-        Apps = [
-          {
-            "Archivist" = {
-              href = "http://minix:${toString ports.archivistUi}";
-              description = "Media archiver";
-            };
-          }
-          {
-            "Property Search" = {
-              href = "http://minix:${toString ports.propertySearch}";
-              description = "Property listings";
-            };
-          }
-        ];
-      }
-      {
-        Infra = [
-          {
-            "Blocky" = {
-              href = "http://minix:${toString ports.blockyUi}";
-              description = "DNS ad-blocking";
-            };
-          }
-          {
-            "Zigbee2MQTT" = {
-              href = "http://minix:${toString ports.zigbee2mqtt}";
-              description = "Zigbee device management";
-            };
-          }
-          {
-            "Web TTY" = {
-              href = "https://minix.golden-minor.ts.net:${toString ports.webTty}";
-              description = "Web terminal";
-            };
-          }
-        ];
-      }
-      {
-        NAS = [
-          {
-            "Synology" = {
-              href = "http://nas:5000";
-              description = "NAS management";
-            };
-          }
-          {
-            "Plex" = {
-              href = "http://nas:32400/web/index.html";
-              description = "Media player";
-            };
-          }
-        ];
-      }
-    ];
+    port = 80;
+    address = "::";
+    rootDir = "${homepageRoot}";
   };
 
   sops.defaultSopsFile = ../../secrets/minix.yaml;

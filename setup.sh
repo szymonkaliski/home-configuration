@@ -88,6 +88,16 @@ if [[ $HOSTNAME == "orchid" ]]; then
   askBeforeRunning ./terminfos/generate-terminfos.sh
   askBeforeRunning ./scripts/setup-osx
   askBeforeRunning ./scripts/npm-link-global-packages
+
+  # determinate nix encrypts the /nix volume if the boot disk has FileVault on,
+  # which causes a password prompt at every boot, /nix store is public anyway
+  # so we can decrypt it
+  if [[ "$(diskutil info 'Nix Store' 2>/dev/null | awk -F': +' '/FileVault:/{print $2}')" == "Yes" ]]; then
+    read -p "$(tput setaf 3)Decrypt the Nix Store volume?$(tput sgr0) (y/n) " RESP
+    if [ "$RESP" == "y" ]; then
+      security find-generic-password -s "Nix Store" -w /Library/Keychains/System.keychain | sudo diskutil apfs decryptVolume "Nix Store" -stdinpassphrase
+    fi
+  fi
 fi
 
 echo

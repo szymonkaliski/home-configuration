@@ -49,6 +49,10 @@ let
             name = "web tty";
             url = "https://minix.golden-minor.ts.net:${toString ports.webTty}";
           }
+          {
+            name = "glances";
+            url = "http://minix:${toString ports.glances}";
+          }
         ];
       }
       {

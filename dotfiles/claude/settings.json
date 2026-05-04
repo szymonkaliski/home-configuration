@@ -91,6 +91,7 @@
   "effortLevel": "xhigh",
   "promptSuggestionEnabled": false,
   "verbose": true,
+  "preferredNotifChannel": "notifications_disabled",
   "fileCheckpointingEnabled": false,
   "terminalProgressBarEnabled": false,
   "skipAutoPermissionPrompt": true

@@ -31,9 +31,9 @@ nvd_diff() {
     output=$(nix run nixpkgs#nvd -- diff "$before" "$after" 2>&1)
   fi
 
+  echo
   echo -e "$(tput setaf 2)Diffing $label...$(tput sgr0)"
   echo "$output"
-  echo
 
   {
     echo "[$(date -Iseconds 2>/dev/null || date)] $label"
@@ -59,8 +59,8 @@ if [[ $HOSTNAME == "orchid" ]]; then
 
   HM_AFTER=$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null)
   nvd_diff "home-manager" "$HM_BEFORE" "$HM_AFTER"
-
   echo
+
   popd > /dev/null || return
 elif [[ $HOSTNAME == "minix" ]]; then
   echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"
@@ -78,6 +78,7 @@ elif [[ $HOSTNAME == "minix" ]]; then
   HM_AFTER=$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null)
   nvd_diff "system" "$SYSTEM_BEFORE" "$SYSTEM_AFTER"
   nvd_diff "home-manager" "$HM_BEFORE" "$HM_AFTER"
+  echo
 
   popd > /dev/null || return
 fi

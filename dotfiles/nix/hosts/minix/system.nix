@@ -76,8 +76,6 @@ let
   };
 in
 {
-  imports = [ ./claude-env.nix ];
-
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 10;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -249,6 +247,11 @@ in
   };
 
   programs.zsh.enable = true;
+
+  # claude-code ships native ELF binaries (the launcher itself plus embedded
+  # ugrep/bfs/rg dispatched via ARGV0); they hardcode /lib64/ld-linux-x86-64.so.2.
+  # nix-ld's shim at that path makes them all run without per-binary wrappers.
+  programs.nix-ld.enable = true;
 
   nixpkgs.config.allowUnfree = true;
 

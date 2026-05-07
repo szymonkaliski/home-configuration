@@ -81,21 +81,10 @@ EOF
 # create executable wrappers for claude and gemini
 mkdir -p /home/szymon/.bin
 
-# claude: inline ld-bypass wrapper. Prefers ~/.local/bin/claude (native install,
-# kept fresh by claude's own auto-updater); bootstraps via npm install -g on
-# first run. ~/.bin (not ~/.local/bin) so claude's native installer can't
-# clobber our wrapper. $CLAUDE_LD / $CLAUDE_LD_LIBPATH come from base.nix.
 cat << 'EOF' > /home/szymon/.bin/claude
 #!/bin/sh
-CLAUDE_EXE="$HOME/.local/bin/claude"
-if [ ! -x "$CLAUDE_EXE" ]; then
-  NPM_EXE="$HOME/.npm/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe"
-  if [ ! -x "$NPM_EXE" ]; then
-    npm install -g @anthropic-ai/claude-code@latest
-  fi
-  CLAUDE_EXE="$NPM_EXE"
-fi
-exec "$CLAUDE_LD" --library-path "$CLAUDE_LD_LIBPATH" "$CLAUDE_EXE" --dangerously-skip-permissions "$@"
+export PATH="/home/szymon/.npm/bin:$PATH"
+exec npx -y @anthropic-ai/claude-code@latest --dangerously-skip-permissions "$@"
 EOF
 
 cat << 'EOF' > /home/szymon/.bin/gemini

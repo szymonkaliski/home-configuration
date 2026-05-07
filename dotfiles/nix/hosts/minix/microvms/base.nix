@@ -17,7 +17,8 @@ let
   dotfileDir = ../../../../.;
 in
 {
-  imports = [ ../claude-env.nix ];
+  # see system.nix for context — same ELF/ld-linux issue inside microvms
+  programs.nix-ld.enable = true;
 
   networking.hostName = hostName;
   system.stateVersion = "25.11";

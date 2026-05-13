@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   repoRoot,
   ...
@@ -37,7 +38,10 @@ in
     pkgs.unixtools.watch
   ];
 
-  home.file.".hammerspoon".source = link "${dotfileDir}/hammerspoon";
+  # direct symlink so Hammerspoon has config at login before /nix is mounted
+  home.activation.linkHammerspoon = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    ln -sfn "${dotfileDir}/hammerspoon" "$HOME/.hammerspoon"
+  '';
 
   xdg.configFile."ghostty".source = link "${dotfileDir}/ghostty";
 

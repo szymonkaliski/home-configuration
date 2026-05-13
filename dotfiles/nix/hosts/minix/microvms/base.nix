@@ -14,6 +14,18 @@
 
 let
   dotfileDir = ../../../../.;
+  tailscaleAutoServe = pkgs.writeShellApplication {
+    name = "tailscale-auto-serve";
+    runtimeInputs = with pkgs; [
+      tailscale
+      bpftrace
+      iproute2
+      gawk
+      gnugrep
+      coreutils
+    ];
+    text = builtins.readFile ./tailscale-auto-serve.sh;
+  };
 in
 {
   # see system.nix for context — same ELF/ld-linux issue inside microvms
@@ -88,7 +100,8 @@ in
   };
 
   services.tailscale.enable = true;
-  systemd.services.tailscale-autoconnect = {
+
+  systemd.services.tailscale-auto-connect = {
     wantedBy = [ "multi-user.target" ];
     after = [
       "tailscaled.service"
@@ -113,6 +126,19 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+    };
+  };
+
+  systemd.services.tailscale-auto-serve = {
+    description = "Auto-expose user-owned listening ports via tailscale serve";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "tailscale-auto-connect.service" ];
+    requires = [ "tailscale-auto-connect.service" ];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "on-failure";
+      RestartSec = "5s";
+      ExecStart = lib.getExe tailscaleAutoServe;
     };
   };
 

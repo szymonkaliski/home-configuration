@@ -6,14 +6,6 @@ HOST_DIR="$VM_BASE/host"
 SSH_OPTS=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR)
 MAX_VMS=4
 
-# mirror of sizing in dotfiles/nix/hosts/minix/microvms/default.nix
-vm_size() {
-  case "$1" in
-    1|2) echo "lg" ;;
-    *)   echo "sm" ;;
-  esac
-}
-
 REPO_SETUP_SH="$HOME/Projects/home-configuration/dotfiles/nix/hosts/minix/microvms/setup.sh"
 
 
@@ -37,9 +29,7 @@ sync_host_config() {
 }
 
 find_free_vm() {
-  local want_size="${1:-}"
   for i in $(seq 1 "$MAX_VMS"); do
-    [ -n "$want_size" ] && [ "$(vm_size "$i")" != "$want_size" ] && continue
     local state
     state=$(systemctl is-active "microvm@vm-${i}" 2>/dev/null || true)
     if [ "$state" = "inactive" ] || [ "$state" = "failed" ]; then
@@ -47,25 +37,19 @@ find_free_vm() {
       return
     fi
   done
-  if [ -n "$want_size" ]; then
-    echo "error: no free ${want_size} VMs" >&2
-  else
-    echo "error: all VMs in use" >&2
-  fi
+  echo "error: all VMs in use" >&2
   exit 1
 }
 
 cmd_start() {
-  local VM="" PROJECT="." SIZE=""
+  local VM="" PROJECT="."
   while [ $# -gt 0 ]; do
     case "$1" in
       --dir) PROJECT="$2"; shift 2 ;;
-      --size) SIZE="$2"; shift 2 ;;
-      lg|sm) SIZE="$1"; shift ;;
       *) VM="$1"; shift ;;
     esac
   done
-  [ -z "$VM" ] && VM=$(find_free_vm "$SIZE")
+  [ -z "$VM" ] && VM=$(find_free_vm)
   PROJECT=$(realpath "$PROJECT")
   mkdir -p "$VM_BASE/vm-${VM}/data/home"
   rm -rf "$VM_BASE/vm-${VM}/workspace"
@@ -140,7 +124,7 @@ cmd_list() {
       *) status="stopped" ;;
     esac
     ws=$(readlink "$VM_BASE/vm-${i}/workspace" 2>/dev/null || echo "(none)")
-    printf "vm-%-2d %-2s  %-8s  %s\n" "$i" "$(vm_size "$i")" "$status" "$ws"
+    printf "vm-%-2d  %-8s  %s\n" "$i" "$status" "$ws"
   done
 }
 
@@ -231,20 +215,18 @@ cmd_usage() {
   cat <<EOF
 usage: microvm <command> [args]
 
-  list, ls                 show all VMs
+  list, ls                  show all VMs
 
-  start   [N|lg|sm] [--dir path]
-                           start VM (default: current dir, auto-picks VM;
-                           lg/sm filters the auto-pick by size)
-  ssh     N                ssh into running VM
-  stop    N                stop VM
-  restart N                restart VM (preserves workspace)
-  kill    N                kill VM
-  clean   N                clean all ephemeral data for VM
+  start [N] [--dir PATH]    start VM (default cwd; auto-pick if N omitted)
+  ssh N                     ssh into running VM
+  stop N                    stop VM
+  restart N                 restart VM (preserves workspace)
+  kill N                    kill VM
+  clean N                   clean all ephemeral data for VM
 
-  stop-all                 stop all VMs
-  kill-all                 kill all VMs
-  clean-all                clean all stopped VMs
+  stop-all                  stop all VMs
+  kill-all                  kill all VMs
+  clean-all                 clean all stopped VMs
 EOF
 }
 

@@ -3,7 +3,6 @@
   ipAddress,
   tapId,
   mac,
-  mem,
 }:
 
 {
@@ -192,7 +191,8 @@ in
   microvm = {
     hypervisor = "cloud-hypervisor";
     vcpu = 4;
-    inherit mem;
+    mem = 4096;
+    balloon = true;
     writableStoreOverlay = "/nix/.rw-store";
 
     volumes = [

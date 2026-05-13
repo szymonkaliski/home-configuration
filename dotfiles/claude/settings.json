@@ -27,6 +27,7 @@
       "Bash(rg *)",
       "Bash(uname *)",
       "Bash(which *)",
+      "Bash(trash:*)",
       "mcp__chrome-devtools__*",
       "mcp__playwright__*"
     ]

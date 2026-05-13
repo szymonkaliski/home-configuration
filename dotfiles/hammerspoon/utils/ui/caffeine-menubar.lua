@@ -2,7 +2,7 @@ local cache  = {}
 local module = { cache = cache }
 
 local ICON_PATH = os.getenv('HOME') .. '/.hammerspoon/assets/caffeine-3-on.png'
--- created dynamically to have "greayed out" color
+-- created dynamically to have "greyed out" color
 local ICON_ON
 local ICON_OFF
 
@@ -19,74 +19,60 @@ local createGreyedIcon = function(img, alpha)
   return canvas:imageFromCanvas()
 end
 
-local updateCaffeine
+local applyDisplayIdle = function()
+  hs.caffeinate.set('displayIdle', cache.displayIdle)
+  cache.menuItem:setIcon(cache.displayIdle and ICON_ON or ICON_OFF)
+end
 
-local generateCaffeineMenu = function(options)
+local generateMenu = function()
+  local displayIdle = hs.caffeinate.get('displayIdle')
+  local systemIdle  = hs.caffeinate.get('systemIdle')
+
   return {
     {
-      title = options.statusText,
+      title    = 'Display Sleep: ' .. (displayIdle and 'Disabled' or 'Enabled'),
       disabled = true
     },
     {
-      title = options.subStatusText,
-      fn = function()
-        updateCaffeine(options.preventDisplaySleep)
+      title = displayIdle and 'Enable Display Sleep' or 'Disable Display Sleep',
+      fn    = function()
+        cache.displayIdle = not hs.caffeinate.get('displayIdle')
+        applyDisplayIdle()
       end
     },
+    { title = '-' },
     {
-      title = '-',
+      title    = 'System Sleep: ' .. (systemIdle and 'Disabled' or 'Enabled'),
+      disabled = true
     },
+    { title = '-' },
     {
       title = 'Sleep Now',
-      fn = function()
-        updateCaffeine(false)
+      fn    = function()
+        cache.displayIdle = false
+        applyDisplayIdle()
         hs.caffeinate.systemSleep()
       end
     }
   }
 end
 
-local updateMenuItem = function()
-  local isDisplaySleepPrevented = hs.caffeinate.get('displayIdle')
-
-  if isDisplaySleepPrevented then
-    cache.menuItem:setIcon(ICON_ON)
-    cache.currentMenu = generateCaffeineMenu({
-      statusText          = 'Sleep: Disabled',
-      subStatusText       = 'Enable Sleep',
-      preventDisplaySleep = false
-    })
-  else
-    cache.menuItem:setIcon(ICON_OFF)
-    cache.currentMenu = generateCaffeineMenu({
-      statusText          = 'Sleep: Enabled',
-      subStatusText       = 'Disable Sleep',
-      preventDisplaySleep = true
-    })
-  end
-end
-
-updateCaffeine = function(newStatus)
-  if newStatus ~= nil then
-    cache.displayIdle = newStatus
-  end
-
-  hs.caffeinate.set('displayIdle', cache.displayIdle)
-  hs.caffeinate.set('systemIdle', cache.displayIdle)
-  hs.caffeinate.set('system', cache.displayIdle)
-
-  updateMenuItem()
-end
-
 module.toggleCaffeine = function()
   cache.displayIdle = not hs.caffeinate.get('displayIdle')
+  applyDisplayIdle()
+end
 
-  updateCaffeine(cache.displayIdle)
+local studioDisplayWatcher = function(_, _, _, prev, isConnected)
+  -- when studio display is disconnected, force display sleep back on, overriding any manual toggle
+  if prev and not isConnected and cache.displayIdle then
+    cache.displayIdle = false
+    applyDisplayIdle()
+  end
 end
 
 module.start = function()
   local BASE_ICON = hs.image.imageFromPath(ICON_PATH):setSize({ w = 20, h = 20 })
-  ICON_ON = BASE_ICON
+  ICON_ON  = BASE_ICON
   ICON_OFF = createGreyedIcon(BASE_ICON, 0.25)
 
   cache.displayIdle = hs.settings.get('displayIdle') or false
@@ -100,14 +86,17 @@ module.start = function()
       module.toggleCaffeine()
       return {}
     else
-      return cache.currentMenu
+      return generateMenu()
     end
   end)
 
-  updateCaffeine()
+  applyDisplayIdle()
+
+  cache.watcherStudioDisplay = hs.watchable.watch('status.isStudioDisplayConnected', studioDisplayWatcher)
 end
 
 module.stop = function()
+  cache.watcherStudioDisplay:release()
   hs.settings.set('displayIdle', cache.displayIdle)
 end
 

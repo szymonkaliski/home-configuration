@@ -6,6 +6,8 @@ local debounce          = require('ext.utils').debounce
 local cache  = { status = status }
 local module = { cache = cache }
 
+local STUDIO_DISPLAY_UUID = '464307F2-7664-40E9-8705-3B2EB3451EF6'
+
 local updateBattery = function()
   local burnRate = hs.battery.designCapacity() / math.abs(hs.battery.amperage())
 
@@ -23,10 +25,13 @@ local updateBattery = function()
 end
 
 local updateScreen = function()
-  status.connectedScreens        = #hs.screen.allScreens()
-  status.connectedScreenIds      = hs.fnutils.map(hs.screen.allScreens(), function(screen) return screen:id() end)
-  status.connectedScreenNames    = hs.fnutils.map(hs.screen.allScreens(), function(screen) return screen:name() end)
-  status.isLaptopScreenConnected = hs.screen.findByName('Color LCD') ~= nil
+  local screens = hs.screen.allScreens()
+
+  status.connectedScreens         = #screens
+  status.connectedScreenIds       = hs.fnutils.map(screens, function(screen) return screen:id() end)
+  status.connectedScreenNames     = hs.fnutils.map(screens, function(screen) return screen:name() end)
+  status.isLaptopScreenConnected  = hs.screen.findByName('Color LCD') ~= nil
+  status.isStudioDisplayConnected = hs.fnutils.find(screens, function(s) return s:getUUID() == STUDIO_DISPLAY_UUID end) ~= nil
 
   log.d('updated screens:', hs.inspect(status.connectedScreenNames))
 end
@@ -62,9 +67,9 @@ module.start = function()
   cache.watchers = {
     -- sleep   = hs.caffeinate.watcher.new(updateSleep),
     -- wifi    = hs.wifi.watcher.new(updateWiFi),
-    -- screen  = hs.screen.watcher.new(updateScreen),
 
     battery = hs.battery.watcher.new(updateBattery),
+    screen  = hs.screen.watcher.new(updateScreen),
     theme   = hs.distributednotifications.new(updateTheme, "AppleInterfaceThemeChangedNotification"),
     usb     = hs.usb.watcher.new(debounce(updateUSB, 3)),
   }
@@ -73,13 +78,8 @@ module.start = function()
     watcher:start()
   end)
 
-  -- setup on state start
-  --
-  -- updateScreen()  -- this is required for automatic main display setup and hhtwm - not using them anymore
-  -- updateSleep()   -- this is required for autohome and automount - not using them anymore
-  -- updateWiFi()    -- this is required for authome, automount, and wifi notification - not using them anymore
-
   updateBattery()
+  updateScreen()
   updateTheme()
   updateUSB()
 end

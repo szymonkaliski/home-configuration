@@ -40,11 +40,12 @@ config = {
 }
 
 -- requires
-bindings   = require('bindings')
-logger     = require('utils.logger')
-ui         = require('utils.ui')
-watchables = require('utils.watchables')
-watchers   = require('utils.watchers')
+bindings     = require('bindings')
+controlplane = require('utils.controlplane')
+logger       = require('utils.logger')
+ui           = require('utils.ui')
+watchables   = require('utils.watchables')
+watchers     = require('utils.watchers')
 
 -- no animations
 hs.window.animationDuration = 0.0
@@ -62,8 +63,11 @@ watchers.enabled            = { 'theme', 'urlevent' }
 -- ui
 ui.enabled                  = { 'caffeine-menubar' }
 
+-- controlplane
+controlplane.enabled        = { 'auto-system-sleep' }
+
 -- bindings & modules
-local modules               = { bindings, logger, watchers, ui, watchables } -- watchables have to come last to refresh all the things that depend on them
+local modules               = { bindings, logger, watchers, ui, controlplane, watchables }
 local basicBindings         = { 'ask-before-quit', 'block-hide', 'ctrl-esc', 'f-keys', 'global', 'screenshot-with-meta', 'term-ctrl-i' }
 bindings.askBeforeQuitApps  = flatten({ config.apps.browsers, config.apps.terms, { 'Preview' } })
 

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+TINYPARAKEET=$HOME/Documents/Projects/tinyparakeet/.build/release/tinyparakeet
+
+if [[ -f "$TINYPARAKEET" && -x "$TINYPARAKEET" ]]; then
+  "$TINYPARAKEET" "$@"
+else
+  echo "Error: $TINYPARAKEET does not exist or is not executable."
+  exit 1
+fi

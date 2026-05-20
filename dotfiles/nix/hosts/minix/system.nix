@@ -453,7 +453,6 @@ in
   sops.secrets.pushover_user = {
     sopsFile = ../../secrets/shared.yaml;
   };
-  sops.secrets.gemini_api_key_vm = { };
 
   system.activationScripts.samba-password = lib.stringAfter [ "setupSecrets" ] ''
     SMB_PASS=$(cat ${config.sops.secrets.samba_password.path})
@@ -465,7 +464,6 @@ in
     mkdir -p "$dir"
 
     cp ${config.sops.secrets.tailscale_authkey.path} "$dir/ts-authkey"
-    cp ${config.sops.secrets.gemini_api_key_vm.path} "$dir/gemini-api-key"
 
     printf 'PUSHOVER_TOKEN=%s\nPUSHOVER_USER=%s\n' \
       "$(cat ${config.sops.secrets.pushover_token_vm.path})" \
@@ -473,7 +471,7 @@ in
       > "$dir/pushoverrc"
 
     chown -R szymon:users "$dir"
-    chmod 600 "$dir"/{ts-authkey,gemini-api-key,pushoverrc}
+    chmod 600 "$dir"/{ts-authkey,pushoverrc}
   '';
 
   services.restic.backups.nas = {

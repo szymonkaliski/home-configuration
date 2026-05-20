@@ -75,9 +75,6 @@ in
     ".claude/notify.js".source = link "${dotfileDir}/claude/notify.js";
     ".claude/statusline-command.sh".source = link "${dotfileDir}/claude/statusline-command.sh";
     ".claude/skills".source = link "${dotfileDir}/claude/skills";
-    ".gemini/GEMINI.md".source = link "${dotfileDir}/gemini/GEMINI.md";
-    ".gemini/settings.json".source = link "${dotfileDir}/gemini/settings.json";
-    ".gemini/skills".source = link "${dotfileDir}/gemini/skills";
   };
 
   xdg.configFile = {

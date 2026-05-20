@@ -39,6 +39,11 @@
       "settings": {
         "nil.formatting.command": ["nixfmt"]
       }
+    },
+    "sourcekit": {
+      "command": "sourcekit-lsp",
+      "filetypes": ["swift"],
+      "rootPatterns": ["Package.swift", "*.xcodeproj", "*.xcworkspace"]
     }
   }
 }

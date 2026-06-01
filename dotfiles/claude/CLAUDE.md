@@ -29,9 +29,9 @@
 
 ## tmux
 
-- when running in tmux, other pane contents are captured to `/tmp/tmux-panes-$TMUX_PANE.txt` before each prompt
+- when running in tmux, the other panes' contents are written to `/tmp/tmux-panes-$TMUX_PANE.txt` on demand by a `PreToolUse` hook that fires just before a Read of that path - so access it with the **Read tool**, not `cat`/Bash (Bash bypasses the hook and the file reads empty)
   - always run `echo $TMUX_PANE` first to get the actual pane ID, never guess it
-  - read the file when you need to see adjacent panes, use `capture-pane` for more context
+  - use the Read tool on the file when you need to see adjacent panes; use `capture-pane` for more or live context
   - send commands to these panes with `tmux send-keys -t <pane_id> 'command' Enter`
   - when sending commands to other panes, do NOT pipe through `tail` or truncate output, let the full output show so you can read it back with `capture-pane`
 

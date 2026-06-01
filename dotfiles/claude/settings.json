@@ -30,7 +30,8 @@
       "Bash(trash:*)",
       "mcp__chrome-devtools__*",
       "mcp__playwright__*"
-    ]
+    ],
+    "defaultMode": "auto"
   },
   "model": "opus[1m]",
   "hooks": {
@@ -52,6 +53,15 @@
           {
             "type": "command",
             "command": "~/.claude/pre-read-hook.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/notify.js"
           }
         ]
       }

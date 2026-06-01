@@ -62,6 +62,7 @@ ts_dns="$(tailscale status --json 2>/dev/null | jq -r '.Self.DNSName // empty' |
 vm_context="You are running inside an ephemeral, sandboxed NixOS microVM named '${vm_name}'."
 if [ -n "$ts_dns" ]; then
   vm_context="${vm_context} Its private Tailscale hostname is '${ts_dns}', reachable only from devices on the same tailnet (not the public internet). Any TCP port you listen on is automatically published on the tailnet at https://${ts_dns}:<PORT> (same port number, TLS-terminated) by a background watcher, so to share a running dev server you just need to listen on a port."
+  vm_context="${vm_context} That serve is PRIVATE to the tailnet. To make a port public (reachable by anyone, not just the tailnet) when asked to funnel it, run 'tailscale funnel --bg --https=443 http://127.0.0.1:<PORT>'; it then lives at https://${ts_dns}/ . Stop with 'tailscale funnel --https=443 off'. Only one port can be funnelled at a time."
 fi
 
 exec npx -y @anthropic-ai/claude-code@latest --dangerously-skip-permissions --append-system-prompt "$vm_context" "$@"

@@ -46,7 +46,7 @@ check "disk-has-space" bash -c '
 '
 
 check "blocky-blocks-ads" bash -c '
-  result=$(dig @127.0.0.1 +short +time=5 pagead2.googlesyndication.com 2>&1)
+  result=$(dig @127.0.0.1 +short +time=5 pagead2.googlesyndication.com)
   if [[ "$result" != "0.0.0.0" ]]; then
     echo "expected 0.0.0.0, got: $result"
     exit 1
@@ -54,7 +54,7 @@ check "blocky-blocks-ads" bash -c '
 '
 
 check "blocky-resolves-dns" bash -c '
-  result=$(dig @127.0.0.1 +short +time=5 google.com 2>&1)
+  result=$(dig @127.0.0.1 +short +time=5 google.com)
   if [[ -z "$result" ]]; then
     echo "failed to resolve google.com"
     exit 1
@@ -62,16 +62,19 @@ check "blocky-resolves-dns" bash -c '
 '
 
 check "restic-backed-up" bash -c '
+  err=$(mktemp)
   snap=$(timeout 30 sudo -n \
     RESTIC_REPOSITORY="rclone:nas:/NAS/Backup/Minix" \
     RESTIC_PASSWORD_FILE=/run/secrets/restic_password \
     RCLONE_CONFIG=/run/secrets/rclone_nas_config \
-    /run/current-system/sw/bin/restic snapshots --latest 1 --json --no-cache 2>&1)
+    /run/current-system/sw/bin/restic snapshots --latest 1 --json --no-cache 2>"$err")
   ts=$(echo "$snap" | jq -r "sort_by(.time) | .[-1].time // empty" 2>/dev/null)
   if [[ -z "$ts" ]]; then
-    echo "no snapshots found"
+    echo "no snapshots found: $(cat "$err")"
+    rm -f "$err"
     exit 1
   fi
+  rm -f "$err"
   snap_epoch=$(date -d "$ts" +%s 2>/dev/null)
   now_epoch=$(date +%s)
   age_h=$(( (now_epoch - snap_epoch) / 3600 ))
@@ -110,14 +113,14 @@ check "timav-has-events" bash -c '
 '
 
 check "mosquitto-connects" bash -c '
-  if ! mosquitto_pub -h localhost -p 1883 -u mqtt -P mqtt-secure -t "healthcheck" -m "ping" -q 0 2>&1; then
+  if ! timeout 5 mosquitto_pub -h localhost -p 1883 -u mqtt -P mqtt-secure -t "healthcheck" -m "ping" -q 0 2>&1; then
     echo "cannot connect to broker"
     exit 1
   fi
 '
 
 check "zigbee2mqtt-online" bash -c '
-  state=$(mosquitto_sub -h localhost -p 1883 -u mqtt -P mqtt-secure -t "zigbee2mqtt/bridge/state" -C 1 -W 5 2>&1)
+  state=$(mosquitto_sub -h localhost -p 1883 -u mqtt -P mqtt-secure -t "zigbee2mqtt/bridge/state" -C 1 -W 5)
   if [[ -z "$state" ]]; then
     echo "no bridge state (timeout)"
     exit 1
@@ -130,7 +133,7 @@ check "zigbee2mqtt-online" bash -c '
 '
 
 check "xiaomiclock-synced" bash -c '
-  sync=$(mosquitto_sub -h localhost -p 1883 -u mqtt -P mqtt-secure -t "friday/sensor_living_room_temperature/last_sync" -C 1 -W 5 2>&1)
+  sync=$(mosquitto_sub -h localhost -p 1883 -u mqtt -P mqtt-secure -t "friday/sensor_living_room_temperature/last_sync" -C 1 -W 5)
   if [[ -z "$sync" ]]; then
     echo "no last_sync (timeout)"
     exit 1
@@ -148,7 +151,7 @@ check "xiaomiclock-synced" bash -c '
 '
 
 check "web-tty-serves-https" bash -c '
-  status=$(curl -so /dev/null -w "%{http_code}" --max-time 10 https://minix.golden-minor.ts.net:10006/ 2>&1)
+  status=$(curl -so /dev/null -w "%{http_code}" --max-time 10 https://minix.golden-minor.ts.net:10006/)
   if [[ "$status" != "200" ]]; then
     echo "got HTTP $status"
     exit 1
@@ -156,7 +159,7 @@ check "web-tty-serves-https" bash -c '
 '
 
 check "tailscale-online" bash -c '
-  online=$(tailscale status --self --json 2>&1 | jq -r ".Self.Online // empty" 2>/dev/null)
+  online=$(tailscale status --self --json | jq -r ".Self.Online // empty" 2>/dev/null)
   if [[ "$online" != "true" ]]; then
     echo "node not online"
     exit 1
@@ -182,11 +185,11 @@ errors=()
 for (( _j=0; _j < n; _j++ )); do
   wait -n -p _pid
   i=${pids[$_pid]}
-  status=$(< "$tmpdir/$i.status")
+  status=$(cat "$tmpdir/$i.status")
   if [[ "$status" == "ok" ]]; then
     printf "  %b%4s%b  %s\n" "$green" "ok" "$reset" "${names[$i]}"
   else
-    output=$(< "$tmpdir/$i.output" 2>/dev/null)
+    output=$(cat "$tmpdir/$i.output" 2>/dev/null)
     printf "  %b%4s%b  %s %b%s%b\n" "$red" "fail" "$reset" "${names[$i]}" "$dim" "$output" "$reset"
     errors+=("${names[$i]}: $output")
   fi

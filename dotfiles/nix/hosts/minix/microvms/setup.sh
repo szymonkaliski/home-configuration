@@ -54,8 +54,17 @@ mkdir -p /home/szymon/.bin
 
 cat << 'EOF' > /home/szymon/.bin/claude
 #!/bin/sh
-export PATH="/home/szymon/.npm/bin:$PATH"
-exec npx -y @anthropic-ai/claude-code@latest --dangerously-skip-permissions "$@"
+export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
+
+vm_name="$(hostname -s)"
+ts_dns="$(tailscale status --json 2>/dev/null | jq -r '.Self.DNSName // empty' | sed 's/\.$//')"
+
+vm_context="You are running inside an ephemeral, sandboxed NixOS microVM named '${vm_name}'."
+if [ -n "$ts_dns" ]; then
+  vm_context="${vm_context} Its private Tailscale hostname is '${ts_dns}', reachable only from devices on the same tailnet (not the public internet). Any TCP port you listen on is automatically published on the tailnet at https://${ts_dns}:<PORT> (same port number, TLS-terminated) by a background watcher, so to share a running dev server you just need to listen on a port."
+fi
+
+exec npx -y @anthropic-ai/claude-code@latest --dangerously-skip-permissions --append-system-prompt "$vm_context" "$@"
 EOF
 chmod +x /home/szymon/.bin/claude
 

@@ -80,6 +80,17 @@ in
   boot.loader.systemd-boot.configurationLimit = 10;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # remote box, no console: auto-recover from a bad boot.
+  # panic=30 reboots 30s after a kernel panic; boot.panic_on_fail makes the
+  # scripted initrd reboot instead of dropping to a rescue shell.
+  boot.kernelParams = [
+    "panic=30"
+    "boot.panic_on_fail"
+  ];
+
+  # iTCO_wdt (30s hw max): systemd resets the box if PID1 hangs after boot.
+  systemd.settings.Manager.RuntimeWatchdogSec = "20s";
+
   networking.hostName = "minix";
   networking.useNetworkd = true;
   networking.useDHCP = false;
@@ -148,7 +159,9 @@ in
   # resolved needed: useNetworkd enables its stub listener on :53 (conflicts with blocky),
   # and without it tailscale clobbers /etc/resolv.conf via resolvconf (tailscale#9687)
   services.resolved.enable = true;
-  services.resolved.extraConfig = "DNSStubListener=no";
+  services.resolved.settings.Resolve.DNSStubListener = "no";
+  # avahi already provides mDNS; disable resolved's so they don't both respond
+  services.resolved.settings.Resolve.MulticastDNS = "no";
 
   services.avahi = {
     enable = true;
@@ -308,6 +321,12 @@ in
       frontend.port = ports.zigbee2mqtt;
       device_options.retain = true;
     };
+  };
+
+  # zigbee2mqtt exits if the broker isn't up yet
+  systemd.services.zigbee2mqtt = {
+    after = [ "mosquitto.service" ];
+    wants = [ "mosquitto.service" ];
   };
 
   services.postgresql = {

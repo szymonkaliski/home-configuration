@@ -200,6 +200,7 @@ in
 
   fileSystems."/home" = {
     device = "/mnt/data/home";
+    fsType = "none";
     options = [ "bind" ];
     depends = [ "/mnt/data" ];
   };

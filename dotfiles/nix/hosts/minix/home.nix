@@ -275,7 +275,10 @@ in
 
   services.dropbox.enable = true;
 
-  # auto-start default "home" session in tmux
+  # keep a default "home" tmux session alive. ExecStart creates it then blocks
+  # until it is closed; Restart=always then re-runs ExecStart to recreate it, so
+  # closing the home session (not just killing the whole server) brings it back.
+  # web-tty relies on home always existing and never creates it itself.
   systemd.user.services.tmux = {
     Unit = {
       Description = "tmux default session";
@@ -283,10 +286,10 @@ in
       X-SwitchMethod = "keep-old";
     };
     Service = {
-      Type = "forking";
-      ExecStart = "${pkgs.zsh}/bin/zsh -lc '${pkgs.tmux}/bin/tmux new-session -s home -d'";
+      ExecStart = "${pkgs.zsh}/bin/zsh -lc '${pkgs.tmux}/bin/tmux new-session -d -s home 2>/dev/null; while ${pkgs.tmux}/bin/tmux has-session -t home 2>/dev/null; do ${pkgs.coreutils}/bin/sleep 5; done'";
       ExecStop = "${pkgs.tmux}/bin/tmux kill-server";
       Restart = "always";
+      RestartSec = 1;
     };
     Install = {
       WantedBy = [ "default.target" ];
@@ -424,7 +427,22 @@ in
 
     Service = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -c '%h/.bin/notify-pushover \"Booted: $(date +%%Y-%%m-%%dT%%H:%%M)\"'";
+      ExecStart =
+        let
+          bootNotify = pkgs.writeShellScript "boot-notify" ''
+            booted=$(${pkgs.coreutils}/bin/readlink -f /run/booted-system)
+            ver=$(${pkgs.coreutils}/bin/cat /run/booted-system/nixos-version 2>/dev/null || echo "?")
+            gen=""
+            for l in /nix/var/nix/profiles/system-*-link; do
+              if [ "$(${pkgs.coreutils}/bin/readlink -f "$l")" = "$booted" ]; then
+                gen=$(${pkgs.coreutils}/bin/basename "$l" | ${pkgs.gnugrep}/bin/grep -oE '[0-9]+')
+                break
+              fi
+            done
+            "$HOME/.bin/notify-pushover" "Booted minix: ''${ver} | kernel $(${pkgs.coreutils}/bin/uname -r) | gen ''${gen:-?} | $(${pkgs.coreutils}/bin/date +%Y-%m-%dT%H:%M)"
+          '';
+        in
+        "${bootNotify}";
       ExecStartPost = "${pkgs.coreutils}/bin/touch /run/user/%U/boot-notify-done";
       Environment = "PATH=${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.curl}/bin";
     };
@@ -477,6 +495,7 @@ in
 
     Service = {
       Type = "oneshot";
+      TimeoutStartSec = "10min";
       ExecStartPre = [
         waitForMosquitto
         "${pkgs.nix}/bin/nix develop %h/Projects/xiaomiclock2mqtt --command npm run build"
@@ -518,6 +537,7 @@ in
 
     Service = {
       Type = "oneshot";
+      TimeoutStartSec = "10min";
       ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/timav --command ./cli.js cache";
       WorkingDirectory = "%h/Projects/timav";
       Environment = "DEBUG=*";
@@ -550,6 +570,7 @@ in
 
     Service = {
       Type = "oneshot";
+      TimeoutStartSec = "10min";
       ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/szymonkaliski-com --command bash -c './scripts/update-notes.sh && ./scripts/publish.sh'";
       WorkingDirectory = "%h/Projects/szymonkaliski-com";
       Environment = [
@@ -601,6 +622,7 @@ in
 
     Service = {
       Type = "oneshot";
+      TimeoutStartSec = "60min";
       ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/archivist --command node dist/cli/index.js fetch";
       WorkingDirectory = "%h/Projects/archivist";
     };
@@ -655,15 +677,17 @@ in
   systemd.user.services.web-tty = {
     Unit = {
       Description = "Web TTY terminal";
-      After = [ "network-online.target" ];
-      Wants = [ "network-online.target" ];
+      # tmux.service owns creating the "home" session; start after it so home
+      # exists before web-tty attaches (web-tty only recreates home as a watchdog)
+      After = [ "network-online.target" "tmux.service" ];
+      Wants = [ "network-online.target" "tmux.service" ];
       OnFailure = [ "notify-failure@%N.service" ];
       ConditionPathIsDirectory = "%h/Projects/web-tty";
     };
 
     Service = {
       ExecStartPre = "${pkgs.nix}/bin/nix develop %h/Projects/web-tty --command npm run build";
-      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/web-tty --command ${pkgs.bash}/bin/bash -c 'SHELL=${pkgs.zsh}/bin/zsh PATH=%h/.bin:$PATH exec node dist/server/server.js motd'";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/web-tty --command ${pkgs.bash}/bin/bash -c 'SHELL=${pkgs.zsh}/bin/zsh PATH=%h/.bin:${pkgs.tmux}/bin:$PATH exec node dist/server/server.js'";
 
       # https:// through tailscale serve
       ExecStartPost = "${pkgs.tailscale}/bin/tailscale serve --bg --https=10006 10006";
@@ -691,6 +715,7 @@ in
 
     Service = {
       Type = "oneshot";
+      TimeoutStartSec = "10min";
       ExecStart = "${pkgs.bash}/bin/bash %h/.bin/healthcheck";
       Environment = "PATH=/run/wrappers/bin:/run/current-system/sw/bin:%h/.nix-profile/bin:%h/.bin";
     };
@@ -726,6 +751,7 @@ in
 
     Service = {
       Type = "oneshot";
+      TimeoutStartSec = "10min";
       ExecStart = "${pkgs.rss2email}/bin/r2e run";
       Environment = "PATH=${pkgs.msmtp}/bin";
     };
@@ -794,6 +820,7 @@ in
 
     Service = {
       Type = "oneshot";
+      TimeoutStartSec = "60min";
       ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/property-search --command npm run scrape";
       WorkingDirectory = "%h/Projects/property-search";
     };
@@ -821,6 +848,7 @@ in
 
     Service = {
       Type = "oneshot";
+      TimeoutStartSec = "10min";
       ExecStart = "${pkgs.trash-cli}/bin/trash-empty 90";
     };
   };

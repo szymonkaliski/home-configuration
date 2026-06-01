@@ -1,3 +1,14 @@
+" neovim's `runtime/ftplugin/markdown.lua` calls `vim.treesitter.start()`,
+" which makes treesitter the active highlighter and shadows our vim-markdown
+" syntax/fences/tags/etc. we're disabling treesitter here to keep the legacy
+" look for now
+"
+" TODO: port the custom colors and syntax (tags, due dates, checkboxes) to
+" treesitter queries
+if has('nvim')
+  lua vim.treesitter.stop()
+endif
+
 setlocal conceallevel=2
 setlocal spell
 

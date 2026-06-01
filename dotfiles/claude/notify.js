@@ -7,6 +7,7 @@ const { execFileSync, execSync } = require("child_process");
 const input = JSON.parse(fs.readFileSync(0, "utf8"));
 const event = input.hook_event_name;
 const transcriptPath = input.transcript_path;
+const sessionId = input.session_id;
 
 function truncate(str, max) {
   if (str.length <= max) return str;
@@ -17,6 +18,51 @@ function truncate(str, max) {
     if (atBoundary) cut = atBoundary;
   }
   return cut.trimEnd() + "…";
+}
+
+// PermissionRequest fires the instant a real permission dialog appears (carrying
+// the tool input) and we notify from it directly. A redundant generic
+// `permission_prompt` Notification then fires ~6s later; to drop that duplicate
+// we drop a per-session "already notified" marker here when we deliver a
+// blocking-prompt notification, and the later Notification dedups against it.
+// (Verified: PermissionRequest +51ms with command; Notification +6s generic.)
+const PENDING_DIR = `${os.homedir()}/.claude/notify-pending`;
+const PENDING_FRESH_MS = 10 * 60 * 1000;
+
+function pendingFile(sid) {
+  return `${PENDING_DIR}/${String(sid).replace(/[^\w.-]/g, "_")}.json`;
+}
+function markNotified(sid) {
+  if (!sid) return;
+  try {
+    fs.mkdirSync(PENDING_DIR, { recursive: true });
+    fs.writeFileSync(pendingFile(sid), JSON.stringify({ ts: Date.now() }));
+  } catch {}
+}
+function wasNotified(sid) {
+  if (!sid) return false;
+  try {
+    const rec = JSON.parse(fs.readFileSync(pendingFile(sid), "utf8"));
+    return Date.now() - rec.ts <= PENDING_FRESH_MS;
+  } catch {
+    return false;
+  }
+}
+function clearPending(sid) {
+  if (!sid) return;
+  try {
+    fs.unlinkSync(pendingFile(sid));
+  } catch {}
+  // sweep records orphaned by killed/crashed sessions so the dir can't grow
+  try {
+    const now = Date.now();
+    for (const f of fs.readdirSync(PENDING_DIR)) {
+      const p = `${PENDING_DIR}/${f}`;
+      try {
+        if (now - fs.statSync(p).mtimeMs > PENDING_FRESH_MS) fs.unlinkSync(p);
+      } catch {}
+    }
+  } catch {}
 }
 
 const LOG_PATH = `${os.homedir()}/.claude/notify.log`;
@@ -183,45 +229,6 @@ function lastUserOriginIsTaskNotification(filePath) {
   return false;
 }
 
-function readLastToolUse(filePath) {
-  const fd = fs.openSync(filePath, "r");
-  try {
-    const stat = fs.fstatSync(fd);
-    const readSize = Math.min(stat.size, 65536);
-    const buf = Buffer.alloc(readSize);
-    fs.readSync(fd, buf, 0, readSize, stat.size - readSize);
-    const chunk = buf.toString("utf8");
-
-    const firstNewline = chunk.indexOf("\n");
-    const lines = chunk
-      .slice(firstNewline + 1)
-      .split("\n")
-      .filter(Boolean);
-
-    for (let i = lines.length - 1; i >= 0; i--) {
-      let entry;
-      try {
-        entry = JSON.parse(lines[i]);
-      } catch {
-        continue;
-      }
-      if (entry.type !== "assistant") continue;
-
-      const contents = entry.message?.content;
-      if (!Array.isArray(contents)) return null;
-
-      for (let j = contents.length - 1; j >= 0; j--) {
-        if (contents[j].type !== "tool_use") continue;
-        return contents[j];
-      }
-      return null;
-    }
-  } finally {
-    fs.closeSync(fd);
-  }
-  return null;
-}
-
 function formatToolUse(toolUse) {
   const name = toolUse.name;
   const inp = toolUse.input || {};
@@ -245,43 +252,10 @@ function formatToolUse(toolUse) {
   return name;
 }
 
-// Permission prompts for read-only inspection commands (git log/status/diff,
-// ls, cat, …) are pure noise: the answer is always "approve", so a phone buzz
-// per prompt is worthless. A misclassification here only costs a heads-up ping
-// — the command still needs explicit in-terminal approval and never auto-runs,
-// so suppressing a write-by-mistake can't let anything through. Bias the lists
-// toward commands that are read-only in essentially every common form.
-const READONLY_GIT_SUBCMDS = new Set([
-  "log", "status", "diff", "show", "rev-parse", "rev-list", "describe",
-  "blame", "shortlog", "reflog", "ls-files", "ls-tree", "cat-file",
-  "whatchanged", "name-rev", "grep",
-]);
-const READONLY_CMDS = new Set([
-  "ls", "cat", "head", "tail", "wc", "pwd", "stat", "file", "tree", "du",
-  "df", "env", "printenv", "whoami", "id", "hostname", "date", "realpath",
-  "readlink", "basename", "dirname", "nl", "tac", "jq", "less", "more", "bat",
-]);
-
-function isReadOnlyBash(command) {
-  if (!command) return false;
-  // redirections / command substitution can hide a write — don't classify
-  if (/[<>]|\$\(|`/.test(command)) return false;
-  // every chained/piped segment must itself be read-only
-  return command.split(/&&|\|\||;|\|/).every((seg) => {
-    const tokens = seg.trim().split(/\s+/).filter(Boolean);
-    while (tokens.length && /^\w+=/.test(tokens[0])) tokens.shift(); // env prefix
-    if (!tokens.length) return false;
-    if (tokens[0] === "git") {
-      const sub = tokens.slice(1).find((t) => !t.startsWith("-"));
-      return sub ? READONLY_GIT_SUBCMDS.has(sub) : false;
-    }
-    return READONLY_CMDS.has(tokens[0]);
-  });
-}
-
 let body;
 
 if (event === "Stop") {
+  clearPending(sessionId); // turn ended; any pending-tool record is now stale
   if (!transcriptPath || !fs.existsSync(transcriptPath)) {
     logLine({ phase: "skipped", reason: "no-transcript", event });
     process.exit(0);
@@ -310,37 +284,38 @@ if (event === "Stop") {
   }
   body = state.text;
 } else if (event === "PreToolUse") {
-  // AskUserQuestion blocks mid-turn waiting on the user but fires no Notification
-  // event (it bypasses the permission system) and Stop never fires for it either,
-  // so a PreToolUse hook is the only signal that the chooser is now waiting.
-  body = formatToolUse({
-    name: input.tool_name,
-    input: input.tool_input || {},
-  });
+  // Only AskUserQuestion reaches here (Read goes to pre-read-hook; nothing else
+  // is hooked). It blocks mid-turn but fires no permission Notification, so this
+  // is the only immediate signal that the chooser is waiting.
+  if (input.tool_name !== "AskUserQuestion") process.exit(0);
+  body = formatToolUse({ name: input.tool_name, input: input.tool_input || {} });
+} else if (event === "PermissionRequest") {
+  // Fires the instant a real permission dialog appears (never for auto-approved
+  // calls) and carries the tool input — so we name exactly what's awaited,
+  // immediately. This is the primary permission notification.
+  body = formatToolUse({ name: input.tool_name, input: input.tool_input || {} });
 } else {
   body = input.message || "Notification";
 
-  if (
-    input.notification_type === "permission_prompt" &&
-    transcriptPath &&
-    fs.existsSync(transcriptPath)
-  ) {
-    try {
-      const toolUse = readLastToolUse(transcriptPath);
-      if (toolUse) {
-        if (toolUse.name === "Bash" && isReadOnlyBash(toolUse.input?.command)) {
-          logLine({
-            phase: "suppressed",
-            reason: "readonly-permission-prompt",
-            event,
-            command: truncate(toolUse.input?.command || "", 120),
-          });
-          process.exit(0);
-        }
-        body = formatToolUse(toolUse);
-      }
-    } catch {}
+  // The generic permission_prompt Notification fires ~6s later as a backstop. If
+  // PermissionRequest already notified this prompt (marker set on delivery), it's
+  // a duplicate — drop it. It still fires when PermissionRequest was suppressed
+  // because the pane was focused and the user has since looked away (a re-alert).
+  if (input.notification_type === "permission_prompt" && wasNotified(sessionId)) {
+    logLine({ phase: "suppressed", reason: "permission-already-notified", event });
+    process.exit(0);
   }
+}
+
+// remember we delivered a blocking-prompt notification (we are past the
+// focused-pane suppression here), so the redundant ~6s permission_prompt — or a
+// re-fire — dedups against it; cleared on Stop.
+if (
+  event === "PermissionRequest" ||
+  (event === "PreToolUse" && input.tool_name === "AskUserQuestion") ||
+  (event === "Notification" && input.notification_type === "permission_prompt")
+) {
+  markNotified(sessionId);
 }
 
 const title = `Claude Code (${os.hostname()})`;

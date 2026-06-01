@@ -66,6 +66,16 @@
         ]
       }
     ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/notify.js"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -101,6 +111,7 @@
   },
   "effortLevel": "xhigh",
   "promptSuggestionEnabled": false,
+  "theme": "dark",
   "verbose": true,
   "preferredNotifChannel": "notifications_disabled",
   "fileCheckpointingEnabled": false,

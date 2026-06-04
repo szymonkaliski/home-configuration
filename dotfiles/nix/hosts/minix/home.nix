@@ -151,15 +151,19 @@ in
     '';
   };
 
-  sops.templates."friday-ruler-config" = {
-    path = "${config.home.homeDirectory}/.config/friday-ruler/config.json";
+  # engine config (no secrets: mqtt creds come from mqtt.nix)
+  xdg.configFile."friday-ruler/config.json".text = builtins.toJSON {
+    host = mqtt.host;
+    port = mqtt.port;
+    username = mqtt.username;
+    password = mqtt.password;
+    topicPrefix = "friday/ruler";
+  };
+
+  # user config (pushover secrets, router + location)
+  sops.templates."friday-ruler-user-config" = {
+    path = "${config.home.homeDirectory}/.config/friday-ruler/user.json";
     content = builtins.toJSON {
-      mqtt = {
-        host = mqtt.host;
-        port = mqtt.port;
-        username = mqtt.username;
-        password = mqtt.password;
-      };
       pushover = {
         token = config.sops.placeholder.pushover_token_user;
         user = config.sops.placeholder.pushover_user;
@@ -472,7 +476,7 @@ in
         waitForMosquitto
         "${pkgs.nix}/bin/nix develop %h/Projects/friday-ruler --command npm run build"
       ];
-      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/friday-ruler --command node dist/main.js";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/friday-ruler --command node dist/src/main.js";
       WorkingDirectory = "%h/Projects/friday-ruler";
       TimeoutStopSec = 10;
       Restart = "on-failure";

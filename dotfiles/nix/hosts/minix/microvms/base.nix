@@ -142,6 +142,42 @@ in
     };
   };
 
+  # warm and renew the tailscale serve TLS cert proactively, tailscaled
+  # otherwise provisions it only on the first inbound TLS handshake, so the
+  # first hit after boot (or after a cert-issuance outage) fails; the timer
+  # also retries a failed provision
+  systemd.services.tailscale-cert-ensure = {
+    description = "Proactively provision/renew the tailscale serve TLS cert";
+    after = [ "tailscale-auto-connect.service" ];
+    requires = [ "tailscale-auto-connect.service" ];
+    path = [
+      pkgs.tailscale
+      pkgs.jq
+    ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      name=$(tailscale status --json | jq -r '.Self.DNSName // empty')
+      name=''${name%.}
+
+      if [ -z "$name" ]; then
+        echo "tailscale not ready" >&2
+        exit 1
+      fi
+
+      # this is idempotent (real ACME work only when cert is missing or <30d valid)
+      tailscale cert --min-validity 720h --cert-file=- --key-file=- "$name" >/dev/null
+    '';
+  };
+
+  systemd.timers.tailscale-cert-ensure = {
+    description = "Periodically ensure the tailscale serve TLS cert is valid";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "90s";
+      OnUnitActiveSec = "10min";
+    };
+  };
+
   services.resolved.enable = true;
   networking.useDHCP = false;
   networking.useNetworkd = true;

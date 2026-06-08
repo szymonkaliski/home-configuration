@@ -14,6 +14,7 @@ let
     archivistUi = 10005;
     telegraphist = 10006;
     propertySearch = 10007;
+    searx = 10008;
     glances = 10003;
   };
   homepageRoot = import ./homepage {
@@ -31,6 +32,10 @@ let
           {
             name = "property search";
             url = "http://minix:${toString ports.propertySearch}";
+          }
+          {
+            name = "searxng";
+            url = "http://minix:${toString ports.searx}";
           }
         ];
       }
@@ -454,6 +459,23 @@ in
     port = ports.glances;
   };
 
+  # SearXNG metasearch, built-in HTTP server on the LAN.
+  # secret_key comes via envsubst from the sops environment file so it stays
+  # out of the world-readable nix store.
+  services.searx = {
+    enable = true;
+    environmentFile = config.sops.templates."searx-environment".path;
+    settings = {
+      server = {
+        bind_address = "0.0.0.0";
+        port = ports.searx;
+        secret_key = "$SEARXNG_SECRET";
+      };
+      search.autocomplete = "duckduckgo";
+      ui.default_locale = "en";
+    };
+  };
+
   services.darkhttpd = {
     enable = true;
     port = 80;
@@ -469,9 +491,14 @@ in
   sops.secrets.samba_password = { };
   sops.secrets.tailscale_authkey = { };
   sops.secrets.pushover_token_vm = { };
+  sops.secrets.searx_secret_key = { };
   sops.secrets.pushover_user = {
     sopsFile = ../../secrets/shared.yaml;
   };
+
+  sops.templates."searx-environment".content = ''
+    SEARXNG_SECRET=${config.sops.placeholder.searx_secret_key}
+  '';
 
   system.activationScripts.samba-password = lib.stringAfter [ "setupSecrets" ] ''
     SMB_PASS=$(cat ${config.sops.secrets.samba_password.path})

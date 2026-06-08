@@ -255,11 +255,15 @@ watchexec() {
 }
 
 timg() {
-  if [[ -n "$WEB_TTY" ]]; then
-    command timg -p sixel "$@"
-  else
-    command timg -p kitty "$@"
+  # timg auto-detects the wrong graphics protocol inside tmux, so force it: sixel
+  # when the attached client advertises it (telegraphist's xterm.js does), else kitty.
+  local proto=kitty
+  if [[ -n "$TMUX" ]] && \
+     tmux list-clients -t "$(tmux display -p '#{session_name}')" \
+       -F '#{client_termfeatures}' 2>/dev/null | grep -q sixel; then
+    proto=sixel
   fi
+  command timg -p "$proto" "$@"
 }
 
 hl() {

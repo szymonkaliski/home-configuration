@@ -12,7 +12,7 @@ let
     blockyUi = 10002;
     zigbee2mqtt = 10004;
     archivistUi = 10005;
-    webTty = 10006;
+    telegraphist = 10006;
     propertySearch = 10007;
     glances = 10003;
   };
@@ -46,8 +46,8 @@ let
             url = "http://minix:${toString ports.zigbee2mqtt}";
           }
           {
-            name = "web tty";
-            url = "https://minix.golden-minor.ts.net:${toString ports.webTty}";
+            name = "telegraphist";
+            url = "https://minix.golden-minor.ts.net:${toString ports.telegraphist}";
           }
           {
             name = "glances";

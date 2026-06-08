@@ -678,26 +678,26 @@ in
     };
   };
 
-  systemd.user.services.web-tty = {
+  systemd.user.services.telegraphist = {
     Unit = {
-      Description = "Web TTY terminal";
+      Description = "Telegraphist terminal";
       # tmux.service owns creating the "home" session; start after it so home
-      # exists before web-tty attaches (web-tty only recreates home as a watchdog)
+      # exists before telegraphist attaches (telegraphist only recreates home as a watchdog)
       After = [ "network-online.target" "tmux.service" ];
       Wants = [ "network-online.target" "tmux.service" ];
       OnFailure = [ "notify-failure@%N.service" ];
-      ConditionPathIsDirectory = "%h/Projects/web-tty";
+      ConditionPathIsDirectory = "%h/Projects/telegraphist";
     };
 
     Service = {
-      ExecStartPre = "${pkgs.nix}/bin/nix develop %h/Projects/web-tty --command npm run build";
-      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/web-tty --command ${pkgs.bash}/bin/bash -c 'SHELL=${pkgs.zsh}/bin/zsh PATH=%h/.bin:${pkgs.tmux}/bin:$PATH exec node dist/server/server.js'";
+      ExecStartPre = "${pkgs.nix}/bin/nix develop %h/Projects/telegraphist --command npm run build";
+      ExecStart = "${pkgs.nix}/bin/nix develop %h/Projects/telegraphist --command ${pkgs.bash}/bin/bash -c 'SHELL=${pkgs.zsh}/bin/zsh PATH=%h/.bin:${pkgs.tmux}/bin:$PATH exec node dist/server/server.js'";
 
       # https:// through tailscale serve
       ExecStartPost = "${pkgs.tailscale}/bin/tailscale serve --bg --https=10006 10006";
       ExecStopPost = "${pkgs.tailscale}/bin/tailscale serve --https=10006 off";
 
-      WorkingDirectory = "%h/Projects/web-tty";
+      WorkingDirectory = "%h/Projects/telegraphist";
       Environment = "PORT=10006";
       SuccessExitStatus = "143";
       TimeoutStopSec = 10;

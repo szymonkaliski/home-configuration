@@ -282,7 +282,17 @@ in
   # keep a default "home" tmux session alive. ExecStart creates it then blocks
   # until it is closed; Restart=always then re-runs ExecStart to recreate it, so
   # closing the home session (not just killing the whole server) brings it back.
-  # web-tty relies on home always existing and never creates it itself.
+  # telegraphist relies on home always existing and never creates it itself.
+  #
+  # the tmux server daemonizes into this unit's cgroup, so the default
+  # KillMode=control-group would SIGKILL the whole server (every session) on each
+  # restart. KillMode=process limits the kill to the blocking loop, leaving the
+  # server and any other sessions alive; recreating home thus never touches them.
+  # for the same reason there is no `kill-server` ExecStop.
+  #
+  # has-session is targeted as "=home" (the `=` forces an exact match); a plain
+  # `-t home` prefix-matches any home* session (e.g. home-configuration), so the
+  # loop would never notice home itself being closed.
   systemd.user.services.tmux = {
     Unit = {
       Description = "tmux default session";
@@ -290,8 +300,8 @@ in
       X-SwitchMethod = "keep-old";
     };
     Service = {
-      ExecStart = "${pkgs.zsh}/bin/zsh -lc '${pkgs.tmux}/bin/tmux new-session -d -s home 2>/dev/null; while ${pkgs.tmux}/bin/tmux has-session -t home 2>/dev/null; do ${pkgs.coreutils}/bin/sleep 5; done'";
-      ExecStop = "${pkgs.tmux}/bin/tmux kill-server";
+      ExecStart = "${pkgs.zsh}/bin/zsh -lc '${pkgs.tmux}/bin/tmux new-session -d -s home 2>/dev/null; while ${pkgs.tmux}/bin/tmux has-session -t \"=home\" 2>/dev/null; do ${pkgs.coreutils}/bin/sleep 5; done'";
+      KillMode = "process";
       Restart = "always";
       RestartSec = 1;
     };

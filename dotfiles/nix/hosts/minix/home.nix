@@ -693,8 +693,14 @@ in
       Description = "Telegraphist terminal";
       # tmux.service owns creating the "home" session; start after it so home
       # exists before telegraphist attaches (telegraphist only recreates home as a watchdog)
-      After = [ "network-online.target" "tmux.service" ];
-      Wants = [ "network-online.target" "tmux.service" ];
+      After = [
+        "network-online.target"
+        "tmux.service"
+      ];
+      Wants = [
+        "network-online.target"
+        "tmux.service"
+      ];
       OnFailure = [ "notify-failure@%N.service" ];
       ConditionPathIsDirectory = "%h/Projects/telegraphist";
     };

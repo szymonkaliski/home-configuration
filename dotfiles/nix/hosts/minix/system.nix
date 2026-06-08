@@ -415,6 +415,7 @@ in
           downloads = {
             attempts = 5;
             cooldown = "10s";
+            timeout = "60s";
           };
         };
         denylists = {

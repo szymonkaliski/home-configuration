@@ -55,6 +55,19 @@ in
     nix-direnv.enable = true;
   };
 
+  # GitHub PAT so fetches use api.github.com (avoids the unauth rate limit +
+  # routes around github.com/archive 5xx). Written into the user nix.conf
+  # directly rather than via nix.extraOptions so it stays out of home-manager's
+  # nix.package/Determinate-Nix machinery. !include tolerates the secret being
+  # absent so nix never breaks if sops hasn't populated it yet.
+  sops.secrets.nix_access_tokens = {
+    sopsFile = ./secrets/shared.yaml;
+  };
+
+  xdg.configFile."nix/nix.conf".text = ''
+    !include ${config.sops.secrets.nix_access_tokens.path}
+  '';
+
   home.file = {
     ".hushlogin".text = "";
     ".dircolors".source = link "${dotfileDir}/dircolors";

@@ -17,6 +17,16 @@
 
 - if a request is ambiguous or spans multiple reasonable approaches, ask one or two clarifying questions before implementing
 
+## Subagents
+
+- fan out independent read-only work (codebase search, multi-file research, doc/web lookups) to parallel subagents, launched in one message
+  - only when tasks are independent with no shared writes - subagents can't share context or nest
+- an unrelated edit that comes up mid-session - hand it to a background subagent editing the live tree, keep working the main thread
+  - only when its files don't overlap the main thread's or another agent's - watch shared files (lockfiles, configs, anything a formatter rewrites); if overlap is unavoidable, keep it inline instead
+  - give it a complete spec up front - no supervision once it's running - and review the result before trusting it
+- prefer background subagents for research/analysis whose results aren't blocking the current step
+- don't parallelize a single edit or dependent steps
+
 ## Shell / environment
 
 - for running ad-hoc shell commands from nixpkgs, use `nix run nixpkgs#<pkg> -- <args>` (for example: `nix run nixpkgs#poppler_utils -- pdfinfo [...]`); prefer it over trying to write ad-hoc code

@@ -13,6 +13,8 @@ export GREP_COLORS="mt=48;5;16;38;5;0" # orange background, black text
 load_dircolors() {
   if [ -f ~/.dircolors ]; then
     eval $(dircolors -b ~/.dircolors)
+    # completion list-colors is set once at startup before LS_COLORS exists, so refresh it here
+    zstyle ":completion:*" list-colors ${(s.:.)LS_COLORS}
   fi
 }
 zsh-defer -t 1.0 +1 load_dircolors

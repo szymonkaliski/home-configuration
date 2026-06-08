@@ -4,7 +4,22 @@ fi
 
 typeset -gU fpath     # clean fpaths
 autoload -Uz compinit # load completions
-compinit -C
+
+# Reuse the cached dump with -C (skips the slow security audit) while it's fresh;
+# do a full rebuild + bytecode-compile at most once a day so newly installed
+# completions still get picked up. compinit reads the compiled .zwc when present.
+_zdump="${ZDOTDIR:-$HOME}/.zcompdump"
+_zfresh=( ${_zdump}(N.mh-24) ) # exists and modified within the last 24h
+if (( $#_zfresh )); then
+  compinit -C -d "$_zdump" # trust the cache, skip the slow security audit
+else
+  compinit -d "$_zdump"    # full rebuild at most once a day (picks up new completions)
+fi
+# Bytecode-compile the dump (compinit loads the .zwc ~3x faster) whenever stale.
+if [[ -s "$_zdump" && ( ! -s "${_zdump}.zwc" || "$_zdump" -nt "${_zdump}.zwc" ) ]]; then
+  zcompile "$_zdump"
+fi
+unset _zdump _zfresh
 
 # complete with dots, useful on slow systems
 expand-or-complete-with-dots() {

@@ -1,12 +1,12 @@
-if [ "$(hostname -s)" = "orchid" ]; then
+if [ "${HOST%%.*}" = "orchid" ]; then
   PROMPTCOLOR=blue
-elif [ "$(hostname -s)" = "minix" ]; then
+elif [ "${HOST%%.*}" = "minix" ]; then
   PROMPTCOLOR=yellow
 else
   PROMPTCOLOR=magenta
 fi
 
-if [ "$(whoami)" = "root" ]; then
+if (( EUID == 0 )); then
   PROMPTCOLOR=red
 fi
 

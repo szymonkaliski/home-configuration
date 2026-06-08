@@ -265,6 +265,16 @@ in
   };
 
   programs.zsh.enable = true;
+  # /etc/zshrc otherwise runs a full `compinit` (~40-50ms security audit) before
+  # our own; dotfiles/zsh/completion.zsh extends fpath and runs compinit itself,
+  # so skip the redundant global one.
+  programs.zsh.enableGlobalCompInit = false;
+
+  # We set our own PROMPT (dotfiles/zsh/prompt.zsh) and load our own dircolors
+  # (deferred, dotfiles/zsh/colors.zsh), so skip /etc/zshrc's `prompt suse` line
+  # and its dircolors fork.
+  programs.zsh.promptInit = "";
+  programs.zsh.enableLsColors = false;
 
   # claude-code ships native ELF binaries (the launcher itself plus embedded
   # ugrep/bfs/rg dispatched via ARGV0); they hardcode /lib64/ld-linux-x86-64.so.2.

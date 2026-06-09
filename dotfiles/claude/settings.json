@@ -87,6 +87,7 @@
       }
     ]
   },
+  "workflowKeywordTriggerEnabled": false,
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline-command.sh"
@@ -111,10 +112,12 @@
   },
   "effortLevel": "xhigh",
   "promptSuggestionEnabled": false,
+  "awaySummaryEnabled": false,
   "theme": "dark",
-  "verbose": true,
+  "verbose": false,
   "preferredNotifChannel": "notifications_disabled",
   "fileCheckpointingEnabled": false,
   "terminalProgressBarEnabled": false,
+  "agentPushNotifEnabled": false,
   "skipAutoPermissionPrompt": true
 }

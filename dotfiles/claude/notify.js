@@ -65,6 +65,24 @@ function clearPending(sid) {
   } catch {}
 }
 
+// idle-state marker: set when we deliver a turn-end (Stop) or idle notification,
+// cleared when a forked skill / subagent finishes (SubagentStop). Lets the ~60s
+// idle_prompt Notification act as a backstop for turns that fire no Stop (e.g.
+// `context: fork` slash-commands, which fire SubagentStop only) without
+// double-notifying normal turns that Stop already covered.
+function markIdle(sid) {
+  markNotified(`${sid}__idle`);
+}
+function wasIdle(sid) {
+  return wasNotified(`${sid}__idle`);
+}
+function clearIdle(sid) {
+  if (!sid) return;
+  try {
+    fs.unlinkSync(pendingFile(`${sid}__idle`));
+  } catch {}
+}
+
 const LOG_PATH = `${os.homedir()}/.claude/notify.log`;
 const LOG_RETAIN_MS = 90 * 24 * 60 * 60 * 1000;
 const LOG_PRUNE_SLACK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -115,6 +133,16 @@ logLine({
   notification_type: input.notification_type,
   tool_name: input.tool_name,
 });
+
+// A forked skill / subagent finished. It fires SubagentStop (never Stop), so the
+// turn-end path won't run; clear the idle marker so the ~60s idle_prompt backstop
+// fires if the session is now waiting on the user. (For a mid-turn Task subagent,
+// the main turn's own Stop re-marks idle afterward, so idle_prompt stays deduped.)
+if (event === "SubagentStop") {
+  clearIdle(sessionId);
+  logLine({ phase: "cleared-idle", event });
+  process.exit(0);
+}
 
 // skip the notification when the user is actively looking at this pane
 if (process.env.TMUX && process.env.TMUX_PANE) {
@@ -305,6 +333,15 @@ if (event === "Stop") {
     logLine({ phase: "suppressed", reason: "permission-already-notified", event });
     process.exit(0);
   }
+
+  // idle_prompt ("Claude is waiting for your input") fires ~60s after the session
+  // goes idle. If a Stop already notified this idle period it's a duplicate, drop
+  // it. Otherwise it's the only signal (e.g. a `context: fork` command that fired
+  // SubagentStop but no Stop), so deliver it.
+  if (input.notification_type === "idle_prompt" && wasIdle(sessionId)) {
+    logLine({ phase: "suppressed", reason: "idle-already-notified", event });
+    process.exit(0);
+  }
 }
 
 // remember we delivered a blocking-prompt notification (we are past the
@@ -316,6 +353,15 @@ if (
   (event === "Notification" && input.notification_type === "permission_prompt")
 ) {
   markNotified(sessionId);
+}
+
+// mark this idle period as notified so the ~60s idle_prompt backstop dedups
+// against the instant Stop notification (or against itself if it re-fires).
+if (
+  event === "Stop" ||
+  (event === "Notification" && input.notification_type === "idle_prompt")
+) {
+  markIdle(sessionId);
 }
 
 const title = `Claude Code (${os.hostname()})`;

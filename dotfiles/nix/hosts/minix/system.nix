@@ -79,6 +79,17 @@ let
     quad9 = "https://dns.quad9.net/dns-query";
     cloudflare = "https://security.cloudflare-dns.com/dns-query";
   };
+  # sendmail-compatible: message arrives on stdin, recipient args are ignored.
+  # pushover caps messages at 1024 chars. same pushover app as notify-pushover.
+  smartdPushoverMailer = pkgs.writeShellScript "smartd-pushover-mailer" ''
+    message=$(${pkgs.coreutils}/bin/head -c 1024)
+    ${pkgs.curl}/bin/curl -fsS --retry 3 --max-time 30 \
+      --form-string "token=$(${pkgs.coreutils}/bin/cat ${config.sops.secrets.pushover_token_user.path})" \
+      --form-string "user=$(${pkgs.coreutils}/bin/cat ${config.sops.secrets.pushover_user.path})" \
+      --form-string "title=smartd on minix" \
+      --form-string "message=$message" \
+      https://api.pushover.net/1/messages.json >/dev/null
+  '';
 in
 {
   boot.loader.systemd-boot.enable = true;
@@ -470,6 +481,17 @@ in
     port = ports.glances;
   };
 
+  services.smartd = {
+    enable = true;
+    notifications = {
+      wall.enable = false;
+      mail = {
+        enable = true;
+        mailer = smartdPushoverMailer;
+      };
+    };
+  };
+
   # SearXNG metasearch, built-in HTTP server on the LAN.
   # secret_key comes via envsubst from the sops environment file so it stays
   # out of the world-readable nix store.
@@ -502,6 +524,7 @@ in
   sops.secrets.samba_password = { };
   sops.secrets.tailscale_authkey = { };
   sops.secrets.pushover_token_vm = { };
+  sops.secrets.pushover_token_user = { };
   sops.secrets.searx_secret_key = { };
   sops.secrets.pushover_user = {
     sopsFile = ../../secrets/shared.yaml;

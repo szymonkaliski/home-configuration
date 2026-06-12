@@ -50,7 +50,7 @@ load_syntax_highlight() {
 
 # gitstatus
 load_gitstatus() {
-  if [ !-f ~/.zsh/plugins/gitstatus/gitstatus.plugin.zsh ]; then
+  if [ ! -f ~/.zsh/plugins/gitstatus/gitstatus.plugin.zsh ]; then
     return
   fi
 

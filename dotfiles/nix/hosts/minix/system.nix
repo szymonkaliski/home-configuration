@@ -472,9 +472,14 @@ in
           QUERY_LOG_TARGET = "postgres://blocky@127.0.0.1:${toString ports.blockyPostgresql}/blocky?sslmode=disable";
         };
         extraOptions = [ "--network=host" ];
+        labels."io.containers.autoupdate" = "registry";
       };
     };
   };
+
+  # re-pulls :latest for io.containers.autoupdate-labeled containers and
+  # restarts their units, rolling back on failure
+  systemd.timers.podman-auto-update.wantedBy = [ "timers.target" ];
 
   services.glances = {
     enable = true;

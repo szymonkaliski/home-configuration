@@ -17,7 +17,9 @@ load_dircolors() {
     zstyle ":completion:*" list-colors ${(s.:.)LS_COLORS}
   fi
 }
-zsh-defer -t 1.0 +1 load_dircolors
+
+# -p disables zsh-defer's `zle reset-prompt` which erases an in-progress completion listing
+zsh-defer -t 1.0 -p load_dircolors
 
 # grc for commands
 if hash grc 2> /dev/null; then

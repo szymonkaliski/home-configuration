@@ -64,7 +64,9 @@ load_z # I often want to jump somewhere immediately when opening a shell
 load_direnv # same for direnv
 
 # deferred loading
-zsh-defer -t 0.5 load_autopair
-zsh-defer -t 0.5 load_syntax_highlight
-zsh-defer -t 1.0 load_gitstatus
+# -t is the timeout at which deffered load starts
+# -p disables zsh-defer's `zle reset-prompt` to not reset in-progress completions
+zsh-defer -t 0.5 -p load_autopair
+zsh-defer -t 0.5 -p load_syntax_highlight
+zsh-defer -t 1.0 -p load_gitstatus
 

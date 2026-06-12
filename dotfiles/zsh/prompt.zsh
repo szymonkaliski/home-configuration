@@ -27,7 +27,9 @@ git_prompt_status() {
 
   if [ -z $VCS_STATUS_LOCAL_BRANCH ] && [ -z $VCS_STATUS_COMMIT ]; then
     PROMPT='$(prompt_pwd)$ZSH_MAIN_PROMPT'
-    zle && zle reset-prompt
+    # only redraw when the command line is empty, otherwise this erases an
+    # in-progress completion listing (gitstatus loads deferred, ~1s after startup)
+    zle && [[ -z $BUFFER ]] && zle reset-prompt
     return
   fi
 
@@ -50,7 +52,7 @@ git_prompt_status() {
   fi
 
   PROMPT='$(prompt_pwd)$branch_color$git_branch_or_commit$ZSH_MAIN_PROMPT'
-  zle && zle reset-prompt
+  zle && [[ -z $BUFFER ]] && zle reset-prompt
 }
 
 setup_git_prompt_status() {

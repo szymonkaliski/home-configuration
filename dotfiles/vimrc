@@ -510,7 +510,6 @@ set dictionary+=/usr/share/dict/words,~/.vim/spell/en.utf-8.add
 if has('mac')
   let g:loaded_python_provider = 1 " disable python 2
   let g:python_host_skip_check = 1
-  let g:python_host_prog = '/usr/local/bin/python'
 
   " enabled python3 for `vim-ai`, host_prog has to be figured out by `(n)vim`
   " for proper `nix` paths

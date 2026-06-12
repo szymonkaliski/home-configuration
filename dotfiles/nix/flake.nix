@@ -84,21 +84,6 @@
           ./hosts/minix/microvms
           microvm.nixosModules.host
           sops-nix.nixosModules.sops
-
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.extraSpecialArgs = {
-              repoRoot = "/home/szymon/Projects/home-configuration";
-            };
-            home-manager.sharedModules = [ sops-nix.homeManagerModules.sops ];
-            home-manager.users.szymon = {
-              imports = [
-                ./hosts/minix/home.nix
-                nix-index-database.homeModules.nix-index
-              ];
-            };
-          }
         ];
       };
     };

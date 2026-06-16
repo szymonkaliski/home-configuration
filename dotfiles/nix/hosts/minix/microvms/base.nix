@@ -28,7 +28,7 @@ let
   };
 in
 {
-  # see system.nix for context — same ELF/ld-linux issue inside microvms
+  # see system.nix for context - same ELF/ld-linux issue inside microvms
   programs.nix-ld.enable = true;
 
   networking.hostName = hostName;

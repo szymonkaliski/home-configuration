@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Behavioral healthcheck for minix. Catches services that appear healthy to
 # systemd but aren't actually working. Service crashes are already handled by
-# systemd OnFailure=notify-failure@%N.service — this script only verifies
+# systemd OnFailure=notify-failure@%N.service - this script only verifies
 # that things are *actually doing their job*.
 
 [[ $(hostname -s) != "minix" ]] && exit 0

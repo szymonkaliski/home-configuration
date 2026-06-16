@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: Test-driven bug fixing and feature development. Use when fixing bugs or building features — works with test suites or ad-hoc repro scripts. Enforces red-green-refactor vertical slices.
+description: Test-driven bug fixing and feature development. Use when fixing bugs or building features - works with test suites or ad-hoc repro scripts. Enforces red-green-refactor vertical slices.
 ---
 
 # Test-Driven Development
@@ -10,7 +10,7 @@ description: Test-driven bug fixing and feature development. Use when fixing bug
 First, determine which mode fits the project:
 
 - **Test suite mode**: The project has an existing test runner (vitest, pytest, cargo test, go test, etc.). Write tests using the project's framework.
-- **Ad-hoc mode**: No test suite, or the bug is easier to reproduce outside one. Write a standalone repro script in `./tmp/repro/`. This directory is gitignored scratch space — create it if it doesn't exist.
+- **Ad-hoc mode**: No test suite, or the bug is easier to reproduce outside one. Write a standalone repro script in `./tmp/repro/`. This directory is gitignored scratch space - create it if it doesn't exist.
 
 Both modes follow the same red-green discipline. The only difference is where the "test" lives.
 
@@ -23,9 +23,9 @@ This is the primary workflow. Do NOT attempt a fix before you have a failing rep
 - Understand the bug. Read the relevant code. Identify the minimal conditions that trigger it.
 - Narrow down: which input, which code path, which state.
 
-### 2. RED — Reproduce
+### 2. RED - Reproduce
 
-**Test suite mode**: Write a failing test case in the project's test framework that captures the broken behavior. Run the suite — confirm it fails for the right reason.
+**Test suite mode**: Write a failing test case in the project's test framework that captures the broken behavior. Run the suite - confirm it fails for the right reason.
 
 **Ad-hoc mode**: Write a self-contained repro script in `./tmp/repro/`:
 
@@ -44,7 +44,7 @@ The repro script should:
 
 Run it. Confirm it fails (exit 1). This is your proof the bug exists.
 
-### 3. GREEN — Fix
+### 3. GREEN - Fix
 
 - Fix the bug with minimal changes.
 - Run the repro again. Confirm it passes (exit 0).

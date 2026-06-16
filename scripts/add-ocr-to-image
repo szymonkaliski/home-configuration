@@ -67,7 +67,7 @@ EOF
 ) | plutil -convert binary1 - -o - | xxd -p | tr -d '\n')
 
 # Finder comments live in TWO places: the xattr and .DS_Store. Spotlight's
-# mdworker treats .DS_Store as authoritative — if the comment isn't there,
+# mdworker treats .DS_Store as authoritative - if the comment isn't there,
 # mdworker clears the xattr on reindex. Register in .DS_Store first via Finder,
 # then overwrite the xattr with our controlled binary plist (for Dropbox compat).
 osascript \

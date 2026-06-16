@@ -64,7 +64,7 @@ command! -nargs=1 -complete=command Redir silent call Redir(<f-args>)
 function! ToAscii()
   silent! %s/[“”„]/"/
   silent! %s/[‘’]/'/
-  silent! %s/—–/-/
+  silent! %s/[—–]/-/
 endfunction
 
 command! ToAscii :call ToAscii()

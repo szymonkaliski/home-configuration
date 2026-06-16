@@ -172,13 +172,19 @@ if (process.env.TMUX && process.env.TMUX_PANE) {
   } catch {}
 }
 
-// Scan backward for the most recent assistant entry, skipping every non-assistant
-// entry. Claude Code appends non-conversational entries (ai-title, last-prompt,
-// permission-mode, mode, queue-operation, attachment) that are frequently the last
-// line when the Stop hook fires, so bailing on the first non-assistant entry would
-// drop the notification. Separately, extended thinking streams as two jsonl entries
-// sharing one msg_id (thinking-only first, paired text up to ~15s later) and Stop
-// fires on the first, so callers poll until kind === "text".
+// Scan backward for the most recent assistant entry, skipping non-conversational
+// entries (ai-title, last-prompt, permission-mode, mode, queue-operation,
+// attachment) and mid-turn tool_result user entries that are frequently the last
+// line when the Stop hook fires, so bailing on the first of them would drop the
+// notification. Two cases make callers poll (kind !== "text"): extended thinking
+// streams as two jsonl entries sharing one msg_id (thinking-only first, paired text
+// up to ~15s later) and Stop fires on the first; and the Stop hook can read before
+// the current turn's assistant line lands on disk, leaving a real user prompt as the
+// latest entry - return "awaiting_response" there instead of falling through to the
+// previous turn's now-stale assistant text (the off-by-one). A finished forked /
+// slash command is the exception: it fires no Stop and prints its result as a
+// local-command-stdout user entry rather than assistant text, so return that output
+// as "command_result" for the idle_prompt backstop to surface.
 function readLastAssistantState(filePath) {
   const fd = fs.openSync(filePath, "r");
   try {
@@ -201,6 +207,31 @@ function readLastAssistantState(filePath) {
       } catch {
         continue;
       }
+
+      // A real user prompt (not a mid-turn tool_result) below the most recent
+      // assistant text means the current turn's reply hasn't been flushed yet.
+      // Stop scanning here so the caller polls, rather than falling through to an
+      // older assistant entry and delivering the previous turn's message.
+      if (entry.type === "user") {
+        const content = entry.message?.content;
+        // A finished forked / slash command (e.g. /git-review) prints its result
+        // as a string-content local-command-stdout user entry, not an assistant
+        // entry, so the off-by-one guard below would otherwise treat it as a
+        // pending prompt. Surface that output as "command_result" instead - the
+        // idle_prompt backstop reads it to name what just finished.
+        if (typeof content === "string") {
+          const m = content.match(
+            /<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/,
+          );
+          const out = m && m[1].trim();
+          if (out) return { kind: "command_result", text: truncate(out, 200) };
+        }
+        const isToolResult =
+          Array.isArray(content) && content.some((c) => c.type === "tool_result");
+        if (!isToolResult) return { kind: "awaiting_response" };
+        continue;
+      }
+
       if (entry.type !== "assistant") continue;
       const contents = entry.message?.content;
       if (!Array.isArray(contents)) return { kind: "assistant_without_text" };
@@ -216,6 +247,27 @@ function readLastAssistantState(filePath) {
   } finally {
     fs.closeSync(fd);
   }
+}
+
+// Stop/PreToolUse/PermissionRequest carry transcript_path, but Notification
+// events are not documented to, so resolve it ourselves: the session_id is a
+// globally-unique UUID, so ~/.claude/projects/*/<session_id>.jsonl matches at
+// most one file. Prefer transcript_path when it is present and points at a real
+// file; otherwise glob the projects tree by session_id.
+function resolveTranscriptPath(input) {
+  if (input.transcript_path && fs.existsSync(input.transcript_path)) {
+    return input.transcript_path;
+  }
+  const sid = input.session_id;
+  if (!sid) return null;
+  const root = `${os.homedir()}/.claude/projects`;
+  try {
+    for (const dir of fs.readdirSync(root)) {
+      const p = `${root}/${dir}/${sid}.jsonl`;
+      if (fs.existsSync(p)) return p;
+    }
+  } catch {}
+  return null;
 }
 
 // task-notification user turns (e.g. Monitor events) spam Stop. Opus sometimes
@@ -319,7 +371,7 @@ if (event === "Stop") {
   body = formatToolUse({ name: input.tool_name, input: input.tool_input || {} });
 } else if (event === "PermissionRequest") {
   // Fires the instant a real permission dialog appears (never for auto-approved
-  // calls) and carries the tool input — so we name exactly what's awaited,
+  // calls) and carries the tool input - so we name exactly what's awaited,
   // immediately. This is the primary permission notification.
   body = formatToolUse({ name: input.tool_name, input: input.tool_input || {} });
 } else {
@@ -327,7 +379,7 @@ if (event === "Stop") {
 
   // The generic permission_prompt Notification fires ~6s later as a backstop. If
   // PermissionRequest already notified this prompt (marker set on delivery), it's
-  // a duplicate — drop it. It still fires when PermissionRequest was suppressed
+  // a duplicate - drop it. It still fires when PermissionRequest was suppressed
   // because the pane was focused and the user has since looked away (a re-alert).
   if (input.notification_type === "permission_prompt" && wasNotified(sessionId)) {
     logLine({ phase: "suppressed", reason: "permission-already-notified", event });
@@ -342,11 +394,27 @@ if (event === "Stop") {
     logLine({ phase: "suppressed", reason: "idle-already-notified", event });
     process.exit(0);
   }
+
+  // The generic idle_prompt body ("Claude is waiting for your input") names no
+  // context. Replace it with the last thing Claude actually said - assistant text
+  // for a normal turn, or a finished forked command's output (command_result) for
+  // the SubagentStop-only case that is the only idle_prompt to survive dedup - so
+  // the alert identifies the session + topic, matching a Stop notification. Falls
+  // back to the generic message when the turn ended on a tool call (no assistant
+  // text), the command produced no output, or the transcript can't be resolved.
+  if (input.notification_type === "idle_prompt") {
+    const tp = resolveTranscriptPath(input);
+    if (tp) {
+      const state = readLastAssistantState(tp);
+      if (state.kind === "text" || state.kind === "command_result")
+        body = state.text;
+    }
+  }
 }
 
 // remember we delivered a blocking-prompt notification (we are past the
-// focused-pane suppression here), so the redundant ~6s permission_prompt — or a
-// re-fire — dedups against it; cleared on Stop.
+// focused-pane suppression here), so the redundant ~6s permission_prompt - or a
+// re-fire - dedups against it; cleared on Stop.
 if (
   event === "PermissionRequest" ||
   (event === "PreToolUse" && input.tool_name === "AskUserQuestion") ||

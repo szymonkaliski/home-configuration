@@ -35,6 +35,8 @@ in
     pkgs.coreutils
     pkgs.darwin.trash
     pkgs.git
+    pkgs.ollama
+    pkgs.socat
     pkgs.unixtools.watch
   ];
 

@@ -25,6 +25,7 @@ PLISTS=(
   "com.szymonkaliski.log-truncate.plist"
   "com.szymonkaliski.muninn-autocommit.plist"
   "com.szymonkaliski.nix-gc.plist"
+  "com.szymonkaliski.ollama-autostart.plist"
   "com.szymonkaliski.timav-cache.plist"
 )
 

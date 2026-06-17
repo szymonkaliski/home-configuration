@@ -227,7 +227,8 @@ function readLastAssistantState(filePath) {
           if (out) return { kind: "command_result", text: truncate(out, 200) };
         }
         const isToolResult =
-          Array.isArray(content) && content.some((c) => c.type === "tool_result");
+          Array.isArray(content) &&
+          content.some((c) => c.type === "tool_result");
         if (!isToolResult) return { kind: "awaiting_response" };
         continue;
       }
@@ -368,12 +369,18 @@ if (event === "Stop") {
   // is hooked). It blocks mid-turn but fires no permission Notification, so this
   // is the only immediate signal that the chooser is waiting.
   if (input.tool_name !== "AskUserQuestion") process.exit(0);
-  body = formatToolUse({ name: input.tool_name, input: input.tool_input || {} });
+  body = formatToolUse({
+    name: input.tool_name,
+    input: input.tool_input || {},
+  });
 } else if (event === "PermissionRequest") {
   // Fires the instant a real permission dialog appears (never for auto-approved
   // calls) and carries the tool input - so we name exactly what's awaited,
   // immediately. This is the primary permission notification.
-  body = formatToolUse({ name: input.tool_name, input: input.tool_input || {} });
+  body = formatToolUse({
+    name: input.tool_name,
+    input: input.tool_input || {},
+  });
 } else {
   body = input.message || "Notification";
 
@@ -381,8 +388,15 @@ if (event === "Stop") {
   // PermissionRequest already notified this prompt (marker set on delivery), it's
   // a duplicate - drop it. It still fires when PermissionRequest was suppressed
   // because the pane was focused and the user has since looked away (a re-alert).
-  if (input.notification_type === "permission_prompt" && wasNotified(sessionId)) {
-    logLine({ phase: "suppressed", reason: "permission-already-notified", event });
+  if (
+    input.notification_type === "permission_prompt" &&
+    wasNotified(sessionId)
+  ) {
+    logLine({
+      phase: "suppressed",
+      reason: "permission-already-notified",
+      event,
+    });
     process.exit(0);
   }
 

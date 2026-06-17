@@ -53,7 +53,11 @@ in
   sops.secrets.smtp_host = { };
   sops.secrets.smtp_bot_email = { };
   sops.secrets.smtp_bot_password = { };
+  sops.secrets.gemini_api_key_opencode = {
+    sopsFile = ../../secrets/shared.yaml;
+  };
   sops.secrets.gemini_api_key_property_search = { };
+
   sops.secrets.pushover_token_user = { };
   sops.secrets.pushover_user = {
     sopsFile = ../../secrets/shared.yaml;
@@ -63,6 +67,11 @@ in
   sops.templates."claude-oauth-token" = {
     path = "${config.home.homeDirectory}/.claude/long-lived-oauth-token";
     content = config.sops.placeholder.claude_oauth_token;
+  };
+
+  sops.templates."gemini-api-key" = {
+    path = "${config.home.homeDirectory}/.config/opencode/gemini_api_key";
+    content = config.sops.placeholder.gemini_api_key_opencode;
   };
 
   sops.templates."smartbox2mqtt-config" = {

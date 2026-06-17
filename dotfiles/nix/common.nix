@@ -92,5 +92,8 @@ in
 
   xdg.configFile = {
     "nvim".source = link "${dotfileDir}/vim";
+    "opencode/opencode.json".source = link "${dotfileDir}/opencode/opencode.json";
+    "opencode/plugins".source = link "${dotfileDir}/opencode/plugins";
+    "opencode/skills".source = link "${dotfileDir}/opencode/skills";
   };
 }

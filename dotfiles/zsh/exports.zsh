@@ -39,3 +39,7 @@ fi
 if [ -f "$HOME/.claude/long-lived-oauth-token" ]; then
   export CLAUDE_CODE_OAUTH_TOKEN="$(cat "$HOME/.claude/long-lived-oauth-token")"
 fi
+
+if [ -f "$HOME/.config/opencode/gemini_api_key" ]; then
+  export GEMINI_API_KEY="$(cat "$HOME/.config/opencode/gemini_api_key")"
+fi

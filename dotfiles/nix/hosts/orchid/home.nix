@@ -67,6 +67,9 @@ in
     sopsFile = ../../secrets/orchid.yaml;
   };
   sops.secrets.pushover_user = { };
+  sops.secrets.gemini_api_key_opencode = {
+    sopsFile = ../../secrets/shared.yaml;
+  };
 
   sops.templates."pushoverrc" = {
     path = "${config.home.homeDirectory}/.pushoverrc";
@@ -74,6 +77,11 @@ in
       PUSHOVER_TOKEN=${config.sops.placeholder.pushover_token_orchid}
       PUSHOVER_USER=${config.sops.placeholder.pushover_user}
     '';
+  };
+
+  sops.templates."gemini-api-key" = {
+    path = "${config.home.homeDirectory}/.config/opencode/gemini_api_key";
+    content = config.sops.placeholder.gemini_api_key_opencode;
   };
 
   sops.templates."timav-credentials.json" = {

@@ -20,6 +20,16 @@ fi
 cp -rT /mnt/host/claude /home/szymon/.claude
 cp /mnt/host/claude.json /home/szymon/.claude.json
 
+# opencode config
+if [ -d /mnt/host/opencode ]; then
+  mkdir -p /home/szymon/.config
+  cp -rT /mnt/host/opencode /home/szymon/.config/opencode
+  
+  if [ -f /home/szymon/.config/opencode/gemini_api_key ]; then
+    echo "export GEMINI_API_KEY=\"$(cat /home/szymon/.config/opencode/gemini_api_key)\"" >> /home/szymon/.bash_profile
+  fi
+fi
+
 # gcloud config
 if [ -d /mnt/host/gcloud ]; then
   mkdir -p /home/szymon/.config
@@ -49,13 +59,11 @@ if (fs.existsSync(claudePath)) {
 }
 EOF
 
-# create executable wrapper for claude
+# create executable wrappers for claude and opencode
 mkdir -p /home/szymon/.bin
 
-cat << 'EOF' > /home/szymon/.bin/claude
-#!/bin/sh
-export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
-
+# shared tailnet/funnel context, sourced by both wrappers
+cat << 'EOF' > /home/szymon/.bin/vm-context.sh
 vm_name="$(hostname -s)"
 ts_dns="$(tailscale status --json 2>/dev/null | jq -r '.Self.DNSName // empty' | sed 's/\.$//')"
 
@@ -64,10 +72,25 @@ if [ -n "$ts_dns" ]; then
   vm_context="${vm_context} Its private Tailscale hostname is '${ts_dns}', reachable only from devices on the same tailnet (not the public internet). Any TCP port you listen on is automatically published on the tailnet at https://${ts_dns}:<PORT> (same port number, TLS-terminated) by a background watcher, so to share a running dev server you just need to listen on a port."
   vm_context="${vm_context} That serve is PRIVATE to the tailnet. To make a port public (reachable by anyone, not just the tailnet) when asked to funnel it, run 'tailscale funnel --bg --https=443 http://127.0.0.1:<PORT>'; it then lives at https://${ts_dns}/ . Stop with 'tailscale funnel --https=443 off'. Only one port can be funnelled at a time."
 fi
+EOF
 
+cat << 'EOF' > /home/szymon/.bin/claude
+#!/bin/sh
+export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
+. /home/szymon/.bin/vm-context.sh
 exec npx -y @anthropic-ai/claude-code@latest --dangerously-skip-permissions --append-system-prompt "$vm_context" "$@"
 EOF
 chmod +x /home/szymon/.bin/claude
+
+cat << 'EOF' > /home/szymon/.bin/opencode
+#!/bin/sh
+export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
+. /home/szymon/.bin/vm-context.sh
+mkdir -p /home/szymon/.config/opencode
+echo "$vm_context" > /home/szymon/.config/opencode/AGENTS.md
+exec npx -y opencode-ai@latest --dangerously-skip-permissions "$@"
+EOF
+chmod +x /home/szymon/.bin/opencode
 
 chown -R szymon:users /home/szymon
 

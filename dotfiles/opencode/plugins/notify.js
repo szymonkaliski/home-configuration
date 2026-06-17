@@ -164,86 +164,79 @@ function sendNotification(title, body, event) {
 }
 
 export const NotifyPlugin = async ({ client }) => {
-  return {
-    "session.idle": async ({ session }) => {
-      const event = "session.idle";
-      logLine({ phase: "fire", event });
+  // opencode delivers all events through a single `event` hook keyed by
+  // event.type (named hooks like "session.idle" are never dispatched)
+  async function notifyIdle(sessionID) {
+    const event = "session.idle";
+    logLine({ phase: "fire", event });
 
-      if (shouldSuppressNotification()) {
-        logLine({ phase: "suppressed", reason: "focused-pane", event });
-        return;
-      }
+    if (shouldSuppressNotification()) {
+      logLine({ phase: "suppressed", reason: "focused-pane", event });
+      return;
+    }
 
-      let body = "OpenCode is waiting for your input";
-      try {
-        const messagesResult = await client.session.messages({
-          path: { id: session.id },
-        });
-        if (messagesResult?.data) {
-          const messages = messagesResult.data;
-          for (let i = messages.length - 1; i >= 0; i--) {
-            const msg = messages[i];
-            if (msg.info.type === "assistant") {
-              const textParts = msg.parts.filter(
-                (p) => p.type === "text" && p.text?.trim(),
-              );
-              if (textParts.length > 0) {
-                body = truncate(
-                  textParts[textParts.length - 1].text.trim(),
-                  200,
-                );
-              }
-              break;
+    let body = "OpenCode is waiting for your input";
+    try {
+      const messagesResult = await client.session.messages({
+        path: { id: sessionID },
+      });
+      if (messagesResult?.data) {
+        const messages = messagesResult.data;
+        for (let i = messages.length - 1; i >= 0; i--) {
+          const msg = messages[i];
+          if (msg.info.role === "assistant") {
+            const textParts = msg.parts.filter(
+              (p) => p.type === "text" && p.text?.trim(),
+            );
+            if (textParts.length > 0) {
+              body = truncate(textParts[textParts.length - 1].text.trim(), 200);
             }
+            break;
           }
         }
-      } catch (err) {
-        logLine({
-          phase: "fetch-context-failed",
-          error: String((err && err.message) || err),
-        });
       }
+    } catch (err) {
+      logLine({
+        phase: "fetch-context-failed",
+        error: String((err && err.message) || err),
+      });
+    }
 
-      const title = `OpenCode (${os.hostname()})`;
-      sendNotification(title, body, event);
-    },
+    sendNotification(`OpenCode (${os.hostname()})`, body, event);
+  }
 
-    "permission.asked": async (input) => {
-      const event = "permission.asked";
-      logLine({ phase: "fire", event, input });
+  function notifyPermission(perm) {
+    const event = "permission.asked";
+    logLine({ phase: "fire", event, perm });
 
-      if (shouldSuppressNotification()) {
-        logLine({ phase: "suppressed", reason: "focused-pane", event });
-        return;
+    if (shouldSuppressNotification()) {
+      logLine({ phase: "suppressed", reason: "focused-pane", event });
+      return;
+    }
+
+    const tool = perm?.permission || "tool";
+    const meta = perm?.metadata || {};
+    const detail =
+      meta.command ||
+      meta.description ||
+      meta.filePath ||
+      meta.path ||
+      perm?.patterns?.[0] ||
+      "";
+    const body = detail
+      ? `${tool}: ${truncate(String(detail), 140)}`
+      : `${tool} permission request`;
+
+    sendNotification(`OpenCode (${os.hostname()})`, body, event);
+  }
+
+  return {
+    event: async ({ event }) => {
+      if (event?.type === "session.idle") {
+        await notifyIdle(event.properties?.sessionID);
+      } else if (event?.type === "permission.asked") {
+        notifyPermission(event.properties);
       }
-
-      let body = "Permission Request";
-      if (input && input.tool) {
-        const toolName = input.tool;
-        const args = input.args || {};
-        if (toolName === "bash") {
-          body = `bash: ${truncate(args.command || "", 120)}`;
-        } else if (
-          toolName === "edit" ||
-          toolName === "write" ||
-          toolName === "read"
-        ) {
-          body = `${toolName}: ${args.filePath || args.path || "?"}`;
-        } else if (toolName === "question") {
-          const q = args.questions?.[0]?.question;
-          if (q) body = `Question: ${truncate(q, 120)}`;
-          else body = "Question";
-        } else {
-          const firstVal = Object.values(args).find(
-            (v) => typeof v === "string",
-          );
-          if (firstVal) body = `${toolName}: ${truncate(firstVal, 100)}`;
-          else body = `${toolName} request`;
-        }
-      }
-
-      const title = `OpenCode (${os.hostname()})`;
-      sendNotification(title, body, event);
     },
   };
 };

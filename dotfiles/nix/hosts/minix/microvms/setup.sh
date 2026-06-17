@@ -24,9 +24,10 @@ cp /mnt/host/claude.json /home/szymon/.claude.json
 if [ -d /mnt/host/opencode ]; then
   mkdir -p /home/szymon/.config
   cp -rT /mnt/host/opencode /home/szymon/.config/opencode
-  
+
   if [ -f /home/szymon/.config/opencode/gemini_api_key ]; then
-    echo "export GEMINI_API_KEY=\"$(cat /home/szymon/.config/opencode/gemini_api_key)\"" >> /home/szymon/.bash_profile
+    # opencode's google provider (via @ai-sdk/google) reads GOOGLE_GENERATIVE_AI_API_KEY
+    echo "export GOOGLE_GENERATIVE_AI_API_KEY=\"$(cat /home/szymon/.config/opencode/gemini_api_key)\"" >> /home/szymon/.bash_profile
   fi
 fi
 
@@ -36,9 +37,9 @@ if [ -d /mnt/host/gcloud ]; then
   cp -rT /mnt/host/gcloud /home/szymon/.config/gcloud
 fi
 
-# patch .claude.json for VM environment:
-# - inject chromium path for playwright mcp (system package in VM)
-# - trust /workspace so claude doesn't prompt on every boot
+# patch agent configs for the VM environment:
+# - claude: inject chromium path for playwright mcp, trust /workspace so it doesn't prompt
+# - opencode: auto-approve permissions (the VM is an ephemeral sandbox)
 node << 'EOF'
 const fs = require("fs");
 
@@ -56,6 +57,15 @@ if (fs.existsSync(claudePath)) {
   config.projects["/workspace"].hasTrustDialogAccepted = true;
 
   fs.writeFileSync(claudePath, JSON.stringify(config, null, 2));
+}
+
+// patch opencode: skip permission prompts (opencode has no global skip flag,
+// so it must come from config; scoped to the VM copy, not the shared dotfile)
+const opencodePath = "/home/szymon/.config/opencode/opencode.json";
+if (fs.existsSync(opencodePath)) {
+  const config = JSON.parse(fs.readFileSync(opencodePath, "utf8"));
+  config.permission = "allow";
+  fs.writeFileSync(opencodePath, JSON.stringify(config, null, 2));
 }
 EOF
 
@@ -88,7 +98,7 @@ export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
 . /home/szymon/.bin/vm-context.sh
 mkdir -p /home/szymon/.config/opencode
 echo "$vm_context" > /home/szymon/.config/opencode/AGENTS.md
-exec npx -y opencode-ai@latest --dangerously-skip-permissions "$@"
+exec npx -y opencode-ai@latest "$@"
 EOF
 chmod +x /home/szymon/.bin/opencode
 

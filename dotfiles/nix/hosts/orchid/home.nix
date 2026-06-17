@@ -46,7 +46,7 @@ in
   xdg.configFile."ghostty".source = link "${dotfileDir}/ghostty";
 
   sops.defaultSopsFile = ../../secrets/shared.yaml;
-  sops.age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
+  sops.age.keyFile = "${config.home.homeDirectory}/Library/Application Support/sops/age/keys.txt";
 
   home.file."Library/Preferences/timav-nodejs/config.json".source =
     link "${dotfileDir}/timav/config.json";

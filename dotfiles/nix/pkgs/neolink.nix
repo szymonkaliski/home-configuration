@@ -9,13 +9,13 @@ let
   src = fetchFromGitHub {
     owner = "szymonkaliski";
     repo = "neolink";
-    rev = "7fa59e6f059b8023e22fcac093a3375517a1e6aa";
-    hash = "sha256-FrhUabhhJwVCwld+YaHWZ6231cDwc1wgoZEAQDj0ciI=";
+    rev = "7a2380b98ce2ae8655b73d5368bb18d9fc5cb20c";
+    hash = "sha256-Zzf6jnxtbpEjGRqeVvkgHrvh3qBS2qHm0eTnvcv+KYU=";
   };
 in
 rustPlatform.buildRustPackage {
   pname = "neolink";
-  version = "0-unstable-2026-02-10";
+  version = "0-unstable-2026-06-24";
 
   inherit src;
 

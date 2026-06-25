@@ -36,4 +36,9 @@
     battery = true;
     autoConnect = true;
   }
+  {
+    name = "studio";
+    battery = false;
+    autoConnect = true;
+  }
 ]

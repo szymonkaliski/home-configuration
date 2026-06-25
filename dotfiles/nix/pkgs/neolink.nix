@@ -9,8 +9,8 @@ let
   src = fetchFromGitHub {
     owner = "szymonkaliski";
     repo = "neolink";
-    rev = "7a2380b98ce2ae8655b73d5368bb18d9fc5cb20c";
-    hash = "sha256-Zzf6jnxtbpEjGRqeVvkgHrvh3qBS2qHm0eTnvcv+KYU=";
+    rev = "321b5ff816b9fbc5aac73e2e007c81d238c01542";
+    hash = "sha256-e0VLBQGb/Ka8Pl8wvNVAD99zesqg3BxHlUo4RGPlw1k=";
   };
 in
 rustPlatform.buildRustPackage {

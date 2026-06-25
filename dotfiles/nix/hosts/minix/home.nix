@@ -30,15 +30,19 @@ let
     password = "${config.sops.placeholder."neolink_${c.name}_password"}"
     uid = "${config.sops.placeholder."neolink_${c.name}_uid"}"
 
+    # drop the cam connection when nothing is watching, so battery cams can sleep
     idle_disconnect = true
+    # don't push a placeholder splash when cam is not up
     use_splash = false
+    # all cams are on lan
+    discovery = "local"
 
     [cameras.mqtt]
-    # motion + preview hold a live connection that keeps the camera awake
-    # only enable them on the wired cams
+    # motion holds a live connection that keeps the camera awake
     enable_motion = ${lib.boolToString (!c.battery)}
-    enable_preview = ${lib.boolToString (!c.battery)}
-    # battery level reports are cheap, queried ~6h / on connect
+    # preview snapshots go stale and aren't worth the mqtt traffic
+    enable_preview = false
+    # battery level reports are queried ~6h
     enable_battery = ${lib.boolToString c.battery}
     battery_update = 21600000
   '';
@@ -350,7 +354,7 @@ in
 
     Service = {
       Environment = [ "GST_PLUGIN_SYSTEM_PATH_1_0=${gstPluginPath}" ];
-      CPUQuota = "50%";
+      CPUQuota = "100%";
       ExecStartPre = waitForMosquitto;
       ExecStart = "${neolink}/bin/neolink mqtt-rtsp --config=%h/.config/neolink/config.toml";
       Restart = "on-failure";

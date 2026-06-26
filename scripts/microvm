@@ -177,7 +177,7 @@ clean_vm() {
   local VM="$1"
   sudo /run/current-system/sw/bin/rm -f "/var/lib/microvms/vm-${VM}/nix-store-overlay.img"
   sudo /run/current-system/sw/bin/rm -rf "$VM_BASE/vm-${VM}/data"
-  rm -f "$VM_BASE/vm-${VM}/workspace"
+  rm -rf "$VM_BASE/vm-${VM}/workspace"
 }
 
 cmd_clean() {

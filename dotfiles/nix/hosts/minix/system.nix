@@ -7,6 +7,7 @@
 let
   mqtt = import ../../mqtt.nix;
   ports = import ./ports.nix;
+  net = import ./net.nix;
   homepageRoot = import ./homepage {
     inherit pkgs lib;
     title = "minix";
@@ -20,12 +21,16 @@ let
             url = "http://minix:${toString ports.archivistUi}";
           }
           {
+            name = "telegraphist";
+            url = "https://minix.golden-minor.ts.net:${toString ports.telegraphist}";
+          }
+          {
             name = "property search";
             url = "http://minix:${toString ports.propertySearch}";
           }
           {
-            name = "cameras";
-            url = "http://minix:${toString ports.cameras}";
+            name = "neolink dashboard";
+            url = "http://minix:${toString ports.neolinkDashboard}";
           }
           {
             name = "searxng";
@@ -45,12 +50,12 @@ let
             url = "http://minix:${toString ports.zigbee2mqtt}";
           }
           {
-            name = "telegraphist";
-            url = "https://minix.golden-minor.ts.net:${toString ports.telegraphist}";
-          }
-          {
             name = "glances";
             url = "http://minix:${toString ports.glances}";
+          }
+          {
+            name = "grafana";
+            url = "http://minix:${toString ports.grafana}";
           }
         ];
       }
@@ -69,10 +74,6 @@ let
       }
     ];
   };
-  dns = {
-    quad9 = "https://dns.quad9.net/dns-query";
-    cloudflare = "https://security.cloudflare-dns.com/dns-query";
-  };
   # sendmail-compatible: message arrives on stdin, recipient args are ignored.
   # pushover caps messages at 1024 chars. same pushover app as notify-pushover.
   smartdPushoverMailer = pkgs.writeShellScript "smartd-pushover-mailer" ''
@@ -86,19 +87,26 @@ let
   '';
 in
 {
+  imports = [
+    ./system/grafana.nix
+    ./system/metrics.nix
+    ./system/blocky.nix
+    ./system/backup.nix
+    ./system/file-sharing.nix
+  ];
+
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 10;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # remote box, no console: auto-recover from a bad boot.
   # panic=30 reboots 30s after a kernel panic; boot.panic_on_fail makes the
-  # scripted initrd reboot instead of dropping to a rescue shell.
+  # scripted initrd reboot instead of dropping to a rescue shell
   boot.kernelParams = [
     "panic=30"
     "boot.panic_on_fail"
   ];
 
-  # iTCO_wdt (30s hw max): systemd resets the box if PID1 hangs after boot.
+  # iTCO_wdt (30s hw max): systemd resets the box if PID1 hangs after boot
   systemd.settings.Manager.RuntimeWatchdogSec = "20s";
 
   networking.hostName = "minix";
@@ -107,6 +115,7 @@ in
   networking.firewall.enable = false;
 
   systemd.network.enable = true;
+
   # anyInterface: don't block boot waiting for vm-bridge
   systemd.network.wait-online.anyInterface = true;
 
@@ -134,7 +143,7 @@ in
 
   systemd.network.networks."20-vm-bridge" = {
     matchConfig.Name = "vm-bridge";
-    addresses = [ { Address = "10.100.0.254/24"; } ];
+    addresses = [ { Address = "${net.gateway}/${toString net.prefixLength}"; } ];
     networkConfig.ConfigureWithoutCarrier = true;
   };
 
@@ -172,48 +181,6 @@ in
   services.resolved.settings.Resolve.DNSStubListener = "no";
   # avahi already provides mDNS; disable resolved's so they don't both respond
   services.resolved.settings.Resolve.MulticastDNS = "no";
-
-  services.avahi = {
-    enable = true;
-    nssmdns4 = true;
-    publish.enable = true;
-    publish.addresses = true;
-    extraServiceFiles.smb = ''
-      <?xml version="1.0" standalone='no'?>
-      <!DOCTYPE service-group SYSTEM "avahi-service.dtd">
-      <service-group>
-        <name>Minix</name>
-        <service>
-          <type>_smb._tcp</type>
-          <port>445</port>
-        </service>
-        <service>
-          <type>_device-info._tcp</type>
-          <port>0</port>
-          <txt-record>model=MacPro7,1@ECOLOR=226,226,224</txt-record>
-        </service>
-      </service-group>
-    '';
-  };
-
-  services.samba = {
-    enable = true;
-    settings = {
-      global = {
-        "server string" = "Minix";
-        "server role" = "standalone";
-        "netbios name" = "Minix";
-        "fruit:aapl" = "yes";
-        "fruit:model" = "MacPro7,1";
-        "vfs objects" = "fruit streams_xattr";
-      };
-      homes = {
-        browseable = "no";
-        writable = "yes";
-        "valid users" = "%S";
-      };
-    };
-  };
 
   security.sudo.extraRules = [
     {
@@ -348,132 +315,6 @@ in
     wants = [ "mosquitto.service" ];
   };
 
-  services.postgresql = {
-    enable = true;
-    enableTCPIP = true;
-    ensureDatabases = [ "blocky" ];
-    ensureUsers = [
-      {
-        name = "blocky";
-        ensureDBOwnership = true;
-      }
-    ];
-    authentication = lib.mkAfter ''
-      host blocky blocky 127.0.0.1/32 trust
-    '';
-    settings.port = ports.blockyPostgresql;
-  };
-
-  systemd.services.blocky = {
-    after = [
-      "network-online.target"
-      "postgresql.service"
-    ];
-    wants = [ "network-online.target" ];
-    requires = [ "postgresql.service" ];
-    serviceConfig = {
-      Restart = lib.mkForce "always"; # upstream sets on-failure, whole network depends on blocky
-      RestartSec = "2s";
-    };
-  };
-
-  services.blocky = {
-    enable = true;
-    settings = {
-      ports = {
-        dns = 53;
-        http = ports.blockyApi;
-      };
-
-      connectIPVersion = "v4";
-
-      # IPv4-only network; drop AAAA so clients don't try unreachable v6 via
-      # tailscale's ULA and fail with ENETUNREACH
-      filtering.queryTypes = [ "AAAA" ];
-
-      upstreams.groups.default = [
-        dns.quad9
-        dns.cloudflare
-      ];
-
-      bootstrapDns = [
-        {
-          upstream = dns.quad9;
-          ips = [
-            "9.9.9.9"
-            "149.112.112.112"
-          ];
-        }
-        {
-          upstream = dns.cloudflare;
-          ips = [
-            "1.1.1.2"
-            "1.0.0.2"
-          ];
-        }
-      ];
-
-      blocking = {
-        loading = {
-          strategy = "fast";
-          downloads = {
-            attempts = 5;
-            cooldown = "10s";
-            timeout = "60s";
-          };
-        };
-        denylists = {
-          ads = [
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/dyndns.txt"
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/fake.txt"
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/gambling.txt"
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt"
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.txt"
-          ];
-        };
-        clientGroupsBlock.default = [ "ads" ];
-        blockType = "zeroIp";
-      };
-
-      caching = {
-        prefetching = true;
-        minTime = "5m";
-      };
-
-      queryLog = {
-        type = "postgresql";
-        target = "postgres://blocky@127.0.0.1:${toString ports.blockyPostgresql}/blocky?sslmode=disable";
-        logRetentionDays = 30;
-      };
-
-      prometheus.enable = true;
-    };
-  };
-
-  virtualisation.podman.enable = true;
-
-  virtualisation.oci-containers = {
-    backend = "podman";
-    containers = {
-      blocky-ui = {
-        image = "ghcr.io/gabeduartem/blocky-ui:latest";
-        environment = {
-          TZ = "Europe/Warsaw";
-          PORT = toString ports.blockyUi;
-          BLOCKY_API_URL = "http://localhost:${toString ports.blockyApi}";
-          QUERY_LOG_TYPE = "postgresql";
-          QUERY_LOG_TARGET = "postgres://blocky@127.0.0.1:${toString ports.blockyPostgresql}/blocky?sslmode=disable";
-        };
-        extraOptions = [ "--network=host" ];
-        labels."io.containers.autoupdate" = "registry";
-      };
-    };
-  };
-
-  # re-pulls :latest for io.containers.autoupdate-labeled containers and
-  # restarts their units, rolling back on failure
-  systemd.timers.podman-auto-update.wantedBy = [ "timers.target" ];
-
   services.glances = {
     enable = true;
     port = ports.glances;
@@ -517,9 +358,6 @@ in
   sops.defaultSopsFile = ../../secrets/minix.yaml;
   sops.age.keyFile = "${config.users.users.szymon.home}/.config/sops/age/keys.txt";
 
-  sops.secrets.restic_password = { };
-  sops.secrets.rclone_nas_config = { };
-  sops.secrets.samba_password = { };
   sops.secrets.tailscale_authkey = { };
   sops.secrets.pushover_token_vm = { };
   sops.secrets.pushover_token_user = { };
@@ -530,11 +368,6 @@ in
 
   sops.templates."searx-environment".content = ''
     SEARXNG_SECRET=${config.sops.placeholder.searx_secret_key}
-  '';
-
-  system.activationScripts.samba-password = lib.stringAfter [ "setupSecrets" ] ''
-    SMB_PASS=$(cat ${config.sops.secrets.samba_password.path})
-    (echo "$SMB_PASS"; echo "$SMB_PASS") | ${pkgs.samba}/bin/smbpasswd -a -s szymon 2>/dev/null
   '';
 
   system.activationScripts.microvm-secrets = lib.stringAfter [ "setupSecrets" ] ''
@@ -551,49 +384,6 @@ in
     chown -R szymon:users "$dir"
     chmod 600 "$dir"/{ts-authkey,pushoverrc}
   '';
-
-  services.restic.backups.nas = {
-    initialize = true;
-    repository = "rclone:nas:/NAS/Backup/Minix";
-    rcloneConfigFile = config.sops.secrets.rclone_nas_config.path;
-    passwordFile = config.sops.secrets.restic_password.path;
-
-    paths = [
-      "${config.users.users.szymon.home}"
-      "/var/lib/zigbee2mqtt"
-    ];
-
-    exclude = [
-      "**/.direnv"
-      "**/node_modules"
-      "**/result"
-      "${config.users.users.szymon.home}/.cache"
-      "${config.users.users.szymon.home}/.cargo"
-      "${config.users.users.szymon.home}/.config/sops/age"
-      "${config.users.users.szymon.home}/.dropbox"
-      "${config.users.users.szymon.home}/.dropbox-dist"
-      "${config.users.users.szymon.home}/.nix-defexpr"
-      "${config.users.users.szymon.home}/.nix-profile"
-      "${config.users.users.szymon.home}/.npm"
-      "${config.users.users.szymon.home}/Dropbox"
-    ];
-
-    timerConfig = {
-      OnCalendar = "daily";
-      Persistent = true;
-    };
-
-    extraBackupArgs = [ "--verbose" ];
-
-    checkOpts = [ "--read-data-subset=5%" ];
-
-    pruneOpts = [
-      "--keep-daily 7"
-      "--keep-weekly 4"
-      "--keep-monthly 6"
-      "--keep-yearly 2"
-    ];
-  };
 
   system.stateVersion = "25.11";
 }

@@ -13,7 +13,7 @@
 }:
 
 let
-  dotfileDir = ../../../../.;
+  net = import ../net.nix;
   tailscaleAutoServe = pkgs.writeShellApplication {
     name = "tailscale-auto-serve";
     runtimeInputs = with pkgs; [
@@ -184,10 +184,10 @@ in
   systemd.network.enable = true;
   systemd.network.networks."10-e" = {
     matchConfig.Name = "e*";
-    addresses = [ { Address = "${ipAddress}/24"; } ];
-    routes = [ { Gateway = "10.100.0.254"; } ];
+    addresses = [ { Address = "${ipAddress}/${toString net.prefixLength}"; } ];
+    routes = [ { Gateway = net.gateway; } ];
   };
-  networking.nameservers = [ "10.100.0.254" ];
+  networking.nameservers = [ net.gateway ];
   networking.firewall.enable = false;
 
   programs.git = {
@@ -224,7 +224,7 @@ in
     };
   };
 
-  environment.etc."gitignore_global".source = "${dotfileDir}/gitignore_global";
+  environment.etc."gitignore_global".source = ../../../../gitignore_global;
 
   environment.variables.NPM_CONFIG_PREFIX = "/home/szymon/.npm";
   environment.extraInit = ''

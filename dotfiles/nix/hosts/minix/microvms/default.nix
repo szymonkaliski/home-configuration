@@ -5,6 +5,7 @@
 }:
 
 let
+  net = import ../net.nix;
   microvmBase = import ./base.nix;
 
   mkVm = index: {
@@ -17,7 +18,7 @@ let
           microvm.nixosModules.microvm
           (microvmBase {
             hostName = "vm-${toString index}";
-            ipAddress = "10.100.0.${toString index}";
+            ipAddress = "${net.subnet}.${toString index}";
             tapId = "vm-tap${toString index}";
             mac = "02:00:00:00:00:0${toString index}";
           })

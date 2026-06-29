@@ -8,5 +8,6 @@
   propertySearch = 10007;
   searx = 10008;
   glances = 10003;
-  cameras = 10010;
+  grafana = 10009;
+  neolinkDashboard = 10010;
 }

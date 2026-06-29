@@ -1,27 +1,37 @@
 #!/usr/bin/env bash
 
+# OPTIONS is intentionally word-split below, but must never be glob-expanded
+# (the gif filtergraph contains [s0]/[s1] which are glob bracket patterns).
+set -f
+
 # set ffmpeg options
 case $1 in
   ipad|iPad)
-    OPTIONS="-acodec aac -strict -2 -ac 2 -ab 160k -s 1024x768 -vcodec libx264 -b 1200k"
+    OPTIONS="-c:a aac -ac 2 -b:a 160k -s 1024x768 -c:v libx264 -preset slow -crf 23 -movflags +faststart"
     EXT=".iPad.mp4"
     ;;
   mjpeg)
-    OPTIONS="-vcodec mjpeg -qscale 1 -an"
+    OPTIONS="-c:v mjpeg -qscale 1 -an"
     EXT=".MJPEG.avi"
     ;;
   h264)
-    OPTIONS="-qscale 1 -vcodec libx264 -max_muxing_queue_size 1024"
+    OPTIONS="-c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart -max_muxing_queue_size 1024"
     EXT=".H264.mp4"
     ;;
+  h265|hevc)
+    OPTIONS="-c:v libx265 -preset medium -crf 26 -tag:v hvc1 -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart -max_muxing_queue_size 1024"
+    EXT=".H265.mp4"
+    ;;
+  av1)
+    OPTIONS="-c:v libsvtav1 -preset 6 -crf 32 -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart -max_muxing_queue_size 1024"
+    EXT=".AV1.mp4"
+    ;;
   gif)
-    BEFORE="mkdir output"
-    OPTIONS="-vf scale=640:-1 -r 10 output/gif%05d.png"
-    AFTER="convert +repage -loop 0 output/*.png animation.gif"
-    CLEANUP="rm -rf output"
+    OPTIONS="-vf fps=12,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse -loop 0"
+    EXT=".gif"
     ;;
   mp3)
-    OPTIONS="-f mp3 -acodec libmp3lame -ab 320000 -ar 44100"
+    OPTIONS="-c:a libmp3lame -b:a 320k -ar 44100"
     EXT=".mp3"
     ;;
   wav)
@@ -29,22 +39,17 @@ case $1 in
     EXT=".wav"
     ;;
   remove-audio)
-    OPTIONS="-vcodec copy -an"
+    OPTIONS="-c:v copy -an"
     EXT=".no-audio.mp4"
     ;;
   *)
-    echo "Usage: $0 [preset] [files]"
+    echo "Usage: $0 [ipad|mjpeg|h264|h265|av1|gif|mp3|wav|remove-audio] [files]"
     exit 0
     ;;
 esac
 
 # remove first attribute given from command line
 shift
-
-# run BEFORE if set
-if [[ -n $BEFORE ]]; then
-  $($BEFORE)
-fi
 
 # convert files
 for f in "$@"
@@ -55,13 +60,3 @@ do
     ffmpeg -threads 0 -i "${f}" $OPTIONS
   fi
 done
-
-# run AFTER if set
-if [[ -n $AFTER ]]; then
-  $($AFTER)
-fi
-
-# run CLEANUP if set
-if [[ -n $CLEANUP ]]; then
-  $($CLEANUP)
-fi

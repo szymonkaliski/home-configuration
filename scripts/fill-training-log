@@ -1,7 +1,3 @@
 #!/usr/bin/env bash
 
-# Thin launcher for the colocated fill-training-log project.
-# Boots a Claude Code session in that project's nix env and runs the
-# /fill-training-log skill. All logic lives in the project, not here.
-
 exec "$HOME/Documents/Projects/fill-training-log/fill" "$@"

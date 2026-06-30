@@ -81,6 +81,14 @@ in
           ];
         }
       ];
+      # heavy probe; own interval, not the 30s agent default
+      inputs.internet_speed = [
+        {
+          interval = "60m";
+          cache = true;
+          memory_saving_mode = true;
+        }
+      ];
       inputs.mqtt_consumer =
         let
           broker = {

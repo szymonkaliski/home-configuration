@@ -361,9 +361,15 @@ in
           ])
           (tsPanelUnit "celsius" "Temperatures" 12 8 12 8 [
             {
-              expr = "node_hwmon_temp_celsius";
-              legend = "{{chip}} {{sensor}}";
+              # coretemp cores track together (show max); thermal_zone0 is pinned/flat
+              expr = ''max(node_hwmon_temp_celsius{chip="platform_coretemp_0"})'';
+              legend = "CPU max";
               refId = "A";
+            }
+            {
+              expr = ''node_hwmon_temp_celsius{chip="nvme_nvme0"}'';
+              legend = "SSD {{sensor}}";
+              refId = "B";
             }
           ])
           (tsPanelUnit "Bps" "Disk I/O" 0 16 12 8 [
@@ -380,12 +386,13 @@ in
           ])
           (tsPanelUnit "Bps" "Network" 12 16 12 8 [
             {
-              expr = ''rate(node_network_receive_bytes_total{device!="lo"}[5m])'';
+              # wlo1 (wifi) is down with no traffic
+              expr = ''rate(node_network_receive_bytes_total{device!~"lo|wlo1"}[5m])'';
               legend = "{{device}} rx";
               refId = "A";
             }
             {
-              expr = ''rate(node_network_transmit_bytes_total{device!="lo"}[5m])'';
+              expr = ''rate(node_network_transmit_bytes_total{device!~"lo|wlo1"}[5m])'';
               legend = "{{device}} tx";
               refId = "B";
             }
@@ -404,6 +411,30 @@ in
               legend = "uptime";
               refId = "A";
               instant = true;
+            }
+          ])
+          (tsPanelUnit "Mbits" "Internet speed" 0 32 12 8 [
+            {
+              expr = "internet_speed_download";
+              legend = "down";
+              refId = "A";
+            }
+            {
+              expr = "internet_speed_upload";
+              legend = "up";
+              refId = "B";
+            }
+          ])
+          (tsPanelUnit "ms" "Internet latency" 12 32 12 8 [
+            {
+              expr = "internet_speed_latency";
+              legend = "latency";
+              refId = "A";
+            }
+            {
+              expr = "internet_speed_jitter";
+              legend = "jitter";
+              refId = "B";
             }
           ])
         ];

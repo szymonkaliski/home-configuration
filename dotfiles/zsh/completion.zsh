@@ -81,13 +81,6 @@ function _comp_tm() {
   done
 }
 
-function _comp_p() {
-  IFS=$'\n'
-  for line in $(p --ls); do
-    reply+="$line"
-  done
-}
-
 function _comp_base16() {
   IFS=$'\n'
   for c in $(find $BASE16_SHELL/scripts/ -type f | sed 's/^.*base16-\(.*\).sh/\1/' | cut -d '.' -f1); do
@@ -96,7 +89,6 @@ function _comp_base16() {
 }
 
 compctl -K _comp_base16 base16
-compctl -K _comp_p      p
 compctl -K _comp_tm     tm
 
 compctl -g '*.tar.bz2 *.tar.gz *.bz2 *.gz *.jar *.rar *.tar *.tbz2 *.tgz *.zip *.Z' + -g '*(-/)' extract
@@ -116,7 +108,7 @@ compctl -f -x "c[-1,watchexec]" -c -- watchexec
 
 if (( $+commands[microvm] )); then
   function _microvm() {
-    local -a subcmds=(start stop ssh list ls stop-all clean clean-all)
+    local -a subcmds=(start stop restart ssh list ls stop-all kill kill-all clean clean-all)
     local max_vms=$(sed -n 's/^MAX_VMS=//p' "$(command -v microvm)")
     if (( CURRENT == 2 )); then
       _describe 'command' subcmds

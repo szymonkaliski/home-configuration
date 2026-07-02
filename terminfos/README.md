@@ -1,1 +1,1 @@
-Just run `./fix-terminfos`. I got it from https://github.com/neovim/neovim/issues/14550#issuecomment-841318202 while debugging why ~~strikethrough~~ was working in `tmux` but not `neovim`. Now it works in both.
+Just run `./generate-terminfos.sh`. I got it from https://github.com/neovim/neovim/issues/14550#issuecomment-841318202 while debugging why ~~strikethrough~~ was working in `tmux` but not `neovim`. Now it works in both.

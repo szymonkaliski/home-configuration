@@ -49,7 +49,7 @@ gitUpdate "$(dirname "$(dirname "$REAL_SCRIPT")")"
 if [[ $HOSTNAME == "orchid" ]]; then
   echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"
 
-  pushd ~/.config/home-manager > /dev/null || return
+  pushd ~/.config/home-manager > /dev/null || exit 1
 
   HM_BEFORE=$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null)
 
@@ -61,11 +61,11 @@ if [[ $HOSTNAME == "orchid" ]]; then
   nvd_diff "home-manager" "$HM_BEFORE" "$HM_AFTER"
   echo
 
-  popd > /dev/null || return
+  popd > /dev/null || exit 1
 elif [[ $HOSTNAME == "minix" ]]; then
   echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"
 
-  pushd ~/.config/home-manager > /dev/null || return
+  pushd ~/.config/home-manager > /dev/null || exit 1
 
   SYSTEM_BEFORE=$(readlink -f /run/current-system 2>/dev/null)
   HM_BEFORE=$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null)
@@ -80,7 +80,7 @@ elif [[ $HOSTNAME == "minix" ]]; then
   nvd_diff "home-manager" "$HM_BEFORE" "$HM_AFTER"
   echo
 
-  popd > /dev/null || return
+  popd > /dev/null || exit 1
 fi
 
 if [ -d ~/.zsh/plugins ]; then
@@ -110,8 +110,8 @@ if hash ncu 2> /dev/null; then
 fi
 
 if hash vale 2> /dev/null; then
-  pushd ~/ > /dev/null || return
+  pushd ~/ > /dev/null || exit 1
   echo -e "$(tput setaf 2)Checking Vale...$(tput sgr0)"
   vale sync
-  popd > /dev/null || return
+  popd > /dev/null || exit 1
 fi

@@ -7,12 +7,6 @@
 # zsh plugins
 **/zsh/plugins/
 
-# flexget generated files
-**/flexget/db-config.sqlite
-**/flexget/flexget.log*
-**/flexget/temp
-**/flexget/received/*
-
 # vim
 **/vim/autoload/plug.vim*
 **/vim/backup/

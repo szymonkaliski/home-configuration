@@ -40,7 +40,7 @@ fh() {
 
 # kill process
 fkill() {
-  ps -ef | sed 1d | fzf --multi --query="$1" --prompt="kill > " | awk '{ print $2 }' | xargs kill -${1:-9}
+  ps -ef | sed 1d | fzf --multi --query="$1" --prompt="kill > " | awk '{ print $2 }' | xargs kill -9
 }
 
 # checkout git commit

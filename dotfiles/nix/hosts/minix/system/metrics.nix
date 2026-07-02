@@ -4,9 +4,6 @@ let
   ports = import ../ports.nix;
 in
 {
-  # metrics trial: VictoriaMetrics store, Telegraf (MQTT push), Grafana (tailnet
-  # only), plus node + smartctl exporters scraped alongside blocky. Everything
-  # binds 127.0.0.1; Grafana is reached over `tailscale serve` like telegraphist.
   services.victoriametrics = {
     enable = true;
     listenAddress = "127.0.0.1:8428";

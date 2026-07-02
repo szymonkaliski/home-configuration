@@ -54,7 +54,7 @@ in
   };
 
   environment.systemPackages = with pkgs; [
-    chromium # for playwright claude mcp
+    chromium # for playwright MCP
     curl
     git
     jq

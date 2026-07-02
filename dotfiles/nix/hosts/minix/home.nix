@@ -11,7 +11,6 @@ let
   mqtt = import ../../mqtt.nix;
   ports = import ./ports.nix;
   inherit (import ./lib.nix { inherit pkgs lib; })
-    waitForMosquitto
     waitForInternet
     mkProjectService
     mkTimer
@@ -84,7 +83,6 @@ in
     };
   };
 
-  # engine config (no secrets: mqtt creds come from mqtt.nix)
   xdg.configFile."friday-ruler/config.json".text = builtins.toJSON {
     host = mqtt.host;
     port = mqtt.port;
@@ -93,7 +91,6 @@ in
     topicPrefix = "friday/ruler";
   };
 
-  # user config (pushover secrets, router + location)
   sops.templates."friday-ruler-user-config" = {
     path = "${config.home.homeDirectory}/.config/friday-ruler/user.json";
     content = builtins.toJSON {
@@ -196,6 +193,12 @@ in
     password = mqtt.password;
   };
 
+  xdg.configFile."friday-homebridge/mqtt.json".text = builtins.toJSON {
+    url = "mqtt://${mqtt.host}:${toString mqtt.port}";
+    username = mqtt.username;
+    password = mqtt.password;
+  };
+
   xdg.configFile."xiaomiclock2mqtt/config.json".text = builtins.toJSON {
     ble = {
       mac = "A4:C1:38:B3:76:F7";
@@ -275,7 +278,6 @@ in
     command = "node cli.js";
   };
 
-  # homebridge exits 143 (SIGTERM) on clean stop
   systemd.user.services.friday-homebridge = mkProjectService {
     dir = "friday-homebridge";
     description = "Homebridge";
@@ -423,7 +425,7 @@ in
   };
 
   # tmux.service owns creating the "home" session; start after it so home
-  # exists before telegraphist attaches (telegraphist only recreates home as a watchdog)
+  # exists before telegraphist attaches
   systemd.user.services.telegraphist = mkProjectService {
     dir = "telegraphist";
     description = "Telegraphist terminal";

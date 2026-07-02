@@ -10,7 +10,12 @@ let
   link = config.lib.file.mkOutOfStoreSymlink;
   mqtt = import ../../mqtt.nix;
   ports = import ./ports.nix;
-  inherit (import ./lib.nix { inherit pkgs lib; }) waitForMosquitto mkProjectService mkTimer;
+  inherit (import ./lib.nix { inherit pkgs lib; })
+    waitForMosquitto
+    waitForInternet
+    mkProjectService
+    mkTimer
+    ;
 in
 {
   imports = [
@@ -223,6 +228,9 @@ in
   systemd.user.services.tmux = {
     Unit = {
       Description = "tmux default session";
+      # wait for sops for secrets in the session
+      After = [ "sops-nix.service" ];
+      Wants = [ "sops-nix.service" ];
       # don't restart on rebuild (kills running sessions)
       X-SwitchMethod = "keep-old";
     };
@@ -256,6 +264,7 @@ in
     description = "Smartbox to MQTT bridge for heaters";
     extraUnits = [ "sops-nix.service" ];
     needsMqtt = true;
+    needsInternet = true;
     command = "node src/index.js";
   };
 
@@ -290,6 +299,8 @@ in
 
     Service = {
       Type = "oneshot";
+      TimeoutStartSec = "10min";
+      ExecStartPre = "${waitForInternet}";
       ExecStart =
         let
           bootNotify = pkgs.writeShellScript "boot-notify" ''
@@ -344,6 +355,7 @@ in
     dir = "timav";
     description = "Timav cache update";
     extraUnits = [ "sops-nix.service" ];
+    needsInternet = true;
     command = "./cli.js cache";
     environment = "DEBUG=*";
     oneshot = true;
@@ -358,6 +370,7 @@ in
   systemd.user.services.szymonkaliski-com-publish = mkProjectService {
     dir = "szymonkaliski-com";
     description = "Publish szymonkaliski.com";
+    needsInternet = true;
     command = "bash -c './scripts/update-notes.sh && ./scripts/publish.sh'";
     oneshot = true;
     timeoutStart = "10min";
@@ -386,6 +399,7 @@ in
     dir = "archivist";
     description = "Archivist fetch";
     extraUnits = [ "sops-nix.service" ];
+    needsInternet = true;
     command = "node dist/cli/index.js fetch";
     oneshot = true;
     timeoutStart = "60min";
@@ -400,6 +414,7 @@ in
     dir = "archivist";
     description = "Archivist web UI";
     extraUnits = [ "sops-nix.service" ];
+    needsInternet = true;
     build = "npm run build";
     command = "node dist/server/index.js";
     environment = "PORT=${toString ports.archivistUi}";
@@ -413,6 +428,7 @@ in
     dir = "telegraphist";
     description = "Telegraphist terminal";
     extraUnits = [ "tmux.service" ];
+    needsInternet = true;
     build = "npm run build";
     command = "${pkgs.bash}/bin/bash -c 'SHELL=${pkgs.zsh}/bin/zsh PATH=%h/.bin:${pkgs.tmux}/bin:$PATH exec node dist/server/server.js'";
     environment = "PORT=${toString ports.telegraphist}";
@@ -435,6 +451,7 @@ in
     Service = {
       Type = "oneshot";
       TimeoutStartSec = "10min";
+      ExecStartPre = "${waitForInternet}";
       ExecStart = "${pkgs.bash}/bin/bash %h/.bin/healthcheck";
       Environment = "PATH=/run/wrappers/bin:/run/current-system/sw/bin:%h/.nix-profile/bin:%h/.bin";
     };
@@ -443,6 +460,8 @@ in
   systemd.user.timers.healthcheck = mkTimer {
     description = "Daily system healthcheck";
     onCalendar = "*-*-* 08:00:00";
+    # a daily monitor shouldn't replay a missed run at cold boot
+    persistent = false;
   };
 
   systemd.user.services.rss2email = {
@@ -461,6 +480,7 @@ in
     Service = {
       Type = "oneshot";
       TimeoutStartSec = "10min";
+      ExecStartPre = "${waitForInternet}";
       ExecStart = "${pkgs.rss2email}/bin/r2e run";
       Environment = "PATH=${pkgs.msmtp}/bin";
     };
@@ -475,6 +495,7 @@ in
     dir = "property-search";
     description = "Property Search web UI";
     extraUnits = [ "sops-nix.service" ];
+    needsInternet = true;
     build = "npm run build";
     command = "node dist/index.js";
     environment = "PORT=${toString ports.propertySearch}";
@@ -486,6 +507,7 @@ in
     dir = "property-search";
     description = "Property Search scraper";
     extraUnits = [ "sops-nix.service" ];
+    needsInternet = true;
     command = "npm run scrape";
     oneshot = true;
     timeoutStart = "60min";

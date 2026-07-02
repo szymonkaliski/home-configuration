@@ -14,9 +14,21 @@ let
     echo "mosquitto not ready"
     exit 1
   '';
+
+  # network-online.target is inert for user services, so poll tailscale for
+  # real internet (it comes up last, so online implies dns/upstream are up)
+  waitForInternet = pkgs.writeShellScript "wait-for-internet" ''
+    for i in {1..150}; do
+      online=$(${pkgs.tailscale}/bin/tailscale status --self --json 2>/dev/null | ${pkgs.jq}/bin/jq -r '.Self.Online // empty')
+      [ "$online" = "true" ] && exit 0
+      sleep 2
+    done
+    echo "internet not ready after 300s, proceeding anyway"
+    exit 0
+  '';
 in
 {
-  inherit waitForMosquitto;
+  inherit waitForMosquitto waitForInternet;
 
   # systemd user service that runs a project via `nix develop`. captures the
   # shared boilerplate (network-online + notify-failure + ConditionPathIsDirectory
@@ -28,6 +40,7 @@ in
       command,
       build ? null,
       needsMqtt ? false,
+      needsInternet ? false,
       extraUnits ? [ ], # extra After/Wants beyond network-online.target
       oneshot ? false,
       timeoutStart ? null,
@@ -39,7 +52,8 @@ in
     let
       projectDir = "%h/Projects/${dir}";
       pre =
-        lib.optional needsMqtt waitForMosquitto
+        lib.optional needsInternet waitForInternet
+        ++ lib.optional needsMqtt waitForMosquitto
         ++ lib.optional (build != null) "${pkgs.nix}/bin/nix develop ${projectDir} --command ${build}";
       preAttr =
         if pre == [ ] then
@@ -77,12 +91,16 @@ in
     // lib.optionalAttrs (!oneshot) { Install.WantedBy = [ "default.target" ]; };
 
   mkTimer =
-    { description, onCalendar }:
+    {
+      description,
+      onCalendar,
+      persistent ? true,
+    }:
     {
       Unit.Description = description;
       Timer = {
         OnCalendar = onCalendar;
-        Persistent = true;
+        Persistent = persistent;
       };
       Install.WantedBy = [ "timers.target" ];
     };

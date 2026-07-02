@@ -58,6 +58,8 @@ cmd_start() {
   done
   [ -z "$VM" ] && VM=$(find_free_vm)
   PROJECT=$(realpath "$PROJECT")
+  # drop empty microvm:kvm-owned data/ recreated by tmpfiles after a clean
+  rmdir "$VM_BASE/vm-${VM}/data" 2>/dev/null || true
   mkdir -p "$VM_BASE/vm-${VM}/data/home"
   rm -rf "$VM_BASE/vm-${VM}/workspace"
   ln -s "$PROJECT" "$VM_BASE/vm-${VM}/workspace"
@@ -65,8 +67,8 @@ cmd_start() {
   t0=$SECONDS
   printf "vm-${VM} (10.100.0.${VM}) ${PROJECT}\n"
   printf "starting..."
-  sudo systemctl reset-failed "microvm@vm-${VM}" 2>/dev/null || true
-  sudo systemctl start --no-block "microvm@vm-${VM}"
+  systemctl reset-failed "microvm@vm-${VM}" 2>/dev/null || true
+  systemctl start --no-block "microvm@vm-${VM}"
   printf " booting..."
   while true; do
     local setup_state
@@ -104,7 +106,7 @@ cmd_start() {
 stop_vm() {
   local VM="$1"
   ssh -o ConnectTimeout=3 "${SSH_OPTS[@]}" "szymon@10.100.0.${VM}" "sudo tailscale logout" 2>/dev/null || true
-  sudo systemctl stop "microvm@vm-${VM}"
+  systemctl stop "microvm@vm-${VM}"
 }
 
 cmd_stop() {
@@ -150,8 +152,8 @@ cmd_stop_all() {
 
 kill_vm() {
   local VM="$1"
-  sudo systemctl kill "microvm@vm-${VM}"
-  sudo systemctl stop "microvm@vm-${VM}" 2>/dev/null || true
+  systemctl kill "microvm@vm-${VM}"
+  systemctl stop "microvm@vm-${VM}" 2>/dev/null || true
 }
 
 cmd_kill() {
@@ -175,8 +177,8 @@ cmd_kill_all() {
 
 clean_vm() {
   local VM="$1"
-  sudo /run/current-system/sw/bin/rm -f "/var/lib/microvms/vm-${VM}/nix-store-overlay.img"
-  sudo /run/current-system/sw/bin/rm -rf "$VM_BASE/vm-${VM}/data"
+  sudo rm -f "/var/lib/microvms/vm-${VM}/nix-store-overlay.img"
+  sudo rm -rf "$VM_BASE/vm-${VM}/data"
   rm -rf "$VM_BASE/vm-${VM}/workspace"
 }
 

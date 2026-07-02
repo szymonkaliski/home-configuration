@@ -63,11 +63,10 @@ check "blocky-resolves-dns" bash -c '
 
 check "restic-backed-up" bash -c '
   err=$(mktemp)
-  snap=$(timeout 30 sudo -n \
-    RESTIC_REPOSITORY="rclone:nas:/NAS/Backup/Minix" \
+  snap=$(RESTIC_REPOSITORY="rclone:nas:/NAS/Backup/Minix" \
     RESTIC_PASSWORD_FILE=/run/secrets/restic_password \
     RCLONE_CONFIG=/run/secrets/rclone_nas_config \
-    /run/current-system/sw/bin/restic snapshots --latest 1 --json --no-cache 2>"$err")
+    timeout 30 restic snapshots --latest 1 --json --no-cache 2>"$err")
   ts=$(echo "$snap" | jq -r "sort_by(.time) | .[-1].time // empty" 2>/dev/null)
   if [[ -z "$ts" ]]; then
     echo "no snapshots found: $(cat "$err")"

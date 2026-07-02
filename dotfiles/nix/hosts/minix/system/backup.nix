@@ -1,7 +1,7 @@
 { config, ... }:
 {
-  sops.secrets.restic_password = { };
-  sops.secrets.rclone_nas_config = { };
+  sops.secrets.restic_password.owner = "szymon";
+  sops.secrets.rclone_nas_config.owner = "szymon";
 
   services.restic.backups.nas = {
     initialize = true;

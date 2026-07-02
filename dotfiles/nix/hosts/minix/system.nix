@@ -74,8 +74,9 @@ let
       }
     ];
   };
+
   # sendmail-compatible: message arrives on stdin, recipient args are ignored.
-  # pushover caps messages at 1024 chars. same pushover app as notify-pushover.
+  # pushover caps messages at 1024 chars. same pushover app as notify-pushover
   smartdPushoverMailer = pkgs.writeShellScript "smartd-pushover-mailer" ''
     message=$(${pkgs.coreutils}/bin/head -c 1024)
     ${pkgs.curl}/bin/curl -fsS --retry 3 --max-time 30 \
@@ -179,33 +180,15 @@ in
   # and without it tailscale clobbers /etc/resolv.conf via resolvconf (tailscale#9687)
   services.resolved.enable = true;
   services.resolved.settings.Resolve.DNSStubListener = "no";
+
   # avahi already provides mDNS; disable resolved's so they don't both respond
   services.resolved.settings.Resolve.MulticastDNS = "no";
 
+  # microvm lifecycle is granted via polkit below; the cleanup rm's need root
   security.sudo.extraRules = [
     {
       users = [ "szymon" ];
       commands = [
-        {
-          command = "/run/current-system/sw/bin/systemctl start microvm@*";
-          options = [ "NOPASSWD" ];
-        }
-        {
-          command = "/run/current-system/sw/bin/systemctl start --no-block microvm@*";
-          options = [ "NOPASSWD" ];
-        }
-        {
-          command = "/run/current-system/sw/bin/systemctl stop microvm@*";
-          options = [ "NOPASSWD" ];
-        }
-        {
-          command = "/run/current-system/sw/bin/systemctl kill microvm@*";
-          options = [ "NOPASSWD" ];
-        }
-        {
-          command = "/run/current-system/sw/bin/systemctl reset-failed microvm@*";
-          options = [ "NOPASSWD" ];
-        }
         {
           command = "/run/current-system/sw/bin/rm -f /var/lib/microvms/vm-*/nix-store-overlay.img";
           options = [ "NOPASSWD" ];
@@ -214,16 +197,23 @@ in
           command = "/run/current-system/sw/bin/rm -rf /home/szymon/MicroVMs/vm-*/data";
           options = [ "NOPASSWD" ];
         }
-        {
-          command = "/run/current-system/sw/bin/restic snapshots *";
-          options = [
-            "NOPASSWD"
-            "SETENV"
-          ];
-        }
       ];
     }
   ];
+
+  # start/stop/kill/reset-failed the microvm guest units without sudo
+  security.polkit.enable = true;
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if (action.id == "org.freedesktop.systemd1.manage-units" && subject.user == "szymon") {
+        var unit = action.lookup("unit");
+
+        if (unit && /^microvm@vm-[0-9]+\.service$/.test(unit)) {
+          return polkit.Result.YES;
+        }
+      }
+    });
+  '';
 
   users.users.szymon = {
     isNormalUser = true;
@@ -236,20 +226,19 @@ in
   };
 
   programs.zsh.enable = true;
-  # /etc/zshrc otherwise runs a full `compinit` (~40-50ms security audit) before
-  # our own; dotfiles/zsh/completion.zsh extends fpath and runs compinit itself,
-  # so skip the redundant global one.
+  # /etc/zshrc otherwise runs a full `compinit` (~40-50ms security audit)
+  # before our own; dotfiles/zsh/completion.zsh extends fpath and runs compinit
+  # itself, so skip the redundant global one
   programs.zsh.enableGlobalCompInit = false;
 
-  # We set our own PROMPT (dotfiles/zsh/prompt.zsh) and load our own dircolors
-  # (deferred, dotfiles/zsh/colors.zsh), so skip /etc/zshrc's `prompt suse` line
-  # and its dircolors fork.
+  # we set our own PROMPT (dotfiles/zsh/prompt.zsh) and load our own dircolors
+  # (deferred, dotfiles/zsh/colors.zsh), so skip /etc/zshrc's `prompt suse`
+  # line and its dircolors fork
   programs.zsh.promptInit = "";
   programs.zsh.enableLsColors = false;
 
-  # claude-code ships native ELF binaries (the launcher itself plus embedded
-  # ugrep/bfs/rg dispatched via ARGV0); they hardcode /lib64/ld-linux-x86-64.so.2.
-  # nix-ld's shim at that path makes them all run without per-binary wrappers.
+  # claude-code ships native binaries, they hardcode /lib64/ld-linux-x86-64.so.2
+  # nix-ld's shim at that path makes them all run without per-binary wrappers
   programs.nix-ld.enable = true;
 
   nixpkgs.config.allowUnfree = true;
@@ -331,9 +320,6 @@ in
     };
   };
 
-  # SearXNG metasearch, built-in HTTP server on the LAN.
-  # secret_key comes via envsubst from the sops environment file so it stays
-  # out of the world-readable nix store.
   services.searx = {
     enable = true;
     environmentFile = config.sops.templates."searx-environment".path;

@@ -87,7 +87,14 @@ in
     ".claude/pre-read-hook.sh".source = link "${dotfileDir}/claude/pre-read-hook.sh";
     ".claude/notify.js".source = link "${dotfileDir}/claude/notify.js";
     ".claude/statusline-command.sh".source = link "${dotfileDir}/claude/statusline-command.sh";
-    ".claude/skills".source = link "${dotfileDir}/claude/skills";
+    # skills linked one-by-one so ~/.claude/skills stays a real directory;
+    # machine-local additions can then sit alongside without living in this repo
+    ".claude/skills/git-amend".source = link "${dotfileDir}/claude/skills/git-amend";
+    ".claude/skills/git-catchup".source = link "${dotfileDir}/claude/skills/git-catchup";
+    ".claude/skills/git-commit".source = link "${dotfileDir}/claude/skills/git-commit";
+    ".claude/skills/git-review".source = link "${dotfileDir}/claude/skills/git-review";
+    ".claude/skills/plan-review".source = link "${dotfileDir}/claude/skills/plan-review";
+    ".claude/skills/tdd".source = link "${dotfileDir}/claude/skills/tdd";
   };
 
   xdg.configFile = {

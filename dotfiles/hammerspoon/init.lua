@@ -4,7 +4,6 @@ local flatten = require('ext.table').flatten
 -- global stuff
 require('hs.ipc')
 require('console').init()
-require('overrides').init()
 
 -- https://developer.apple.com/documentation/applicationservices/1459345-axuielementsetmessagingtimeout
 hs.window.timeout(0.5)
@@ -20,18 +19,12 @@ config = {
   },
 
   wm = {
-    -- tilingMethod = 'grid',
     tilingMethod = 'sequoia',
   },
 
   window = {
     highlightBorder = false,
-    highlightMouse  = true,
-    historyLimit    = 100
-  },
-
-  network = {
-    home = 'Skynet 5G'
+    highlightMouse  = true
   },
 
   logger = {
@@ -70,10 +63,6 @@ controlplane.enabled        = { 'auto-system-sleep' }
 local modules               = { bindings, logger, watchers, ui, controlplane, watchables }
 local basicBindings         = { 'ask-before-quit', 'block-hide', 'ctrl-esc', 'f-keys', 'global', 'screenshot-with-meta', 'term-ctrl-i' }
 bindings.askBeforeQuitApps  = flatten({ config.apps.browsers, config.apps.terms, { 'Preview' } })
-
-if config.wm.tilingMethod == 'grid' then
-  bindings.enabled = flatten({ basicBindings, { 'grid', 'focus' } })
-end
 
 if config.wm.tilingMethod == 'sequoia' then
   bindings.enabled = flatten({ basicBindings, { 'sequoia' } })

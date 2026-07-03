@@ -33,7 +33,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "fable",
+  "model": "opus[1m]",
   "hooks": {
     "Notification": [
       {

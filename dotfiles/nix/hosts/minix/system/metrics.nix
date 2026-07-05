@@ -1,7 +1,22 @@
-{ ... }:
+{ pkgs, ... }:
 let
   mqtt = import ../../../mqtt.nix;
   ports = import ../ports.nix;
+  # neolink only publishes status on connect/disconnect transitions; sample the
+  # broker's retained state periodically to get a dense 0/1 series that
+  # integrate()/state-timeline can use (reads retained messages only, so
+  # battery cameras are never woken)
+  cameraStateSample = pkgs.writeShellScript "camera-state-sample" ''
+    ${pkgs.mosquitto}/bin/mosquitto_sub \
+      -h ${mqtt.host} -p ${toString mqtt.port} \
+      -u ${mqtt.username} -P ${mqtt.password} \
+      --retained-only -W 2 -t 'neolink/+/status' -v 2>/dev/null |
+      ${pkgs.gawk}/bin/awk '{
+        split($1, t, "/");
+        printf "camera_state,device=%s value=%d\n", t[2], ($2 == "connected") ? 1 : 0
+      }'
+    exit 0
+  '';
 in
 {
   services.victoriametrics = {
@@ -35,7 +50,6 @@ in
     enable = true;
     listenAddress = "127.0.0.1";
     port = 9100;
-    enabledCollectors = [ "systemd" ];
   };
 
   services.prometheus.exporters.smartctl = {
@@ -76,6 +90,12 @@ in
               };
             }
           ];
+        }
+      ];
+      inputs.exec = [
+        {
+          commands = [ "${cameraStateSample}" ];
+          data_format = "influx";
         }
       ];
       # heavy probe; own interval, not the 30s agent default

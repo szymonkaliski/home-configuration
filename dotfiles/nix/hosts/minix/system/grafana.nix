@@ -149,8 +149,8 @@ in
           };
         };
       };
-      # single reduced value (stat)
-      bigStat = unit: title: x: y: w: h: targets: {
+      # single reduced value (stat); steps = threshold steps for coloring
+      bigStat = unit: steps: title: x: y: w: h: targets: {
         inherit title;
         type = "stat";
         datasource = ds;
@@ -164,7 +164,13 @@ in
         };
         targets = mkTargets targets;
         fieldConfig = {
-          defaults = { inherit unit; };
+          defaults = {
+            inherit unit;
+            thresholds = {
+              mode = "absolute";
+              inherit steps;
+            };
+          };
           overrides = [ ];
         };
         options = {
@@ -174,10 +180,16 @@ in
             values = false;
           };
           colorMode = "value";
-          graphMode = "area";
+          graphMode = "none";
           textMode = "auto";
         };
       };
+      alwaysGreen = [
+        {
+          value = null;
+          color = "green";
+        }
+      ];
       mkDashboard =
         {
           uid,
@@ -250,16 +262,23 @@ in
               refId = "A";
             }
           ])
-          (tsPanelUnit "percent" "Camera battery (%)" 0 24 12 8 [
+          (tsPanelUnit "percent" "Batteries (%)" 0 24 12 8 [
             {
               expr = "camera_battery_value";
               legend = "{{device}}";
               refId = "A";
             }
+            {
+              expr = ''env_value{metric="battery"}'';
+              legend = "{{device}}";
+              refId = "B";
+            }
           ])
+          # camera_state is the dense 30s sampling of the retained status topic
+          # (see metrics.nix); camera_status is the raw transition events
           (barPanel "h" null "Camera connected time, in range (h)" 12 24 12 8 [
             {
-              expr = "integrate(camera_status_value[$__range]) / 3600";
+              expr = "integrate(camera_state_value[$__range]) / 3600";
               legend = "{{device}}";
               refId = "A";
               instant = true;
@@ -267,7 +286,7 @@ in
           ])
           (statePanel "Camera connection" 0 32 24 6 [
             {
-              expr = "camera_status_value";
+              expr = "camera_state_value";
               legend = "{{device}}";
               refId = "A";
             }
@@ -302,7 +321,9 @@ in
           ])
           (panel "Top clients (queries/s)" 12 8 12 8 [
             {
-              expr = "topk(5, sum by (client) (rate(blocky_query_total[5m])))";
+              # topk() picks top 5 per step (legend fills up with dozens of
+              # clients); topk_avg picks 5 series across the whole range
+              expr = "topk_avg(5, sum by (client) (rate(blocky_query_total[5m])))";
               legend = "{{client}}";
               refId = "A";
             }
@@ -321,6 +342,51 @@ in
               refId = "A";
             }
           ])
+          (panel "Queries by type (per s)" 0 24 12 8 [
+            {
+              expr = "sum by (type) (rate(blocky_query_total[5m]))";
+              legend = "{{type}}";
+              refId = "A";
+            }
+          ])
+          (tsPanelUnit "s" "Query duration p95" 12 24 12 8 [
+            {
+              expr = "histogram_quantile(0.95, sum by (le) (rate(blocky_request_duration_seconds_bucket[5m])))";
+              legend = "p95";
+              refId = "A";
+            }
+          ])
+          # blocklists refresh every 4h (blocky default); yellow after two
+          # missed refreshes, red after a day
+          (bigStat "dtdurations"
+            [
+              {
+                value = null;
+                color = "green";
+              }
+              {
+                value = 28800;
+                color = "yellow";
+              }
+              {
+                value = 86400;
+                color = "red";
+              }
+            ]
+            "List refresh age"
+            0
+            32
+            6
+            6
+            [
+              {
+                expr = "time() - blocky_last_list_group_refresh_timestamp_seconds";
+                legend = "age";
+                refId = "A";
+                instant = true;
+              }
+            ]
+          )
         ];
       };
       minixDashboard = mkDashboard {
@@ -358,6 +424,11 @@ in
               legend = "used";
               refId = "A";
             }
+            {
+              expr = "100 * (1 - node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)";
+              legend = "swap";
+              refId = "B";
+            }
           ])
           (tsPanelUnit "celsius" "Temperatures" 12 8 12 8 [
             {
@@ -367,8 +438,9 @@ in
               refId = "A";
             }
             {
-              expr = ''node_hwmon_temp_celsius{chip="nvme_nvme0"}'';
-              legend = "SSD {{sensor}}";
+              # single composite reading instead of the three nvme hwmon sensors
+              expr = ''smartctl_device_temperature{temperature_type="current"}'';
+              legend = "SSD";
               refId = "B";
             }
           ])
@@ -386,26 +458,28 @@ in
           ])
           (tsPanelUnit "Bps" "Network" 12 16 12 8 [
             {
-              # wlo1 (wifi) is down with no traffic
-              expr = ''rate(node_network_receive_bytes_total{device!~"lo|wlo1"}[5m])'';
+              # wlo1 (wifi) is down with no traffic; vm-bridge duplicates the
+              # tap devices
+              expr = ''rate(node_network_receive_bytes_total{device!~"lo|wlo1|vm-bridge"}[5m])'';
               legend = "{{device}} rx";
               refId = "A";
             }
             {
-              expr = ''rate(node_network_transmit_bytes_total{device!~"lo|wlo1"}[5m])'';
+              expr = ''rate(node_network_transmit_bytes_total{device!~"lo|wlo1|vm-bridge"}[5m])'';
               legend = "{{device}} tx";
               refId = "B";
             }
           ])
           (barPanel "percent" 100 "Filesystem used (%)" 0 24 16 8 [
             {
-              expr = ''100 * (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|ramfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|ramfs|overlay"})'';
+              # /nix/store is a bind mount of the root partition
+              expr = ''100 * (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|ramfs|overlay",mountpoint!="/nix/store"} / node_filesystem_size_bytes{fstype!~"tmpfs|ramfs|overlay",mountpoint!="/nix/store"})'';
               legend = "{{mountpoint}}";
               refId = "A";
               instant = true;
             }
           ])
-          (bigStat "dtdurations" "Uptime" 16 24 8 8 [
+          (bigStat "dtdurations" alwaysGreen "Uptime" 16 24 8 8 [
             {
               expr = "time() - node_boot_time_seconds";
               legend = "uptime";
@@ -435,6 +509,101 @@ in
               expr = "internet_speed_jitter";
               legend = "jitter";
               refId = "B";
+            }
+          ])
+          (tsPanelUnit "percent" "Packet loss (%)" 0 40 12 8 [
+            {
+              # the exporter reports -1 when loss wasn't measured
+              expr = "internet_speed_packet_loss >= 0";
+              legend = "packet loss";
+              refId = "A";
+            }
+          ])
+          (bigStat "percent"
+            [
+              {
+                value = null;
+                color = "green";
+              }
+              {
+                value = 50;
+                color = "yellow";
+              }
+              {
+                value = 80;
+                color = "red";
+              }
+            ]
+            "SSD wear"
+            12
+            40
+            6
+            4
+            [
+              {
+                expr = "smartctl_device_percentage_used";
+                legend = "wear";
+                refId = "A";
+                instant = true;
+              }
+            ]
+          )
+          (bigStat "percent"
+            [
+              {
+                value = null;
+                color = "red";
+              }
+              {
+                value = 50;
+                color = "green";
+              }
+            ]
+            "SSD spare"
+            18
+            40
+            6
+            4
+            [
+              {
+                expr = "smartctl_device_available_spare";
+                legend = "spare";
+                refId = "A";
+                instant = true;
+              }
+            ]
+          )
+          (bigStat "none"
+            [
+              {
+                value = null;
+                color = "green";
+              }
+              {
+                value = 1;
+                color = "red";
+              }
+            ]
+            "SSD media errors"
+            12
+            44
+            6
+            4
+            [
+              {
+                expr = "smartctl_device_media_errors";
+                legend = "errors";
+                refId = "A";
+                instant = true;
+              }
+            ]
+          )
+          (bigStat "dtdurations" alwaysGreen "SSD power-on" 18 44 6 4 [
+            {
+              expr = "smartctl_device_power_on_seconds";
+              legend = "power-on";
+              refId = "A";
+              instant = true;
             }
           ])
         ];

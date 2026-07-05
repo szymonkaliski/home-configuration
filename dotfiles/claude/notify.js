@@ -365,9 +365,9 @@ if (event === "Stop") {
   }
   body = state.text;
 } else if (event === "PreToolUse") {
-  // Only AskUserQuestion reaches here (Read goes to pre-read-hook; nothing else
-  // is hooked). It blocks mid-turn but fires no permission Notification, so this
-  // is the only immediate signal that the chooser is waiting.
+  // AskUserQuestion is the only hooked PreToolUse tool. It blocks mid-turn but
+  // fires no permission Notification, so this is the only immediate signal that
+  // the chooser is waiting.
   if (input.tool_name !== "AskUserQuestion") process.exit(0);
   body = formatToolUse({
     name: input.tool_name,

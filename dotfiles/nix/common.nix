@@ -7,6 +7,17 @@
 let
   dotfileDir = "${repoRoot}/dotfiles";
   link = config.lib.file.mkOutOfStoreSymlink;
+
+  # flake eval only sees git-tracked files - `git add` newly created skills
+  skillNames = builtins.attrNames (builtins.readDir ../agents/skills);
+  skillLinks =
+    dest:
+    builtins.listToAttrs (
+      map (name: {
+        name = "${dest}/${name}";
+        value.source = link "${dotfileDir}/agents/skills/${name}";
+      }) skillNames
+    );
 in
 {
   home.username = "szymon";
@@ -84,18 +95,13 @@ in
     ".bin".source = link "${repoRoot}/scripts";
     ".claude/CLAUDE.md".source = link "${dotfileDir}/claude/CLAUDE.md";
     ".claude/settings.json".source = link "${dotfileDir}/claude/settings.json";
-    ".claude/pre-read-hook.sh".source = link "${dotfileDir}/claude/pre-read-hook.sh";
     ".claude/notify.js".source = link "${dotfileDir}/claude/notify.js";
     ".claude/statusline-command.sh".source = link "${dotfileDir}/claude/statusline-command.sh";
-    # skills linked one-by-one so ~/.claude/skills stays a real directory;
-    # machine-local additions can then sit alongside without living in this repo
-    ".claude/skills/git-amend".source = link "${dotfileDir}/claude/skills/git-amend";
-    ".claude/skills/git-catchup".source = link "${dotfileDir}/claude/skills/git-catchup";
-    ".claude/skills/git-commit".source = link "${dotfileDir}/claude/skills/git-commit";
-    ".claude/skills/git-review".source = link "${dotfileDir}/claude/skills/git-review";
-    ".claude/skills/plan-review".source = link "${dotfileDir}/claude/skills/plan-review";
-    ".claude/skills/tdd".source = link "${dotfileDir}/claude/skills/tdd";
-  };
+  }
+  # skills linked one-by-one so the destination dirs stay real directories;
+  # machine-local additions can then sit alongside without living in this repo
+  // skillLinks ".claude/skills"
+  // skillLinks ".gemini/config/skills";
 
   xdg.configFile = {
     "nvim".source = link "${dotfileDir}/vim";

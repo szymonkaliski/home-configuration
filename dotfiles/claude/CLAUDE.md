@@ -25,6 +25,7 @@
   - only when its files don't overlap the main thread's or another agent's - watch shared files (lockfiles, configs, anything a formatter rewrites); if overlap is unavoidable, keep it inline instead
   - give it a complete spec up front - no supervision once it's running - and review the result before trusting it
 - prefer background subagents for research/analysis whose results aren't blocking the current step
+- use your judgement to pick each subagent's model - downgrade to a lower-power model when the task doesn't need the session model
 - don't parallelize a single edit or dependent steps
 
 ## Shell / environment
@@ -34,22 +35,12 @@
 
 - use `./tmp/` in the project root for any temporary/scratch files (repro scripts, test fixtures, debug output, etc.) - it's globally gitignored
   - create it if it doesn't exist
-  - if you have to write ad-hoc code, use `node` instead of `python`
   - when struggling to understand a library, git clone it into `./tmp/` and review the code there
-
-## tmux
-
-- when running in tmux, the other panes' contents are written to `/tmp/tmux-panes-$TMUX_PANE.txt` on demand by a `PreToolUse` hook that fires just before a Read of that path - so access it with the **Read tool**, not `cat`/Bash (Bash bypasses the hook and the file reads empty)
-  - always run `echo $TMUX_PANE` first to get the actual pane ID, never guess it
-  - use the Read tool on the file when you need to see adjacent panes; use `capture-pane` for more or live context
-  - send commands to these panes with `tmux send-keys -t <pane_id> 'command' Enter`
-  - when sending commands to other panes, do NOT pipe through `tail` or truncate output, let the full output show so you can read it back with `capture-pane`
-
-- create new tmux splits with `tmux-smart-split` (auto-picks direction from pane dimensions), not `tmux split-window`
+- if you have to write ad-hoc code, use `node` instead of `python`
 
 ## Prose
 
-- do not use em-dashes
+- IMPORTANT: never use em-dashes
 
 ## Skills
 

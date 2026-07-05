@@ -6,9 +6,14 @@ mkdir -p /home/szymon
 
 # set up bash exports
 echo "" > /home/szymon/.bash_profile
+
 if [ -f /mnt/host/claude/long-lived-oauth-token ]; then
   echo "export CLAUDE_CODE_OAUTH_TOKEN=$(cat /mnt/host/claude/long-lived-oauth-token)" >> /home/szymon/.bash_profile
-  echo 'export ANTHROPIC_MODEL="opus[1m]"' >> /home/szymon/.bash_profile
+fi
+
+anthropic_model="$(cat /mnt/host/claude/anthropic-model 2>/dev/null)"
+if [ -n "$anthropic_model" ]; then
+  echo "export ANTHROPIC_MODEL=\"$anthropic_model\"" >> /home/szymon/.bash_profile
 fi
 
 # for pushover notifications

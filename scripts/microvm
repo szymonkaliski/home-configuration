@@ -23,6 +23,9 @@ sync_host_config() {
   # skip notification logs
   rm -f "$HOST_DIR/claude/notify.log" "$HOST_DIR/opencode/notify.log"
 
+  # extract the default claude code model when starting
+  jq -r '.model // empty' "$HOST_DIR/claude/settings.json" 2>/dev/null > "$HOST_DIR/claude/anthropic-model" || true
+
   # don't ship opencode's regenerable npm state
   rm -rf "$HOST_DIR/opencode/node_modules" "$HOST_DIR/opencode/package.json" "$HOST_DIR/opencode/package-lock.json"
 

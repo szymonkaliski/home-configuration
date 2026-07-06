@@ -76,9 +76,7 @@ let
     idle_disconnect = true
     # don't push a placeholder splash when cam is not up
     use_splash = false
-    # local broadcast raced with reolink-server address lookup; streams stay
-    # direct either way; local-only is not enough (hallway_2 ignores
-    # broadcasts for hours while staying reachable through reolink)
+    # discover through reolink remote servers, "local" is not always reliable
     discovery = "remote"
 
     [cameras.mqtt]

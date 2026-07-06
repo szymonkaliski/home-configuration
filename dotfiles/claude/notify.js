@@ -65,22 +65,32 @@ function clearPending(sid) {
   } catch {}
 }
 
-// idle-state marker: set when we deliver a turn-end (Stop) or idle notification,
-// cleared when a forked skill / subagent finishes (SubagentStop). Lets the ~60s
-// idle_prompt Notification act as a backstop for turns that fire no Stop (e.g.
-// `context: fork` slash-commands, which fire SubagentStop only) without
-// double-notifying normal turns that Stop already covered.
-function markIdle(sid) {
-  markNotified(`${sid}__idle`);
-}
-function wasIdle(sid) {
-  return wasNotified(`${sid}__idle`);
-}
-function clearIdle(sid) {
+// idle-state marker: records the body delivered for this idle period (by Stop or
+// a previous idle_prompt). The ~60s idle_prompt Notification is suppressed only
+// when it would repeat that same body, so it still backstops turns that fire no
+// Stop: a finished `context: fork` slash-command resolves to its command output,
+// which differs from the last Stop's text and passes the body check. Keying on
+// the body (not just freshness) matters because background Task agents finish
+// after the turn's Stop, and a time-only marker either dedups the fork case away
+// or lets the same text re-deliver.
+function markIdle(sid, body) {
   if (!sid) return;
   try {
-    fs.unlinkSync(pendingFile(`${sid}__idle`));
+    fs.mkdirSync(PENDING_DIR, { recursive: true });
+    fs.writeFileSync(
+      pendingFile(`${sid}__idle`),
+      JSON.stringify({ ts: Date.now(), body }),
+    );
   } catch {}
+}
+function wasIdleNotified(sid, body) {
+  if (!sid) return false;
+  try {
+    const rec = JSON.parse(fs.readFileSync(pendingFile(`${sid}__idle`), "utf8"));
+    return Date.now() - rec.ts <= PENDING_FRESH_MS && rec.body === body;
+  } catch {
+    return false;
+  }
 }
 
 const LOG_PATH = `${os.homedir()}/.claude/notify.log`;
@@ -134,13 +144,12 @@ logLine({
   tool_name: input.tool_name,
 });
 
-// A forked skill / subagent finished. It fires SubagentStop (never Stop), so the
-// turn-end path won't run; clear the idle marker so the ~60s idle_prompt backstop
-// fires if the session is now waiting on the user. (For a mid-turn Task subagent,
-// the main turn's own Stop re-marks idle afterward, so idle_prompt stays deduped.)
-if (event === "SubagentStop") {
-  clearIdle(sessionId);
-  logLine({ phase: "cleared-idle", event });
+// Only Stop, PermissionRequest, and Notification are hooked, but sessions
+// started before a settings change keep their old hook registrations and can
+// invoke us for since-removed events (PreToolUse, SubagentStop); ignore those
+// instead of letting them fall through to the generic-Notification branch.
+if (!["Stop", "PermissionRequest", "Notification"].includes(event)) {
+  logLine({ phase: "skipped", reason: "unhooked-event", event });
   process.exit(0);
 }
 
@@ -239,7 +248,11 @@ function readLastAssistantState(filePath) {
 
       for (let j = contents.length - 1; j >= 0; j--) {
         if (contents[j].type === "text" && contents[j].text?.trim()) {
-          return { kind: "text", text: truncate(contents[j].text.trim(), 200) };
+          return {
+            kind: "text",
+            text: truncate(contents[j].text.trim(), 200),
+            ts: entry.timestamp,
+          };
         }
       }
       return { kind: "assistant_without_text" };
@@ -250,7 +263,7 @@ function readLastAssistantState(filePath) {
   }
 }
 
-// Stop/PreToolUse/PermissionRequest carry transcript_path, but Notification
+// Stop/PermissionRequest carry transcript_path, but Notification
 // events are not documented to, so resolve it ourselves: the session_id is a
 // globally-unique UUID, so ~/.claude/projects/*/<session_id>.jsonl matches at
 // most one file. Prefer transcript_path when it is present and points at a real
@@ -337,6 +350,11 @@ let body;
 
 if (event === "Stop") {
   clearPending(sessionId); // turn ended; any pending-tool record is now stale
+  // a Stop re-fired by a blocking stop hook's continuation, not a turn end
+  if (input.stop_hook_active) {
+    logLine({ phase: "skipped", reason: "stop-hook-active", event });
+    process.exit(0);
+  }
   if (!transcriptPath || !fs.existsSync(transcriptPath)) {
     logLine({ phase: "skipped", reason: "no-transcript", event });
     process.exit(0);
@@ -346,37 +364,65 @@ if (event === "Stop") {
     process.exit(0);
   }
 
-  const sab = new SharedArrayBuffer(4);
-  const view = new Int32Array(sab);
-  const deadline = Date.now() + 30000;
-  let state = readLastAssistantState(transcriptPath);
-  while (state.kind !== "text" && Date.now() < deadline) {
-    Atomics.wait(view, 0, 0, 200);
-    state = readLastAssistantState(transcriptPath);
-  }
+  // Reopening an old session appends metadata lines (ai-title, mode, last-prompt)
+  // after the final assistant text and can fire Stop, which would re-deliver
+  // hours-old text as if the turn just ended. Legit final text lands seconds
+  // before Stop (or up to ~15s after, for the thinking case), so a transcript
+  // whose newest assistant text is older than the staleness window means a
+  // reopen, not a turn end.
+  const STALE_MS = 5 * 60 * 1000;
+  const hookStart = Date.now();
+  const isStaleText = (state) => {
+    if (state.kind !== "text" || !state.ts) return false;
+    const t = Date.parse(state.ts);
+    return Number.isFinite(t) && hookStart - t > STALE_MS;
+  };
 
-  if (state.kind !== "text") {
-    logLine({
-      phase: "skipped",
-      reason: "no-assistant-text",
-      kind: state.kind,
-    });
-    process.exit(0);
+  const payloadText =
+    typeof input.last_assistant_message === "string" &&
+    input.last_assistant_message.trim();
+  if (payloadText) {
+    // Since v2.1.47 the Stop payload carries the final text directly, ahead of
+    // the transcript flush (anthropics/claude-code#74340), so no polling; the
+    // transcript is read once, only for the reopen staleness guard.
+    if (isStaleText(readLastAssistantState(transcriptPath))) {
+      logLine({ phase: "skipped", reason: "stale-assistant-text", event });
+      process.exit(0);
+    }
+    body = truncate(payloadText, 200);
+  } else {
+    // Older versions: poll-read the transcript tail until the final text lands.
+    // A stale read keeps polling too - mid-turn the last text can be the
+    // previous turn's while the current one streams, and the fresh line may
+    // still land before the deadline.
+    const sab = new SharedArrayBuffer(4);
+    const view = new Int32Array(sab);
+    const deadline = Date.now() + 30000;
+    let state = readLastAssistantState(transcriptPath);
+    while (
+      (state.kind !== "text" || isStaleText(state)) &&
+      Date.now() < deadline
+    ) {
+      Atomics.wait(view, 0, 0, 200);
+      state = readLastAssistantState(transcriptPath);
+    }
+
+    if (state.kind !== "text" || isStaleText(state)) {
+      logLine({
+        phase: "skipped",
+        reason:
+          state.kind === "text" ? "stale-assistant-text" : "no-assistant-text",
+        kind: state.kind,
+      });
+      process.exit(0);
+    }
+    body = state.text;
   }
-  body = state.text;
-} else if (event === "PreToolUse") {
-  // AskUserQuestion is the only hooked PreToolUse tool. It blocks mid-turn but
-  // fires no permission Notification, so this is the only immediate signal that
-  // the chooser is waiting.
-  if (input.tool_name !== "AskUserQuestion") process.exit(0);
-  body = formatToolUse({
-    name: input.tool_name,
-    input: input.tool_input || {},
-  });
 } else if (event === "PermissionRequest") {
   // Fires the instant a real permission dialog appears (never for auto-approved
   // calls) and carries the tool input - so we name exactly what's awaited,
-  // immediately. This is the primary permission notification.
+  // immediately. This is the primary blocking-prompt notification, and it covers
+  // AskUserQuestion too: the chooser goes through the permission dialog path.
   body = formatToolUse({
     name: input.tool_name,
     input: input.tool_input || {},
@@ -400,28 +446,28 @@ if (event === "Stop") {
     process.exit(0);
   }
 
-  // idle_prompt ("Claude is waiting for your input") fires ~60s after the session
-  // goes idle. If a Stop already notified this idle period it's a duplicate, drop
-  // it. Otherwise it's the only signal (e.g. a `context: fork` command that fired
-  // SubagentStop but no Stop), so deliver it.
-  if (input.notification_type === "idle_prompt" && wasIdle(sessionId)) {
-    logLine({ phase: "suppressed", reason: "idle-already-notified", event });
-    process.exit(0);
-  }
-
   // The generic idle_prompt body ("Claude is waiting for your input") names no
   // context. Replace it with the last thing Claude actually said - assistant text
-  // for a normal turn, or a finished forked command's output (command_result) for
-  // the SubagentStop-only case that is the only idle_prompt to survive dedup - so
-  // the alert identifies the session + topic, matching a Stop notification. Falls
-  // back to the generic message when the turn ended on a tool call (no assistant
-  // text), the command produced no output, or the transcript can't be resolved.
+  // for a normal turn, or a finished forked command's output (command_result) -
+  // so the alert identifies the session + topic, matching a Stop notification.
+  // Falls back to the generic message when the turn ended on a tool call (no
+  // assistant text), the command produced no output, or the transcript can't be
+  // resolved. Then dedup on that resolved body: if this idle period already
+  // delivered the same text (via Stop or an earlier idle_prompt), drop it.
   if (input.notification_type === "idle_prompt") {
     const tp = resolveTranscriptPath(input);
+    if (tp && lastUserOriginIsTaskNotification(tp)) {
+      logLine({ phase: "skipped", reason: "task-notification", event });
+      process.exit(0);
+    }
     if (tp) {
       const state = readLastAssistantState(tp);
       if (state.kind === "text" || state.kind === "command_result")
         body = state.text;
+    }
+    if (wasIdleNotified(sessionId, body)) {
+      logLine({ phase: "suppressed", reason: "idle-already-notified", event });
+      process.exit(0);
     }
   }
 }
@@ -431,19 +477,18 @@ if (event === "Stop") {
 // re-fire - dedups against it; cleared on Stop.
 if (
   event === "PermissionRequest" ||
-  (event === "PreToolUse" && input.tool_name === "AskUserQuestion") ||
   (event === "Notification" && input.notification_type === "permission_prompt")
 ) {
   markNotified(sessionId);
 }
 
-// mark this idle period as notified so the ~60s idle_prompt backstop dedups
+// record what this idle period delivered so the ~60s idle_prompt backstop dedups
 // against the instant Stop notification (or against itself if it re-fires).
 if (
   event === "Stop" ||
   (event === "Notification" && input.notification_type === "idle_prompt")
 ) {
-  markIdle(sessionId);
+  markIdle(sessionId, body);
 }
 
 const title = `Claude Code (${os.hostname()})`;

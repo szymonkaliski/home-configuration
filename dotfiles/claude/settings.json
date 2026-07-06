@@ -46,17 +46,6 @@
         ]
       }
     ],
-    "PreToolUse": [
-      {
-        "matcher": "AskUserQuestion",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/notify.js"
-          }
-        ]
-      }
-    ],
     "PermissionRequest": [
       {
         "hooks": [
@@ -68,16 +57,6 @@
       }
     ],
     "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/notify.js"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
       {
         "hooks": [
           {

@@ -76,8 +76,10 @@ let
     idle_disconnect = true
     # don't push a placeholder splash when cam is not up
     use_splash = false
-    # all cams are on lan
-    discovery = "local"
+    # local broadcast raced with reolink-server address lookup; streams stay
+    # direct either way; local-only is not enough (hallway_2 ignores
+    # broadcasts for hours while staying reachable through reolink)
+    discovery = "remote"
 
     [cameras.mqtt]
     # motion holds a live connection that keeps the camera awake

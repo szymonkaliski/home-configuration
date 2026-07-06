@@ -291,6 +291,13 @@ in
               refId = "A";
             }
           ])
+          (statePanel "Camera PIR" 0 38 24 6 [
+            {
+              expr = "camera_pir_value";
+              legend = "{{device}}";
+              refId = "A";
+            }
+          ])
         ];
       };
       blockyDashboard = mkDashboard {

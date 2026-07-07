@@ -496,24 +496,24 @@ in
           ])
           (tsPanelUnit "Mbits" "Internet speed" 0 32 12 8 [
             {
-              expr = "internet_speed_download";
+              expr = "max(internet_speed_download)";
               legend = "down";
               refId = "A";
             }
             {
-              expr = "internet_speed_upload";
+              expr = "max(internet_speed_upload)";
               legend = "up";
               refId = "B";
             }
           ])
           (tsPanelUnit "ms" "Internet latency" 12 32 12 8 [
             {
-              expr = "internet_speed_latency";
+              expr = "max(internet_speed_latency)";
               legend = "latency";
               refId = "A";
             }
             {
-              expr = "internet_speed_jitter";
+              expr = "max(internet_speed_jitter)";
               legend = "jitter";
               refId = "B";
             }
@@ -521,7 +521,7 @@ in
           (tsPanelUnit "percent" "Packet loss (%)" 0 40 12 8 [
             {
               # the exporter reports -1 when loss wasn't measured
-              expr = "internet_speed_packet_loss >= 0";
+              expr = "max(internet_speed_packet_loss >= 0)";
               legend = "packet loss";
               refId = "A";
             }

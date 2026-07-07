@@ -107,6 +107,13 @@ in
           interval = "60m";
           cache = true;
           memory_saving_mode = true;
+          # server re-picked on every telegraf restart; a different pick
+          # would fork every metric into a new series
+          tagexclude = [
+            "server_id"
+            "source"
+            "test_mode"
+          ];
         }
       ];
       inputs.mqtt_consumer =

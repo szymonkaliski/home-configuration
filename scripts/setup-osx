@@ -21,17 +21,46 @@ defaults write com.apple.dock tilesize -int 48
 # lock Dock size
 defaults write com.apple.dock size-immutable -bool true
 
-# show/hide Dock without delay
+# remove the delay before the Dock auto-show/hide animation starts (animation duration itself is unchanged)
 defaults write com.apple.dock autohide-delay -float 0
 
 # save to disk (not to iCloud) by default
 defaults write NSGlobalDomain NSDocumentSaveNewDocumentsToCloud -bool false
 
 # save screenshots to Dropbox
-defaults write com.apple.screencapture location $SCREENSHOTS_PATH
+if [ -n "$SCREENSHOTS_PATH" ]; then
+  defaults write com.apple.screencapture location "$SCREENSHOTS_PATH"
+else
+  echo "$(tput setaf 3)warning: SCREENSHOTS_PATH unset, skipping screenshot location$(tput sgr0)" >&2
+fi
 
 # name screenshots as Screenshot...
 defaults write com.apple.screencapture name "Screenshot"
+
+# disable ECN negotiation - with ECN on, iOS clients could not open TCP
+# connections to this Mac over Tailscale; disabling it fixed that
+sudo tee /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist > /dev/null <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>com.szymonkaliski.disable-ecn</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>/usr/sbin/sysctl</string>
+            <string>-w</string>
+            <string>net.inet.tcp.ecn_negotiate_in=0</string>
+            <string>net.inet.tcp.ecn_initiate_out=0</string>
+        </array>
+        <key>RunAtLoad</key>
+        <true/>
+    </dict>
+</plist>
+EOF
+sudo chown root:wheel /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist
+sudo launchctl bootout system /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist 2>/dev/null
+sudo launchctl bootstrap system /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist
 
 echo "$(tput setaf 1)done, note that some of these changes require app restart or logout to take effect...$(tput sgr0)"
 

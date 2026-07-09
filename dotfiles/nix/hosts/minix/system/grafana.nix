@@ -667,6 +667,11 @@ in
         };
         analytics.reporting_enabled = false;
         users.allow_sign_up = false;
+        # Grafana 13's dynamic dashboards (dashboardNewLayouts, default-on) render
+        # an always-present right rail (Export / Outline / Dock) even in view mode;
+        # there's no config to hide just the rail, so disable the toggle to fall
+        # back to the classic edit experience (fine for these provisioned dashboards)
+        feature_toggles.dashboardNewLayouts = false;
         # landing page = the dashlist "Dashboards" home dashboard, not Grafana's
         # default welcome screen
         dashboards.default_home_dashboard_path = "${dashboardsDir}/home.json";

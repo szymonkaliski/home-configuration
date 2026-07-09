@@ -1,11 +1,11 @@
 ---
-name: explain-diff
-description: Use when the user asks for a rich explanation of a code change, diff, branch, or PR. Produces a single-file React explainer page served locally with hot reload.
+name: morph-diff
+description: Use when the user asks for a rich explanation of a code change, diff, branch, or PR. Produces a single-file React explainer page served locally with hot reload (morph).
 ---
 
-# Explain Diff
+# Morph Diff
 
-This skill specializes the `explain` skill for code changes. First read `SKILL.md` from the sibling `explain` skill directory (`../explain/SKILL.md` relative to this file) and follow everything in it; below is only what's specific to explaining a diff.
+This skill specializes the `morph-explain` skill for code changes. First read `SKILL.md` from the sibling `morph-explain` skill directory (`../morph-explain/SKILL.md` relative to this file) and follow everything in it (which in turn points to `../morph/SKILL.md` for the tool mechanics); below is only what's specific to explaining a diff.
 
 ## Arguments
 
@@ -24,5 +24,5 @@ This skill specializes the `explain` skill for code changes. First read `SKILL.m
 - **Background** covers the existing system relevant to this change; broadly explore the surrounding code for it.
 - **Intuition** explains the core idea of the change with toy data.
 - **The substance** is a **Code** section: a literate diff. Walk through the changes at a high level, grouped and ordered per the Grounding rules above, not file by file.
-- **Quiz** tests understanding of this change specifically: around five interactive multiple-choice questions at medium difficulty, hard enough that you actually need to have followed the change to answer them but not gotchas, so the reader can confirm they've grasped what it does and why. When the reader clicks an answer, tell them whether they were correct and give feedback. This is the one exception to explain's no-hidden-interactivity rule: the answer stays hidden until the reader commits to a choice, since reveal-on-click is the point. Hold the reader's choices in one top-level `useMorph({})` keyed by question id (`answers.q3`); each pick persists into the document and logs a `mutate` line, so you can read the file to see how the reader did.
+- **Quiz** tests understanding of this change specifically: around five interactive multiple-choice questions at medium difficulty, hard enough that you actually need to have followed the change to answer them but not gotchas, so the reader can confirm they've grasped what it does and why. When the reader clicks an answer, tell them whether they were correct and give feedback. This is the one exception to morph-explain's no-hidden-interactivity rule: the answer stays hidden until the reader commits to a choice, since reveal-on-click is the point. Hold the reader's choices in one top-level `useMorph({})` keyed by question id (`answers.q3`); each pick persists into the document and logs a `mutate` line, so you can read the file to see how the reader did.
 - In the ladder of abstraction, the compared variants are the old and new code paths: run them as parallel film strips and parallel grid rows over the same toy data, and point out the cases whose outcome the change flips.

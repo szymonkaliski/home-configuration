@@ -41,7 +41,3 @@
 ## Prose
 
 - IMPORTANT: never use em-dashes
-
-## Skills
-
-- when using the playground skill, write HTML files to `./tmp/` and serve with `serve` (zsh function) from `./tmp/` instead of using `open`

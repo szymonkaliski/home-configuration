@@ -39,6 +39,7 @@ Interactive devices on top of this, all additive:
 - **Side by side instead of toggles**: compared variants both on screen, always. If a tunable value matters (timeout, threshold, buffer size), show a row of examples at representative values instead of a slider.
 - **Linked highlighting**: the primary interactive device. Hovering a term in the prose highlights the matching diagram node, code line, film-strip frame, or grid cell, and vice versa; hovering a grid cell emphasizes the concrete run it summarizes. Dim unrelated parts while hovering, but never remove them. Budget one highlight color per concept.
 - **Hover emphasis on diagrams**: hovering a component strengthens its connections and fades the rest; the resting state must already show everything.
+- **Margin comments**: every explainer carries a comment rail down the right margin (see State channel). Each block has an affordance to leave a comment or question; it gates nothing, so it stays within "everything visible at once". This is how the reader talks back and how the doc gets refined, so build it into every page, not just ones that seem to invite discussion.
 
 Implementation: one top-level `hovered` state (React context) naming the active concept; prose terms, code lines, diagram nodes, and grid cells tag themselves with a concept id and derive their emphasis/dimming classes from it. The resting render, before any interaction, must already show the complete explanation; interaction only adds emphasis.
 
@@ -120,7 +121,7 @@ morph "./tmp/YYYY-MM-DD-explanation-<slug>.jsx"
 - One server previews exactly one file. Without `--port` it takes the first free port from 3000 upward; read the printed `ready  previewing <file> at http://localhost:<port>` line for the actual URL. (An explicit `--port` fails fast if the port is busy.)
 - Every save hot-reloads the page with Fast Refresh, and the reader's state survives every edit for as long as the server runs: `useState` is preserved across the reload, and `useMorph` values live in the document itself. So iterate by editing the file in place and keep the same server running for the whole session. Editing a `useState` initializer resets that one hook; editing a `useMorph` initializer is how you push a new value to the reader (the page reloads and adopts it, see State channel).
 - morph reformats the whole file with Prettier on every change (yours or the reader's), so keep the document Prettier-clean; your own edits get normalized too.
-- Errors surface as an overlay in the page that clears on the next successful save. morph does **not** mirror transpile/runtime errors to the server output (it logs only reader `mutate`s, `skip`s, and file-watch `update`s), so there is no headless "did my edit render cleanly" signal: the `update … pushed to N client(s)` line confirms your edit was delivered, not that it rendered, so confirm a non-trivial change in the page itself.
+- **Do not verify that the page renders. Make the edit and move on.** This is the single biggest time-sink to avoid. Do **not** run `esbuild`/`tsc`/`prettier`, do **not** re-open or refresh a client "to check for errors", do **not** screenshot the page to confirm it looks right, and do **not** poll morph's output to confirm a render succeeded (an `update` line with no `error` after it is *not* a signal worth waiting for). The reader is looking at the live page, and morph shows any transpile or runtime error as an overlay *in that page*, so a genuinely broken edit is surfaced to the reader, who will tell you; it is not something you discover by inspecting. morph also reformats with Prettier on every save, so never run Prettier yourself either. Trust your edit and spend the effort on the explanation, not on confirming pixels. (morph's output is still worth watching for exactly one thing, reader comments, see the watch loop below, never for render confirmation.)
 - Tell the user the URL. The `ready` line prints `http://localhost:<port>`, but the server binds every interface, so it's equally reachable at `http://<hostname>:<port>` (`hostname -s`) over the LAN or Tailscale; offer that form too when the reader might open it on another device like a phone.
 
 ## State channel
@@ -134,8 +135,46 @@ Design for it:
 
 - **Persist only what should round-trip.** Use `useMorph` for reader-authored content you want to read back (comments, questions, quiz choices); use plain `useState` for ephemeral emphasis (`hovered`, open/closed UI) so hovering doesn't churn the file. Only a **top-level** `useMorph` with a **JSON-literal** initializer persists: a `useMorph(makeDefault())`, or one inside a `.map()` (one initializer, many mounts), stays in-memory only and silently won't round-trip.
 - **One top-level hook per collection, keyed by id.** Model per-section comments as a single top-level `useMorph({})` object keyed by section id (`comments[id]`), not a `useMorph` per rendered item. Each mutation logs under the identity `Component.variable` (enclosing component name + destructured variable), so name them deliberately (`Explainer.comments`, not `C.v`) to keep the log legible.
-- **This is how the reader talks back.** Give each paragraph or section a small affordance to leave a comment or question that writes into `comments[id]`. Push the text on blur or an explicit send (hold the in-progress text in a local `useState`) so a long comment doesn't rewrite and reformat the file on every keystroke. After the reader has gone through the page, watch the `mutate` log or read the file to see their comments, and respond by editing the file in place; their state survives the reload.
+- **This is how the reader talks back.** Every block carries a margin comment rail (see Reader comments and the watch loop below). Hold the in-progress text in a local `useState` and push to `comments[id]` only on an explicit Send, never per keystroke, so a long comment doesn't rewrite and reformat the file as it is typed.
 - **The reverse direction works too.** Edit the file to clear a reader's comment (`comments[id] = ""`), seed or correct a value, or reset a hook to its default; the page reloads and adopts it.
+
+## Reader comments and the watch loop
+
+Every explainer ships with a margin comment rail, and you watch for comments and respond as they arrive, for as long as the session runs. This is the loop by which feedback flows into the docs: the reader questions a paragraph, you answer in the rail and, when the answer belongs in the doc, revise the explanation and leave a short note saying what changed. It is additive and gates nothing, so it does not break "everything visible at once".
+
+**The `Block` wrapper.** One top-level `const [comments, setComments] = useMorph({})`, keyed by block id, each value an array of `{ by, text }` (`by: "you"` for the reader, `by: "claude"` for your replies; nested arrays still round-trip as long as the whole initializer stays a JSON literal). Wrap every block (paragraph, callout, diagram, table) with a stable id; lay content left and the rail right with a CSS grid (`minmax(0,1fr)` plus a fixed rail, stacking under the content on narrow screens, so there is no fragile position measuring).
+
+```jsx
+const [comments, setComments] = useMorph({});
+const addComment = (id, text) =>
+  setComments({ ...comments, [id]: [...(comments[id] || []), { by: "you", text }] });
+
+function Block({ id, children }) {           // comments/addComment via context or closure
+  const thread = comments[id] || [];
+  const [draft, setDraft] = useState("");
+  const [open, setOpen] = useState(false);
+  const send = () => { const t = draft.trim(); if (t) addComment(id, t); setDraft(""); setOpen(false); };
+  return (
+    <div className="cmt-row">
+      <div className="cmt-body">{children}</div>
+      <aside className="cmt-rail">
+        {thread.map((c, i) => <div key={i} className={c.by === "claude" ? "cmt-card claude" : "cmt-card"}>{c.text}</div>)}
+        {open
+          ? <><textarea value={draft} onChange={(e) => setDraft(e.target.value)} /><button onClick={send}>Send</button></>
+          : <button onClick={() => setOpen(true)}>{thread.length ? "+ reply" : "+ comment"}</button>}
+      </aside>
+    </div>
+  );
+}
+```
+
+**Arm the watch loop after serving.** morph logs `mutate  Explainer.comments` to its background output whenever the reader posts (your own file edits log `update`, not `mutate`, so they never echo back as false events). Start a persistent monitor on that output so each new comment notifies you without the user having to ask:
+
+```bash
+tail -n0 -F <morph-background-output> | grep --line-buffered "mutate  Explainer.comments"
+```
+
+On each event, read the `.jsx` for the full thread, then edit the file: append a `{ by: "claude", text }` reply into that block's array, and/or revise the explanation and leave a short reply saying what you changed (the page hot-reloads and the reader sees it). If a claim is challenged, verify it (web search or the code) before answering, and correct the doc rather than defend it. The watch lives only as long as this session, so tell the reader that, and stop it when they are done.
 
 ## Writing style
 

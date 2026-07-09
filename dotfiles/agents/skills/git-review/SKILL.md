@@ -16,6 +16,8 @@ Review the git diff and identify:
 
 ## Changes
 
+!`git status --short`
+
 !`git diff $ARGUMENTS`
 
 !`git diff --cached`
@@ -31,6 +33,7 @@ Before flagging an issue, **read the relevant surrounding code** to verify it's 
   speculating.
 - If a change modifies a condition or filter, check the call sites and data flow to confirm whether the new behavior is correct.
 - If something looks like it could break, check for guards, fallbacks, or reconciliation logic elsewhere before reporting.
+- Untracked new files (`??` in the status above) are in neither diff; read them in full and review them like any other change. A whole new file escaping review is the most likely gap.
 
 **Do not flag something as an issue if the existing codebase already handles it.** Only report confirmed or highly likely problems.
 

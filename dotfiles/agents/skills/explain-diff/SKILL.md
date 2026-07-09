@@ -9,11 +9,13 @@ This skill specializes the `explain` skill for code changes. First read `SKILL.m
 
 ## Arguments
 
-`$ARGUMENTS` names the change to explain: a commit range, branch, PR number, or file paths. If empty, explain the current working diff (staged + unstaged); if that's empty too, explain the latest commit.
+`$ARGUMENTS` names the change to explain: a commit range, branch, PR number, or file paths. If empty, explain the current working change, which is the **union of unstaged, staged, and untracked-new files** (not just what `git diff` prints); if that's empty too, explain the latest commit.
 
 ## Grounding
 
-- Read the diff before writing anything: `git diff --name-status` first to plan, then the actual hunks. Derive the walkthrough order from the changes themselves: background (docs, specs, config) first, then new files, then modified/integration files, then tests. Group by concept, never alphabetically.
+- Gather the whole change before writing anything, and never trust a bare `git diff`: it shows unstaged edits only. A freshly `git add`ed new file appears **only** in `git diff --cached`; an untracked file appears in **neither**. So plan from the union: `git status --short` for the full picture, then `git diff` and `git diff --cached` for tracked hunks, and read the untracked new files (the `??` entries) directly. Missing a staged-new or untracked file is the most common way this skill silently under-covers a change.
+- Derive the walkthrough order from the changes themselves: background (docs, specs, config) first, then new files, then modified/integration files, then tests. Group by concept, never alphabetically.
+- Weight by significance, not by whether a change has runtime behavior. A large new documentation, prompt, or config file (a new `SKILL.md`, a schema, a big README) is often the most important part of a diff even though it has no algorithm to trace. Do not demote it to a one-line footnote just because an algorithmic change nearby is easier to render as a ladder of abstraction. If a new file is among the largest additions, it earns its own section.
 - Skip generated files (lockfiles, generated API reports, snapshots, changelogs, vendored code). At most a one-line mention that they changed.
 - Every claim in the explanation must trace to an actual hunk or to surrounding code you have read. If the diff contradicts the commit message, the PR description, or your recollection, the diff wins.
 

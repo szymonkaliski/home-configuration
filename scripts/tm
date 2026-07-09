@@ -38,20 +38,10 @@ get_title() {
 
 get_session() {
   local title=$1
-  local target_session=""
 
-  if tmux has-session -t "$title" > /dev/null 2>&1; then
-    target_session=$title
-  else
-    for session in $(tmux ls 2> /dev/null | cut -d: -f1); do
-      if [[ $session =~ $title ]]; then
-        target_session=$session
-        break
-      fi
-    done
+  if tmux has-session -t "=$title" > /dev/null 2>&1; then
+    echo "$title"
   fi
-
-  echo "$target_session"
 }
 
 run() {

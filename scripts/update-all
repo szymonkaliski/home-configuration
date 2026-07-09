@@ -95,18 +95,10 @@ if [ -d ~/.tmux/plugins ]; then
   done
 fi
 
-if hash ncu 2> /dev/null; then
+if command -v npm > /dev/null 2>&1; then
   echo -e "$(tput setaf 2)Checking NPM...$(tput sgr0)"
-
-  packages=$(ncu -g --format lines)
-
-  if [ -n "$packages" ]; then
-    npm i -g $packages
-    echo
-  else
-    echo "Nothing to do!"
-    echo
-  fi
+  npm-sync
+  echo
 fi
 
 if hash vale 2> /dev/null; then

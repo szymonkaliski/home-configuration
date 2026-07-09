@@ -1,0 +1,185 @@
+#!/usr/bin/env node
+
+// Reconcile the global npm world against the two lists below:
+//   GLOBAL - registry CLIs kept installed with `npm install -g`
+//   LOCAL  - local repos under $PROJECTS_PATH kept `npm link`ed
+// Listed globals are also upgraded to their latest versions (via `ncu -g`).
+// Anything not listed - a registry package installed globally, or a repo linked
+// globally - is removed after confirming (unlinking just drops the global
+// symlink; the source repo is left alone).
+
+const { execFileSync } = require("node:child_process");
+const { existsSync } = require("node:fs");
+const { basename, join } = require("node:path");
+const readline = require("node:readline");
+
+const tty = process.stdout.isTTY;
+const green = tty ? "\x1b[32m" : "";
+const yellow = tty ? "\x1b[33m" : "";
+const red = tty ? "\x1b[31m" : "";
+const dim = tty ? "\x1b[2m" : "";
+const reset = tty ? "\x1b[0m" : "";
+
+const GLOBAL = [
+  "@anthropic-ai/claude-code",
+  "neovim",
+  "npm-check-updates",
+  "opencode-ai",
+  "prettier",
+];
+
+const LOCAL = [
+  "alfred-infinite-clipboard",
+  "logger-search",
+  "morph",
+  "muninn-cli",
+  "muninn-get-asset",
+  "muninn-make-month",
+  "name-pdfs",
+  "timav-cli",
+];
+
+// npm's own toolchain: never treat as an extra
+const KEEP = new Set(["npm", "corepack", "node-gyp"]);
+
+const projects = process.env.PROJECTS_PATH;
+
+function run(cmd, args, opts = {}) {
+  execFileSync(cmd, args, { stdio: "inherit", ...opts });
+}
+
+function globalDeps() {
+  let raw;
+  try {
+    raw = execFileSync("npm", ["ls", "-g", "--json", "--depth=0"], {
+      encoding: "utf8",
+    });
+  } catch (err) {
+    // `npm ls` exits non-zero on warnings but still prints the tree to stdout
+    if (!err.stdout) throw err;
+    raw = err.stdout;
+  }
+  return JSON.parse(raw).dependencies || {};
+}
+
+function upgradeGlobals(listed) {
+  // check the listed globals for newer versions and upgrade whatever is behind
+  let outdated;
+  try {
+    outdated = execFileSync(
+      "ncu",
+      ["-g", "--format", "lines", "--filter", listed.join(",")],
+      { encoding: "utf8" },
+    );
+  } catch (err) {
+    if (err.code === "ENOENT") {
+      console.log(`${dim}  ncu not found, skipping version check${reset}`);
+      return;
+    }
+    // ncu exits non-zero on some warnings but still prints outdated to stdout
+    if (!err.stdout) throw err;
+    outdated = err.stdout;
+  }
+
+  const pkgs = outdated
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (!pkgs.length) {
+    console.log(`${dim}  all up to date${reset}`);
+    return;
+  }
+
+  console.log(`  upgrading: ${pkgs.join(", ")}`);
+  run("npm", ["install", "-g", ...pkgs]);
+}
+
+function ask(question) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) =>
+    rl.question(question, (a) => {
+      rl.close();
+      resolve(a.trim());
+    }),
+  );
+}
+
+async function main() {
+  const deps = globalDeps();
+
+  // split registry installs from `npm link` symlinks (which resolve to file:)
+  const registry = new Set();
+  const linkedDir = new Map(); // repo dir name -> package name
+  for (const [name, info] of Object.entries(deps)) {
+    if (
+      typeof info.resolved === "string" &&
+      info.resolved.startsWith("file:")
+    ) {
+      linkedDir.set(basename(info.resolved.replace(/^file:/, "")), name);
+    } else {
+      registry.add(name);
+    }
+  }
+
+  // global registry packages
+  console.log(`${green}global packages:${reset}`);
+  const missing = GLOBAL.filter((p) => !registry.has(p));
+  if (missing.length) {
+    console.log(`  installing: ${missing.join(", ")}`);
+    run("npm", ["install", "-g", ...missing]);
+  } else {
+    console.log(`${dim}  all listed packages present${reset}`);
+  }
+  upgradeGlobals(GLOBAL);
+
+  const extra = [...registry].filter(
+    (p) => !GLOBAL.includes(p) && !KEEP.has(p),
+  );
+  for (const p of extra) {
+    const answer = await ask(
+      `${yellow}  remove unlisted global '${p}'?${reset} (y/n) `,
+    );
+    if (answer === "y") run("npm", ["uninstall", "-g", p]);
+    else console.log(`${dim}  keeping ${p}${reset}`);
+  }
+
+  // local linked repos
+  console.log(`${green}local links:${reset}`);
+  if (!projects) {
+    console.log(`${dim}  PROJECTS_PATH not set, skipping local links${reset}`);
+    return;
+  }
+
+  for (const dir of LOCAL) {
+    const path = join(projects, dir);
+    if (!existsSync(path)) {
+      console.log(`${dim}  skip ${dir} (not present)${reset}`);
+      continue;
+    }
+    if (linkedDir.has(dir)) {
+      console.log(`${dim}  ok   ${dir}${reset}`);
+      continue;
+    }
+    console.log(`  link ${dir}`);
+    run("npm", ["install"], { cwd: path });
+    run("npm", ["link"], { cwd: path });
+  }
+
+  // unlink globals linked from repos we no longer list
+  for (const [dir, name] of linkedDir) {
+    if (LOCAL.includes(dir)) continue;
+    const answer = await ask(
+      `${yellow}  unlink unlisted '${name}'?${reset} (y/n) `,
+    );
+    if (answer === "y") run("npm", ["uninstall", "-g", name]);
+    else console.log(`${dim}  keeping ${name}${reset}`);
+  }
+}
+
+main().catch((err) => {
+  console.error(`${red}${err.message || err}${reset}`);
+  process.exit(1);
+});

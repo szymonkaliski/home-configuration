@@ -80,14 +80,13 @@ if [ -d ~/.zsh/ ]; then
 fi
 
 if command -v npm &> /dev/null; then
-  askBeforeRunning ./scripts/npm-install-global-packages
+  askBeforeRunning ./scripts/npm-sync
 fi
 
 if [[ $HOSTNAME == "orchid" ]]; then
   askBeforeRunning ./launchctls/reinstall-launchctls.sh
   askBeforeRunning ./terminfos/generate-terminfos.sh
   askBeforeRunning ./scripts/setup-osx
-  askBeforeRunning ./scripts/npm-link-local-packages
 
   # determinate nix encrypts the /nix volume if the boot disk has FileVault on,
   # which causes a password prompt at every boot, /nix store is public anyway

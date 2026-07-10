@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+exec "$HOME/Documents/Projects/couch-me/couch-me" "$@"

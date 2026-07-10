@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-exec "$HOME/Documents/Projects/fill-training-log/fill" "$@"

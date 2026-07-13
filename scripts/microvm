@@ -6,8 +6,7 @@ HOST_DIR="$VM_BASE/host"
 SSH_OPTS=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR)
 MAX_VMS=4
 
-REPO_SETUP_SH="$HOME/Projects/home-configuration/dotfiles/nix/hosts/minix/microvms/setup.sh"
-
+REPO_SETUP_SH="$PROJECTS_PATH/home-configuration/dotfiles/nix/hosts/minix/microvms/setup.sh"
 
 sync_host_config() {
   mkdir -p "$HOST_DIR"

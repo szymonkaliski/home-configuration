@@ -1,3 +1,10 @@
 #!/usr/bin/env bash
 
-exec "$HOME/Documents/Projects/couch-me/couch-me" "$@"
+COUCH_ME=$PROJECTS_PATH/couch-me/couch-me
+
+if [[ -f "$COUCH_ME" && -x "$COUCH_ME" ]]; then
+  exec "$COUCH_ME" "$@"
+else
+  echo "Error: $COUCH_ME does not exist or is not executable."
+  exit 1
+fi

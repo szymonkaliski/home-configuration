@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-TINYOCR=$HOME/Documents/Projects/tinyocr/.build/release/tinyocr
+TINYOCR=$PROJECTS_PATH/tinyocr/.build/release/tinyocr
 
 if [[ -f "$TINYOCR" && -x "$TINYOCR" ]]; then
   "$TINYOCR" "$@"

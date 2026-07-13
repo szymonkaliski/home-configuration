@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-TINYPARAKEET=$HOME/Documents/Projects/tinyparakeet/.build/release/tinyparakeet
+TINYPARAKEET=$PROJECTS_PATH/tinyparakeet/.build/release/tinyparakeet
 
 if [[ -f "$TINYPARAKEET" && -x "$TINYPARAKEET" ]]; then
   "$TINYPARAKEET" "$@"

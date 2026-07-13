@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DROP=$HOME/Documents/Projects/drop-cli/bin/drop-cli
+DROP=$PROJECTS_PATH/drop-cli/bin/drop-cli
 
 if [[ -f "$DROP" && -x "$DROP" ]]; then
   "$DROP" "$@"

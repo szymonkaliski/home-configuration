@@ -43,6 +43,7 @@ fi
 export GIT_OPTIONAL_LOCKS=0
 
 usage=""
+model=$(echo "$input" | jq -r '.model.display_name // empty')
 five_used=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
 five_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
 if [ -n "$five_used" ]; then
@@ -52,10 +53,14 @@ if [ -n "$five_used" ]; then
   else color="32"; fi
   reset_time=$(date -d "@$five_reset" +%H:%M 2>/dev/null || date -r "$five_reset" +%H:%M 2>/dev/null)
   if [ -n "$reset_time" ]; then
-    usage=$(printf " \033[${color}m%s%%\033[0m until %s" "$p" "$reset_time")
+    usage=$(printf " \033[${color}m%02d%%\033[0m until %s" "$p" "$reset_time")
   else
-    usage=$(printf " \033[${color}m%s%%\033[0m" "$p")
+    usage=$(printf " \033[${color}m%02d%%\033[0m" "$p")
   fi
+fi
+
+if [ -n "$model" ]; then
+  usage=$(printf " %s%s" "$model" "$usage")
 fi
 
 if git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then

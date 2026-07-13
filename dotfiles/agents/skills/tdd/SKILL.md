@@ -37,6 +37,7 @@ This is the primary workflow. Do NOT attempt a fix before you have a failing rep
 ```
 
 The repro script should:
+
 - Exit 0 on correct behavior, exit 1 on bug
 - Print a clear message: what was expected vs what happened
 - Be runnable in one command (e.g. `bash ./tmp/repro/repro.sh`)
@@ -87,6 +88,7 @@ RIGHT (vertical):
 **DO NOT write all tests first.** Tests written in bulk test _imagined_ behavior, not _actual_ behavior. Each test should respond to what you learned from the previous cycle.
 
 Rules:
+
 - One test at a time
 - Only enough code to pass current test
 - Don't anticipate future tests

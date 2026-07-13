@@ -1,10 +1,9 @@
 ---
 name: git-review
-description: Review uncommitted changes for issues, missed items, and improvements. Use when reviewing before commit or when user asks to check their work.
+description: Review uncommitted changes for issues, missed items, and improvements. Use after finishing a substantial change, before committing, or when the user asks to check the work.
 argument-hint: [range]
 allowed-tools: Bash(git *), Read, Glob, Grep
 context: fork
-disable-model-invocation: true
 ---
 
 Review the git diff and identify:
@@ -37,3 +36,8 @@ Before flagging an issue, **read the relevant surrounding code** to verify it's 
 
 **Do not flag something as an issue if the existing codebase already handles it.** Only report confirmed or highly likely problems.
 
+## Handoff
+
+Split the findings: a **fix** is mechanical and unambiguous (leftover debug code, a confirmed bug with an obvious correction, a missed rename, dead code) - include the exact change to make; a **decision** involves intent or a tradeoff (behavior changes, design questions, scope concerns).
+
+End the report by telling the assistant that invoked you to apply the fixes immediately, without waiting for confirmation, and to surface the decisions to the user as questions. If there are no findings, say everything looks good and that nothing needs to happen.

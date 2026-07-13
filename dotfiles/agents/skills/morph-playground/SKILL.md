@@ -15,46 +15,20 @@ When the user asks for an interactive playground, explorer, or visual tool for a
 
 ## Playground types
 
-Identify the type from the request and shape the controls and preview accordingly. The reader's committed configuration always comes back to you through the file (see State), so each type below is about how you read that config and act on it:
+Identify the type from the request, then read the matching file under `templates/` (relative to this file) and follow it for that type's controls, preview, pre-populate guidance, and example topics. Everything else in this SKILL is cross-cutting and applies to every type. The reader's committed configuration always comes back to you through the file (see State).
 
-- **Design** (components, layout, spacing, color, typography, animation): sliders / toggles / dropdowns / clickable layout cards → a live preview element styled from the state's inline styles, rendered on both a light and a dark surface (a context toggle) so contrast and shadows read on each. Act on the committed config as a direction to a developer, not a spec sheet.
-- **Data / query** (SQL, API, regex, pipeline, cron, GraphQL): selectable chips for tables/fields, add-a-filter rows, per-row dropdowns → syntax-highlighted output (use `prism-react-renderer`, per the morph skill). Act on the committed config as a specification of what to build, carrying the schema context (table and column types), not the raw query.
-- **Concept map / learning** (concepts, knowledge gaps, scope, task decomposition): draggable nodes and reader-drawn edges on an SVG canvas, per-node knowledge level (know → fuzzy → unknown). The committed config names what they know, are fuzzy on, and don't know, plus the relationships they drew; act on it as a targeted learning request.
-- **Document critique / diff review** (review content with approve / reject / comment): render the document or diff, attach to each suggestion or hunk a per-item verdict (approve / reject) with a comment affordance and a category tag (clarity, completeness, performance, accessibility, ux), plus filter-by-status with counts. Generate the suggestions yourself by analyzing the real document or diff up front (see Pre-populate). The verdicts and comments are the payload.
-- **Code map** (architecture, data flow, layers): a node/edge system diagram (use the morph diagram toolkit: Graphviz or measured SVG overlay), layer/connection-type filters, per-node comments. The committed config is the reader's per-component feedback against the system context; act on it directly.
+- **Design** (components, layout, spacing, color, typography, animation) → `templates/design.md`
+- **Data / query** (SQL, API, regex, pipeline, cron, GraphQL) → `templates/data.md`
+- **Concept map / learning** (concepts, knowledge gaps, scope, task decomposition) → `templates/concept-map.md`
+- **Code map** (architecture, data flow, layers, per-node feedback) → `templates/code-map.md`
+- **Document critique** (approve / reject / comment on prose suggestions) → `templates/document-critique.md`
+- **Diff review** (line-level comments on a git diff) → `templates/diff-review.md`
 
 If the topic doesn't fit a type cleanly, use the closest and adapt.
 
-## Controls
-
-Pick the control that fits the decision:
-
-| Decision                    | Control                                                                           |
-| --------------------------- | --------------------------------------------------------------------------------- |
-| Size, spacing, radius       | Slider                                                                            |
-| On/off feature              | Toggle                                                                            |
-| One choice from a set       | Dropdown, or clickable cards for structural choices (layout, easing curve)        |
-| Color                       | Hue / saturation / lightness sliders                                              |
-| Responsive behavior         | Viewport-width slider that reflows the preview                                    |
-| Select from available items | Clickable chips or cards (tables, columns, methods)                               |
-| Add a filter or condition   | An "Add" button that appends a row of dropdowns plus an input (column, op, value) |
-| Join type or aggregation    | Dropdown per row                                                                  |
-| Ordering                    | Dropdown plus an ASC/DESC toggle                                                  |
-| Limit or count              | Slider                                                                            |
-
-## Pre-populate with real data
-
-A playground that opens on the reader's actual material beats a blank one, and the read-back loop only pays off when there is something real to configure. Before serving, seed the initial state from the real thing:
-
-- **Concept map:** 15-20 real nodes with real file paths, plus 20-30 real edges from the actual architecture; default every node's knowledge level to fuzzy so the reader adjusts from there.
-- **Code map:** 15-25 real components (real file paths) plus 20-40 real connections, laid out in horizontal bands by layer.
-- **Document critique:** read the actual document, generate the suggestions yourself with real line references and category tags, and embed them as the initial state.
-- **Diff review:** `git show <commit> -p` (or the branch or PR diff), parsed into the hunks the page renders.
-- **Design / data:** defaults that already look good, and 3-5 presets that each snap all controls to a cohesive combination.
-
 ## Core requirements (every playground)
 
-- **Single `.jsx` morph page** (per the morph skill), default export. Two-panel layout: controls on one side, live preview on the other, and a commit action ("Use this" / "Send to Claude") beneath the preview that writes the current controls into the round-tripping config. Responsive: stack the panels on a narrow screen.
+- **Single `.jsx` morph page** (per the morph skill), default export. Two-panel layout: controls on one side, live preview on the other, and a commit action ("Use this" / "Send to Claude") beneath the preview that writes the current controls into the round-tripping config and confirms it visibly (a brief "Sent ✓ - Claude will pick this up"), since the write lands in the file where the reader can't see it. Responsive: stack the panels on a narrow screen. (The canvas types, concept map and code map, put the interactive visual center-stage with a supplementary sidebar instead, see their templates.)
 - **Live preview.** Updates instantly on every control change. No "Apply" button.
 - **Sensible defaults + presets.** Looks good on first load. Include 3-5 named presets that snap all controls to a cohesive combination.
 - **Theme follows the reader's device** (per the morph skill: do **not** hardcode a dark theme; these open on phones over the LAN). System font for UI, monospace for code and values. Minimal chrome.
@@ -64,7 +38,7 @@ A playground that opens on the reader's actual material beats a blank one, and t
 This is the morph-specific design decision. Split state deliberately, following the morph State channel rules:
 
 - **Ephemeral control state** lives in plain `useState`: slider positions, hover, which group is expanded. It drives the live preview, but it does not need to round-trip, so keep it out of `useMorph` (churning the file on every slider tick reformats it constantly).
-- **The configuration you want to read back** lives in **one top-level `useMorph`** with a JSON-literal initializer: the committed config the reader has landed on. Give an explicit **"Use this" / "Send to Claude"** action that writes the current controls into it. When the reader clicks it, morph rewrites the initializer and logs `mutate  Playground.config`; you read the `.jsx` for the exact values.
+- **The configuration you want to read back** lives in **one top-level `useMorph`** with a JSON-literal initializer: the committed config the reader has landed on. Give an explicit **"Use this" / "Send to Claude"** action that writes the current controls into it. When the reader clicks it, morph rewrites the initializer and logs `mutate Playground.config`; you read the `.jsx` for the exact values.
   - For review-style playgrounds (document critique, diff review, code map comments), the per-item verdicts and comments **are** the round-tripping payload: model them as one top-level `useMorph({})` keyed by item id, written on each explicit decision (not per keystroke).
 
 ```jsx
@@ -72,12 +46,14 @@ const DEFAULTS = { radius: 8, padding: 16, shadow: "medium" };
 
 function Playground() {
   const [draft, setDraft] = useState(DEFAULTS); // ephemeral live controls
-  const [config, setConfig] = useMorph(DEFAULTS); // persists → you read it back
-  const commit = () => setConfig(draft); // "Use this" button
-  // preview renders from `draft`; `config` is what you pick up on commit
-  // ...
+  const [config, setConfig] = useMorph(null); // literal initializer, null until committed
+  const commit = () => setConfig(draft); // "Use this" writes draft into the file
+  // preview renders from `draft`; on commit, config's initializer in the file
+  // becomes the committed values, which is what you read back
 }
 ```
+
+**The `useMorph` initializer must be a JSON literal** (`null` here), never a variable: `useMorph(DEFAULTS)` is non-literal, so the reader's commit is refused (the CLI logs a `skip` line, `non-literal initializer`, and the page rolls the commit back with a `change rejected` badge). Start from `null` or inline the literal, don't alias it.
 
 ## Serving and the read-back loop
 
@@ -85,17 +61,21 @@ function Playground() {
 - Because the config round-trips, watch morph's output for the commit and pick it up without being asked:
 
   ```bash
-  tail -n0 -F <morph-background-output> | grep --line-buffered "mutate  Playground.config"
+  tail -n0 -F <morph-background-output> | grep --line-buffered -E "mutate +Playground\.config|error +"
   ```
+
+  (An `error` line means an edit broke the preview; fix the file until `ok     preview recovered` follows, per the morph skill.)
 
   On that event, read the `.jsx`, take the reader's exact configuration, and do the work they set up, no copy-paste required. Tell the reader to click "Use this" when they've landed on a configuration and you'll pick it up here. The watch lives only for this session; stop it when they're done.
 
+- **Act on the delta, not the dump.** When you pick up the committed config, act on what the reader changed from the defaults, not every field; turn raw numbers into qualitative direction ("a pronounced shadow", not just `shadow: 24`); and rely only on context the config itself carries, so what you produce stands on its own. Each type's `templates/` file says what "acting on it" means for that type (a direction to a developer, a spec to build, a learning request).
+
 ## Common mistakes to avoid
 
-- Opening on a blank or fake canvas → pre-populate from the reader's real material (see Pre-populate).
+- Opening on a blank or fake canvas → pre-populate from the reader's real material (see the type's `templates/` file).
 - Too many controls at once → group by concern, and lay advanced ones out below the primary ones (still visible, don't gate behind a collapse unless the list is genuinely long).
 - Preview doesn't update instantly → every control change must re-render immediately.
 - No defaults or presets → starts empty or broken on load.
 - Hardcoding a dark theme → follow the device (per the morph skill).
 - Writing to `useMorph` on every keystroke or slider tick → commit on an explicit action, so the file isn't rewritten and reformatted constantly.
-- The round-tripping config must stay a **JSON literal** → a computed initializer silently won't round-trip (per the morph State channel).
+- The round-tripping config must stay a **JSON literal** → a computed initializer won't round-trip; the commit is rejected and rolled back in front of the reader (per the morph State channel).

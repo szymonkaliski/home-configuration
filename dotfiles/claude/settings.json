@@ -91,6 +91,7 @@
   "effortLevel": "xhigh",
   "promptSuggestionEnabled": false,
   "awaySummaryEnabled": false,
+  "skipWorkflowUsageWarning": true,
   "theme": "dark",
   "verbose": false,
   "preferredNotifChannel": "notifications_disabled",

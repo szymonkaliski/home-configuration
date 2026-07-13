@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
-# Refresh Anthropic's canonical `playground` skill, then open an interactive Claude
-# session that reviews every playground skill it can see against the reference and
-# proposes fixes/backports - so you can discuss them and apply what you want on the
-# spot.
+
+# Refresh Anthropic's canonical `playground` skill, then open an interactive
+# Claude session that reviews every playground skill it can see against the
+# reference and proposes fixes/backports - so you can discuss them and apply
+# what you want on the spot.
 #
-# The script does only the mechanical part: refresh the marketplace and snapshot
-# the reference. Discovery and judgement are Claude's - it lists its own available
-# skills, finds the playground ones, reads each, and reviews it.
+# The script does only the mechanical part: refresh the marketplace and
+# snapshot the reference. Discovery and judgement are Claude's - it lists its
+# own available skills, finds the playground ones, reads each, and reviews it.
+
 set -euo pipefail
 
 marketplace="claude-plugins-official"
 ref_src="$HOME/.claude/plugins/marketplaces/$marketplace/plugins/playground/skills/playground"
 
-# Find the repo from this script's own location (~/.bin symlinks to it), so this
-# works on any host and even before the skills are activated.
+# Find the repo from this script's own location (~/.bin symlinks to it), so
+# this works on any host and even before the skills are activated.
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo="$(git -C "$script_dir" rev-parse --show-toplevel)"
 snapshot="$repo/tmp/playground-upstream"
@@ -29,36 +31,23 @@ mkdir -p "$snapshot"
 cp -R "$ref_src/." "$snapshot/"
 
 read -r -d '' prompt <<EOF || true
-You have a set of available skills (listed in your system context). Some are about
-building interactive "playgrounds" (explorers / visual configurators that pair live
-controls with a preview and an output). Review each such playground skill against
-Anthropic's canonical reference and propose concrete fixes/backports for each.
+You have a set of available skills (listed in your system context). Some are about building interactive "playgrounds" (explorers / visual configurators that pair live controls with a preview and an output). Review each such playground skill against Anthropic's canonical reference and propose concrete fixes/backports for each.
 
-Reference (the canonical vanilla-HTML playground): ${snapshot#"$repo"/}/SKILL.md and
-every file under ${snapshot#"$repo"/}/templates/  - read them first.
+Reference (the canonical vanilla-HTML playground): ${snapshot#"$repo"/}/SKILL.md and every file under ${snapshot#"$repo"/}/templates/ - read them first.
 
 Steps:
-1. Enumerate every skill available to you whose purpose is building playgrounds.
-   Skip the reference itself. If you are unsure a skill qualifies, glob for its
-   SKILL.md (search under ~/.claude) and read the description.
-2. For each, locate and read its full SKILL.md, and infer which platform it targets.
-3. Review it against the reference. Each target is built for a DIFFERENT platform,
-   so treat platform adaptations as DELIBERATE, never as gaps - e.g. a different UI
-   framework, a live/hot-reloading preview instead of \`open\`, reading state back
-   instead of copy-paste, device theming instead of forced dark. Only surface
-   SUBSTANCE the reference does better and the target genuinely lacks: playground
-   types/templates it doesn't cover, control taxonomies, prompt-output craft,
-   pre-populating guidance, or "common mistakes" worth stealing.
+1. Enumerate every skill available to you whose purpose is building playgrounds, and skip the reference itself. The skills listed in your system context are the source of truth for what is actually available - start there. If a description is too terse to tell, read that skill's SKILL.md at its live location only:
+  - Repo skills under dotfiles/agents/skills/ (deployed into ~/.claude/skills/).
+  - Plugin skills only if the plugin is currently registered (~/.claude/plugins/config.json "repositories" plus ~/.claude/plugins/marketplaces/).
+  Do NOT treat ~/.claude/plugins/cache/ or the usageCount history in ~/.claude.json as evidence a skill exists: both survive a plugin's removal, so a SKILL.md found only there is a stale leftover, not a live skill - ignore it.
+2. For each, read its full SKILL.md and every file it ships (a skill may be split across a SKILL.md plus supporting files, like the reference's templates/), and infer which platform/tool it targets. Then ground yourself in how that tool ACTUALLY works before you judge the skill: locate the thing the skill drives (its CLI, library, server, or MCP - search the machine for its source, package, or binary) and read enough of the source to verify the skill's mechanical claims. Where it is cheap, run a tiny probe and observe the real behavior first-hand. SKILL docs drift from their tool - exact commands, the log/output format a watch-loop greps for, API and hook shapes, flags, ports, what round-trips - so treat every such claim as unverified until you have seen it in the source or reproduced it. This is generic: adapt to whatever tool the skill targets, and do not assume any particular one.
+3. Review it against the reference. Each target is built for a DIFFERENT platform, so treat platform adaptations as DELIBERATE, never as gaps - e.g. a different UI framework, a live/hot-reloading preview instead of \`open\`, reading state back instead of copy-paste, device theming instead of forced dark. Surface two kinds of finding, kept separate:
+  a. SUBSTANCE the reference does better and the target genuinely lacks: playground types/templates it doesn't cover, control taxonomies, prompt-output craft, pre-populating guidance, or "common mistakes" worth stealing. If the extra substance is bulky, splitting it into supporting files (as the reference does) is on the table, not just growing one SKILL.md.
+  b. Places where the skill is factually wrong about its own tool (a command or grep that won't match real output, a format or flag that has changed, an API that no longer exists) - the drift you found in step 2. These are bugs to fix regardless of the reference.
 
-Output one section per target skill (labelled by its skill name and SKILL.md path),
-each a concise NUMBERED list of suggestions: what to change, why it helps, and where
-in that skill it goes. If a target needs nothing, say so plainly.
+Output one section per target skill (labelled by its skill name and SKILL.md path), each a concise NUMBERED list of suggestions: what to change, why it helps, and where in that skill it goes. If a target needs nothing, say so plainly.
 
-Then stop and wait - this is a conversation. I'll go through your suggestions and
-confirm, deny, or ask about each (I'll refer to them by skill + number). Apply only
-the ones I confirm, by editing that skill's SKILL.md in place - for a skill that
-lives in this repo, edit the repo source under dotfiles/agents/skills/. Never edit
-anything I haven't confirmed, and re-summarize what's left after each round.
+Then stop and wait - this is a conversation. I'll go through your suggestions and confirm, deny, or ask about each (I'll refer to them by skill + number). Apply only the ones I confirm, by editing that skill's SKILL.md in place - for a skill that lives in this repo, edit the repo source under dotfiles/agents/skills/. Never edit anything I haven't confirmed, and re-summarize what's left after each round.
 EOF
 
 echo "==> opening an interactive review session"

@@ -93,7 +93,7 @@ in
     ".zsh".source = link "${dotfileDir}/zsh";
     ".zshrc".source = link "${dotfileDir}/zshrc";
     ".bin".source = link "${repoRoot}/scripts";
-    ".claude/CLAUDE.md".source = link "${dotfileDir}/claude/CLAUDE.md";
+    ".claude/CLAUDE.md".source = link "${dotfileDir}/agents/AGENTS.md";
     ".claude/settings.json".source = link "${dotfileDir}/claude/settings.json";
     ".claude/notify.js".source = link "${dotfileDir}/claude/notify.js";
     ".claude/statusline-command.sh".source = link "${dotfileDir}/claude/statusline-command.sh";
@@ -101,13 +101,13 @@ in
   # skills linked one-by-one so the destination dirs stay real directories;
   # machine-local additions can then sit alongside without living in this repo
   // skillLinks ".claude/skills"
-  // skillLinks ".gemini/config/skills";
+  // skillLinks ".config/opencode/skills";
 
   xdg.configFile = {
     "nvim".source = link "${dotfileDir}/vim";
     "opencode/opencode.json".source = link "${dotfileDir}/opencode/opencode.json";
     "opencode/tui.json".source = link "${dotfileDir}/opencode/tui.json";
+    "opencode/AGENTS.md".source = link "${dotfileDir}/agents/AGENTS.md";
     "opencode/plugins".source = link "${dotfileDir}/opencode/plugins";
-    "opencode/skills".source = link "${dotfileDir}/opencode/skills";
   };
 }

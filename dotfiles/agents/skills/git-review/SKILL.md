@@ -17,9 +17,9 @@ Review the git diff and identify:
 
 !`git status --short`
 
-!`git diff $ARGUMENTS`
+!`git diff --no-ext-diff $ARGUMENTS`
 
-!`git diff --cached`
+!`git diff --cached --no-ext-diff`
 
 Provide a concise, actionable summary. If everything looks good, say so briefly.
 

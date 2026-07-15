@@ -26,9 +26,9 @@ Note the pattern: conventional commits? imperative mood? lowercase? prefix? scop
 
 !`git status`
 
-!`git diff`
+!`git diff --no-ext-diff`
 
-!`git diff --cached`
+!`git diff --cached --no-ext-diff`
 
 ## 3. Execute
 

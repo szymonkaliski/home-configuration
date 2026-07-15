@@ -32,7 +32,6 @@ in
 
   home.packages = [
     tnotify
-    pkgs.antigravity-cli
     pkgs.coreutils
     pkgs.darwin.trash
     pkgs.git

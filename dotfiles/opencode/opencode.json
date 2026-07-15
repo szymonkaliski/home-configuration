@@ -15,7 +15,11 @@
     }
   },
   "model": "google/gemini-3.1-pro-preview",
-  "model_variant": "high",
+  "agent": {
+    "build": {
+      "variant": "high"
+    }
+  },
   "mcp": {
     "chrome-devtools": {
       "type": "local",

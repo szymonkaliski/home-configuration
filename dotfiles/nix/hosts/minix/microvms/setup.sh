@@ -93,7 +93,7 @@ cat << 'EOF' > /home/szymon/.bin/claude
 #!/bin/sh
 export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
 . /home/szymon/.bin/vm-context.sh
-exec npx -y @anthropic-ai/claude-code@latest --dangerously-skip-permissions --append-system-prompt "$vm_context" "$@"
+exec npx -y @anthropic-ai/claude-code@latest --dangerously-skip-permissions --effort ultracode --append-system-prompt "$vm_context" "$@"
 EOF
 chmod +x /home/szymon/.bin/claude
 

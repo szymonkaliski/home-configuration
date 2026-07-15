@@ -2,6 +2,7 @@
 
 const fs = require("fs");
 const os = require("os");
+const path = require("path");
 const { execFileSync, execSync } = require("child_process");
 
 const input = JSON.parse(fs.readFileSync(0, "utf8"));
@@ -86,7 +87,9 @@ function markIdle(sid, body) {
 function wasIdleNotified(sid, body) {
   if (!sid) return false;
   try {
-    const rec = JSON.parse(fs.readFileSync(pendingFile(`${sid}__idle`), "utf8"));
+    const rec = JSON.parse(
+      fs.readFileSync(pendingFile(`${sid}__idle`), "utf8"),
+    );
     return Date.now() - rec.ts <= PENDING_FRESH_MS && rec.body === body;
   } catch {
     return false;
@@ -158,7 +161,7 @@ if (process.env.TMUX && process.env.TMUX_PANE) {
   try {
     const myPane = process.env.TMUX_PANE;
     const clients = execSync(
-      "tmux list-clients -F '#{client_flags}\t#{session_name}'",
+      "tmux list-clients -F '#{client_flags}\t#{pane_id}'",
       {
         encoding: "utf8",
       },
@@ -167,13 +170,12 @@ if (process.env.TMUX && process.env.TMUX_PANE) {
       .split("\n");
 
     for (const row of clients) {
-      const [flags, session] = row.split("\t");
-      if (!flags || !flags.split(",").includes("focused")) continue;
-      const activePane = execSync(
-        `tmux display-message -p -t ${JSON.stringify(session)} '#{pane_id}'`,
-        { encoding: "utf8" },
-      ).trim();
-      if (activePane === myPane) {
+      const [flags, activePane] = row.split("\t");
+      if (
+        flags &&
+        flags.split(",").includes("focused") &&
+        activePane === myPane
+      ) {
         logLine({ phase: "suppressed", reason: "focused-pane", event });
         process.exit(0);
       }
@@ -491,7 +493,7 @@ if (
   markIdle(sessionId, body);
 }
 
-const title = `Claude Code (${os.hostname()})`;
+const title = `Claude Code (${os.hostname()} - ${path.basename(process.cwd())})`;
 
 logLine({ phase: "deliver", event, body });
 
@@ -544,12 +546,21 @@ if (fs.existsSync(pushoverrcPath)) {
       body: params,
     }).then(
       (res) => {
-        logLine({
-          phase: "sent",
-          channel: "pushover",
-          status: res.status,
-          body,
-        });
+        if (res.ok) {
+          logLine({
+            phase: "sent",
+            channel: "pushover",
+            status: res.status,
+            body,
+          });
+        } else {
+          logLine({
+            phase: "channel-failed",
+            channel: "pushover",
+            status: res.status,
+            error: "HTTP error " + res.status,
+          });
+        }
         process.exit(0);
       },
       (err) => {

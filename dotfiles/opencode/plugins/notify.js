@@ -1,5 +1,6 @@
 import fs from "fs";
 import os from "os";
+import path from "path";
 import { execFileSync, execSync } from "child_process";
 
 const LOG_PATH = `${os.homedir()}/.config/opencode/notify.log`;
@@ -67,20 +68,19 @@ function shouldSuppressNotification() {
     try {
       const myPane = process.env.TMUX_PANE;
       const clients = execSync(
-        "tmux list-clients -F '#{client_flags}\t#{session_name}'",
+        "tmux list-clients -F '#{client_flags}\t#{pane_id}'",
         { encoding: "utf8" },
       )
         .trim()
         .split("\n");
 
       for (const row of clients) {
-        const [flags, session] = row.split("\t");
-        if (!flags || !flags.split(",").includes("focused")) continue;
-        const activePane = execSync(
-          `tmux display-message -p -t ${JSON.stringify(session)} '#{pane_id}'`,
-          { encoding: "utf8" },
-        ).trim();
-        if (activePane === myPane) {
+        const [flags, activePane] = row.split("\t");
+        if (
+          flags &&
+          flags.split(",").includes("focused") &&
+          activePane === myPane
+        ) {
           return true;
         }
       }
@@ -89,7 +89,7 @@ function shouldSuppressNotification() {
   return false;
 }
 
-function sendNotification(title, body, event) {
+async function sendNotification(title, body, event) {
   logLine({ phase: "deliver", event, body });
 
   // tnotify (desktop notifications)
@@ -135,26 +135,33 @@ function sendNotification(title, body, event) {
         message: body,
       });
 
-      fetch("https://api.pushover.net/1/messages.json", {
-        method: "POST",
-        body: params,
-      }).then(
-        (res) => {
+      try {
+        const res = await fetch("https://api.pushover.net/1/messages.json", {
+          method: "POST",
+          body: params,
+        });
+        if (res.ok) {
           logLine({
             phase: "sent",
             channel: "pushover",
             status: res.status,
             body,
           });
-        },
-        (err) => {
+        } else {
           logLine({
             phase: "channel-failed",
             channel: "pushover",
-            error: String((err && err.message) || err),
+            status: res.status,
+            error: "HTTP error " + res.status,
           });
-        },
-      );
+        }
+      } catch (err) {
+        logLine({
+          phase: "channel-failed",
+          channel: "pushover",
+          error: String((err && err.message) || err),
+        });
+      }
     } else {
       logLine({ phase: "skipped", reason: "pushover-no-tokens" });
     }
@@ -202,10 +209,14 @@ export const NotifyPlugin = async ({ client }) => {
       });
     }
 
-    sendNotification(`OpenCode (${os.hostname()})`, body, event);
+    await sendNotification(
+      `OpenCode (${os.hostname()} - ${path.basename(process.cwd())})`,
+      body,
+      event,
+    );
   }
 
-  function notifyPermission(perm) {
+  async function notifyPermission(perm) {
     const event = "permission.asked";
     logLine({ phase: "fire", event, perm });
 
@@ -227,7 +238,11 @@ export const NotifyPlugin = async ({ client }) => {
       ? `${tool}: ${truncate(String(detail), 140)}`
       : `${tool} permission request`;
 
-    sendNotification(`OpenCode (${os.hostname()})`, body, event);
+    await sendNotification(
+      `OpenCode (${os.hostname()} - ${path.basename(process.cwd())})`,
+      body,
+      event,
+    );
   }
 
   return {
@@ -235,7 +250,7 @@ export const NotifyPlugin = async ({ client }) => {
       if (event?.type === "session.idle") {
         await notifyIdle(event.properties?.sessionID);
       } else if (event?.type === "permission.asked") {
-        notifyPermission(event.properties);
+        await notifyPermission(event.properties);
       }
     },
   };

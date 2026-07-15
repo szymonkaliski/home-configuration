@@ -30,6 +30,12 @@ if [ -d /mnt/host/opencode ]; then
   mkdir -p /home/szymon/.config
   cp -rT /mnt/host/opencode /home/szymon/.config/opencode
 
+  # the opencode wrapper regenerates AGENTS.md from each launch for extra
+  # prompting, keep the base around so we do not keep appending
+  if [ -f /home/szymon/.config/opencode/AGENTS.md ]; then
+    cp /home/szymon/.config/opencode/AGENTS.md /home/szymon/.config/opencode/AGENTS.base.md
+  fi
+
   if [ -f /home/szymon/.config/opencode/gemini_api_key ]; then
     # opencode's google provider (via @ai-sdk/google) reads GOOGLE_GENERATIVE_AI_API_KEY
     echo "export GOOGLE_GENERATIVE_AI_API_KEY=\"$(cat /home/szymon/.config/opencode/gemini_api_key)\"" >> /home/szymon/.bash_profile
@@ -102,7 +108,11 @@ cat << 'EOF' > /home/szymon/.bin/opencode
 export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
 . /home/szymon/.bin/vm-context.sh
 mkdir -p /home/szymon/.config/opencode
-echo "$vm_context" > /home/szymon/.config/opencode/AGENTS.md
+if [ -f /home/szymon/.config/opencode/AGENTS.base.md ]; then
+  echo -e "$vm_context\n\n$(cat /home/szymon/.config/opencode/AGENTS.base.md)" > /home/szymon/.config/opencode/AGENTS.md
+else
+  echo "$vm_context" > /home/szymon/.config/opencode/AGENTS.md
+fi
 exec npx -y opencode-ai@latest "$@"
 EOF
 chmod +x /home/szymon/.bin/opencode

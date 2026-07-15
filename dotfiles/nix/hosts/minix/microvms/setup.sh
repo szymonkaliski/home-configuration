@@ -76,6 +76,7 @@ const opencodePath = "/home/szymon/.config/opencode/opencode.json";
 if (fs.existsSync(opencodePath)) {
   const config = JSON.parse(fs.readFileSync(opencodePath, "utf8"));
   config.permission = "allow";
+  config.model_variant = "high";
   fs.writeFileSync(opencodePath, JSON.stringify(config, null, 2));
 }
 EOF

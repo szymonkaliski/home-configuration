@@ -72,9 +72,13 @@ if (fs.existsSync(claudePath)) {
 
 // patch opencode: skip permission prompts (opencode has no global skip flag,
 // so it must come from config; scoped to the VM copy, not the shared dotfile)
+// also inject chromium path for playwright mcp
 const opencodePath = "/home/szymon/.config/opencode/opencode.json";
 if (fs.existsSync(opencodePath)) {
-  const config = JSON.parse(fs.readFileSync(opencodePath, "utf8"));
+  let raw = fs.readFileSync(opencodePath, "utf8");
+  raw = raw.replaceAll("/home/szymon/.nix-profile/bin/chromium", vmChromium);
+
+  const config = JSON.parse(raw);
   config.permission = "allow";
   fs.writeFileSync(opencodePath, JSON.stringify(config, null, 2));
 }

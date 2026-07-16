@@ -1,6 +1,9 @@
 ## Code
 
-- don't add comments to code you didn't write
+- DO NOT commit, push, or deploy anything unless explicitly asked
+- DO NOT add comments to code you didn't write
+- comments must assert current state, never narrate the change
+
 - prefer discriminated unions over optional fields; make illegal states unrepresentable
 
 ## Investigation
@@ -10,12 +13,12 @@
   - if you haven't opened a file, you cannot make claims about what it contains
   - "I don't know" is a valid answer, say it, then investigate
 
-- when designing an approach before writing code, use web search to check documentation and recent GitHub issues
-
-- never dismiss errors, warnings, or failing tests as "pre-existing" or "not caused by my changes" - you are the sole developer - all issues are your responsibility
+- NEVER dismiss errors, warnings, or failing tests as "pre-existing" or "not caused by my changes" - you are the sole developer - all issues are your responsibility
   - when you encounter errors during builds, linting, typechecks, or tests that you didn't introduce, flag them and offer to fix them rather than skipping over them
 
-- if a request is ambiguous or spans multiple reasonable approaches, ask one or two clarifying questions before implementing
+- when designing an approach before writing code, use web search to check documentation and issues on GitHub
+
+- if a request is ambiguous or spans multiple reasonable approaches, ask clarifying questions before implementing
 
 ## Subagents
 
@@ -31,11 +34,13 @@
 ## Shell / environment
 
 - for running ad-hoc shell commands from nixpkgs, use `nix run nixpkgs#<pkg> -- <args>` (for example: `nix run nixpkgs#poppler_utils -- pdfinfo [...]`); prefer it over trying to write ad-hoc code
-- use `trash` instead of `rm` (only if already available)
 
 - use `./tmp/` in the project root for any temporary/scratch files (repro scripts, test fixtures, debug output, etc.) - it's globally gitignored
   - create it if it doesn't exist
   - when struggling to understand a library, git clone it into `./tmp/` and review the code there
+
+- use `trash` instead of `rm` (only if already available)
+
 - if you have to write ad-hoc code, use `node` instead of `python`
 
 ## Prose

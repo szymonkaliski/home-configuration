@@ -53,9 +53,9 @@ if [ -n "$five_used" ]; then
   else color="32"; fi
   reset_time=$(date -d "@$five_reset" +%H:%M 2>/dev/null || date -r "$five_reset" +%H:%M 2>/dev/null)
   if [ -n "$reset_time" ]; then
-    usage=$(printf " \033[${color}m%02d%%\033[0m until %s" "$p" "$reset_time")
+    usage=$(printf " \033[${color}m%d%%\033[0m until %s" "$p" "$reset_time")
   else
-    usage=$(printf " \033[${color}m%02d%%\033[0m" "$p")
+    usage=$(printf " \033[${color}m%d%%\033[0m" "$p")
   fi
 fi
 

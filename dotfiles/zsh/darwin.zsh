@@ -19,6 +19,7 @@ alias cpwd="pwd | pbcopy"
 
 # fix for xterm-256color-italic on osx
 alias ssh="TERM=xterm-256color ssh"
+alias mosh="mosh --ssh=/usr/bin/ssh"
 
 # fixes for processess getting stuck
 alias fix-camera="sudo killall VDCAssistant"

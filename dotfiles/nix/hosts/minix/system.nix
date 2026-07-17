@@ -168,6 +168,8 @@ in
 
   services.openssh.enable = true;
 
+  programs.mosh.enable = true;
+
   # tailscale with exit node
   services.tailscale.enable = true;
   services.tailscale.useRoutingFeatures = "server";

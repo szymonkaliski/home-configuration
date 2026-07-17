@@ -12,7 +12,7 @@ For reviewing and critiquing prose documents with an approve / reject / comment 
 
 ## Preview
 
-The document with line numbers on one side; a filterable suggestions panel on the other. Highlight lines that carry a suggestion with a colored left border, keyed to status: pending amber, approved green, rejected red and de-emphasized (drop its opacity so decided-against items recede). Give each a light and a dark value, per the morph theme rule. Clicking a card scrolls to its line.
+The document with line numbers on one side; a filterable suggestions panel on the other. Highlight lines that carry a suggestion with a colored left border, keyed to status: pending amber, approved green, rejected red and de-emphasized (drop its opacity so decided-against items recede). Give each a light and a dark value, per the morph theme rule. Clicking a card scrolls to its line. Anchor a suggestion to its lines by parsing its line reference ("Line 3", "Lines 17-24") and matching within ±2 lines, so a reference that drifted a line or two while the document evolved still highlights. Render the document line by line rather than through a block markdown renderer (which merges lines and breaks the 1:1 line-number mapping): apply headers and inline code/bold formatting per line, and carry fenced-code-block state across the ``` lines so code renders as code while every line keeps its number.
 
 ## Pre-populate
 

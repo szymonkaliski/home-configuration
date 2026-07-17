@@ -14,14 +14,14 @@ For visualizing codebase architecture: component relationships, data flow, layer
 
 ## Connection-type taxonomy
 
-Define 3-5 connection types, each a distinct line style plus a theme-aware color, so the filters and the diagram stay legible. Give each color a light and a dark value (per the morph theme rule); don't hardcode one palette.
+Define 3-5 connection types, each a distinct line style plus a theme-aware color, so the filters and the diagram stay legible. Give each color a light and a dark value (per the morph theme rule); a default set:
 
-| Type       | Line style | Use for                         |
-| ---------- | ---------- | ------------------------------- |
-| data-flow  | solid      | request/response, data passing  |
-| tool-call  | dashed     | function calls, API invocations |
-| event      | short dash | async events, pub/sub           |
-| dependency | dotted     | import/require relationships    |
+| Type       | Line style | Light stroke          | Dark stroke           | Use for                         |
+| ---------- | ---------- | --------------------- | --------------------- | ------------------------------- |
+| data-flow  | solid      | #3b82f6 (blue-500)    | #60a5fa (blue-400)    | request/response, data passing  |
+| tool-call  | dashed     | #10b981 (emerald-500) | #34d399 (emerald-400) | function calls, API invocations |
+| event      | short dash | #ef4444 (red-500)     | #f87171 (red-400)     | async events, pub/sub           |
+| dependency | dotted     | #6b7280 (gray-500)    | #9ca3af (gray-400)    | import/require relationships    |
 
 ## Layer palette
 

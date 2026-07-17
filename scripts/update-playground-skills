@@ -5,14 +5,16 @@
 # reference and proposes fixes/backports - so you can discuss them and apply
 # what you want on the spot.
 #
-# The script does only the mechanical part: refresh the marketplace and
-# snapshot the reference. Discovery and judgement are Claude's - it lists its
-# own available skills, finds the playground ones, reads each, and reviews it.
+# The script does only the mechanical part: fetch the reference skill straight
+# from the official plugins repo (a throwaway sparse clone - nothing is
+# installed or registered with Claude's plugin machinery) and snapshot it.
+# Discovery and judgement are Claude's - it lists its own available skills,
+# finds the playground ones, reads each, and reviews it.
 
 set -euo pipefail
 
-marketplace="claude-plugins-official"
-ref_src="$HOME/.claude/plugins/marketplaces/$marketplace/plugins/playground/skills/playground"
+upstream="https://github.com/anthropics/claude-plugins-official"
+skill_path="plugins/playground/skills/playground"
 
 # Find the repo from this script's own location (~/.bin symlinks to it), so
 # this works on any host and even before the skills are activated.
@@ -20,15 +22,21 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo="$(git -C "$script_dir" rev-parse --show-toplevel)"
 snapshot="$repo/tmp/playground-upstream"
 
-echo "==> refreshing $marketplace"
-claude plugin marketplace update "$marketplace" || echo "warn: update failed, using the cached copy" >&2
+clone="$(mktemp -d)"
+trap 'rm -rf "$clone"' EXIT
 
-[[ -d "$ref_src" ]] || { echo "reference playground skill not found at $ref_src" >&2; exit 1; }
-
-echo "==> snapshotting the reference skill into ${snapshot#"$repo"/}"
-rm -rf "$snapshot"
-mkdir -p "$snapshot"
-cp -R "$ref_src/." "$snapshot/"
+echo "==> fetching $skill_path from $upstream"
+if git clone --quiet --depth 1 --filter=blob:none --sparse "$upstream" "$clone" &&
+   git -C "$clone" sparse-checkout set "$skill_path" &&
+   [[ -d "$clone/$skill_path" ]]; then
+  echo "==> snapshotting the reference skill into ${snapshot#"$repo"/}"
+  rm -rf "$snapshot"
+  mkdir -p "$snapshot"
+  cp -R "$clone/$skill_path/." "$snapshot/"
+else
+  echo "warn: fetch failed, using the existing snapshot" >&2
+  [[ -d "$snapshot" ]] || { echo "no snapshot at ${snapshot#"$repo"/} either, giving up" >&2; exit 1; }
+fi
 
 read -r -d '' prompt <<EOF || true
 You have a set of available skills (listed in your system context). Some are about building interactive "playgrounds" (explorers / visual configurators that pair live controls with a preview and an output). Review each such playground skill against Anthropic's canonical reference and propose concrete fixes/backports for each.

@@ -1,4 +1,5 @@
 local windowMetadata = require('ext.window').windowMetadata
+local runScript      = require('ext.task').runScript
 local log            = hs.logger.new("screenshot-with-meta", "debug")
 
 local cache  = {}
@@ -32,52 +33,15 @@ local addMetaToScreenshot = function(win, fileName)
   local title, meta = windowMetadata(win)
 
   if meta ~= nil and meta ~= '' then
-    cache['wherefroms:' .. fileName] = hs.task.new(
-      ADD_WHEREFROMS_TO_IMAGE_PATH,
-      function(exitCode, stdOut, stdErr)
-        cache['wherefroms:' .. fileName] = nil
-
-        if stdOut and #stdOut > 0 then log.i(stdOut) end
-        if stdErr and #stdErr > 0 then log.w(stdErr) end
-
-        if exitCode == 0 then
-          log.i("WhereFroms done: " .. fileName)
-          return
-        end
-
-        hs.notify.new({
-          title    = "Screenshot WhereFroms failed",
-          subTitle = "Look into Hammerspoon Console for more info"
-        }):send()
-      end,
-      { fileName, meta }
-    )
-    cache['wherefroms:' .. fileName]:start()
+    runScript(ADD_WHEREFROMS_TO_IMAGE_PATH, { fileName, meta })
   end
 
   -- adds OCR to the image; --url prepends the source URL to kMDItemFinderComment
   -- because Dropbox only syncs that xattr to Linux (not kMDItemWhereFroms)
-  cache[fileName] = hs.task.new(
+  runScript(
     ADD_OCR_TO_IMAGE_PATH,
-    function(exitCode, stdOut, stdErr)
-      cache[fileName] = nil
-
-      if stdOut and #stdOut > 0 then log.i(stdOut) end
-      if stdErr and #stdErr > 0 then log.w(stdErr) end
-
-      if exitCode == 0 then
-        log.i("OCR done: " .. fileName)
-        return
-      end
-
-      hs.notify.new({
-        title    = "Screenshot OCR failed",
-        subTitle = "Look into Hammerspoon Console for more info"
-      }):send()
-    end,
     (meta ~= nil and meta ~= '') and { '--url', meta, fileName } or { fileName }
   )
-  cache[fileName]:start()
 end
 
 -- screencapture can exit before the file is fully flushed to disk

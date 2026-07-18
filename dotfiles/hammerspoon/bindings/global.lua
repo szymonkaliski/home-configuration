@@ -3,9 +3,9 @@ local smartLaunchOrFocus = require('ext.application').smartLaunchOrFocus
 local system             = require('ext.system')
 local window             = require('ext.window')
 local unescape           = require('ext.utils').unescape
+local runScript          = require('ext.task').runScript
 
-local cache  = {}
-local module = { cache = cache }
+local module = {}
 
 local dropCliLog = hs.logger.new('drop-cli', 'debug');
 
@@ -24,14 +24,6 @@ end
 
 local startsWith = function(str, start)
    return str:sub(1, #start) == start
-end
-
-local logDrop = function(_, out, err)
-  if #err > 0 then
-    dropCliLog.e(err)
-  end
-
-  dropCliLog.d(out)
 end
 
 -- fake drop item
@@ -66,7 +58,7 @@ local forceDrop = function()
   end
 
   if #arguments > 0 then
-    hs.task.new(DROP_CLI_PATH, logDrop, arguments):start()
+    runScript(DROP_CLI_PATH, arguments)
   else
     dropCliLog.e('emtpy arguments', inspect(data))
   end

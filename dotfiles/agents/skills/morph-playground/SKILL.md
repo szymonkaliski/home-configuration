@@ -30,7 +30,7 @@ If the topic doesn't fit a type cleanly, use the closest and adapt.
 
 - **Single `.jsx` morph page** (per the morph skill), default export. Two-panel layout: controls on one side, live preview on the other, and a commit action ("Use this" / "Send to Claude") beneath the preview that writes the current controls into the round-tripping config and confirms it visibly (a brief "Sent ✓ - Claude will pick this up"), since the write lands in the file where the reader can't see it. Beside the commit action, render a live one-or-two-sentence plain-language summary of the current draft (only non-default choices, in qualitative words: "a pronounced shadow", not `shadow: 24`); it updates as the controls move, so the reader checks what they're about to send before committing. Responsive: stack the panels on a narrow screen. (The canvas types, concept map and code map, put the interactive visual center-stage with a supplementary sidebar instead, see their templates.)
 - **Live preview.** Updates instantly on every control change. No "Apply" button.
-- **Sensible defaults + presets.** Looks good on first load. Include 3-5 named presets that snap all controls to a cohesive combination.
+- **Sensible defaults + presets.** Looks good on first load. For exploratory playgrounds (design, data/query, concept map, code map), include 3-5 named presets that snap all controls to a cohesive combination; this doesn't apply to the single-subject review templates (document critique, diff review), which review one specific document or diff rather than explore a space, so presets aren't meaningful there.
 - **Theme follows the reader's device** (per the morph skill: do **not** hardcode a dark theme; these open on phones over the LAN). System font for UI, monospace for code and values. Minimal chrome.
 
 ## State: live controls vs. what round-trips
@@ -58,13 +58,13 @@ function Playground() {
 ## Serving and the read-back loop
 
 - Serve with `morph` as a background process; report the URL (both the `localhost:<port>` and `<hostname>:<port>` forms, per the morph skill); never `open`.
-- Because the config round-trips, watch morph's output for the commit and pick it up without being asked:
+- Because the config round-trips, watch morph's output for the commit and pick it up without being asked. Grep for `mutate` scoped to whatever you actually named the round-tripping hook, not a hard-coded name: `Playground.config` for a single committed config, or the per-item hook's own name (for example `Playground.verdicts` or `Playground.comments`) for the review-style playgrounds in State above. Also grep for `skip` and `error` so refusals and failures surface too, not just successful commits:
 
   ```bash
-  tail -n0 -F <morph-background-output> | grep --line-buffered -E "mutate +Playground\.config|error +"
+  tail -n0 -F <morph-background-output> | grep --line-buffered -E "mutate +Playground\.<your-hook-name>|skip +|error +"
   ```
 
-  (An `error` line means an edit broke the preview; fix the file until `ok     preview recovered` follows, per the morph skill.)
+  (A `skip` line means the CLI refused the commit, most often a non-literal `useMorph` initializer; per the morph skill this rolls the reader's edit back with a `change rejected` badge. An `error` line means an edit broke the preview; fix the file until `ok     preview recovered` follows, per the morph skill.)
 
   On that event, read the `.jsx`, take the reader's exact configuration, and do the work they set up, no copy-paste required. Tell the reader to click "Use this" when they've landed on a configuration and you'll pick it up here. The watch lives only for this session; stop it when they're done.
 

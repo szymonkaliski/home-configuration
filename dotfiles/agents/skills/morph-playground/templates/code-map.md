@@ -45,9 +45,9 @@ A node/edge system diagram: nodes are rounded rectangles with a title and a file
 
 ## Reading it back
 
-The per-node comments are the payload: model them as one top-level `useMorph({})` keyed by node id (per `../SKILL.md`'s State section), written on each explicit comment, not per keystroke. Act on the committed config as the reader's per-component feedback against the system context, together with which layers were visible. Only include the components they actually commented on.
+The per-node comments are the payload: model them as one top-level `useMorph({})` keyed by node id (per `../SKILL.md`'s State section), written on each explicit comment, not per keystroke. Act on the committed config as the reader's per-component feedback against the system context. Only include the components they actually commented on.
 
-**Example.** A comment "add retry with backoff" on the `api-client` node (`src/api/client.ts`) becomes: "In `src/api/client.ts`, wrap the request path in retry-with-exponential-backoff; the reader flagged this while viewing the Client→Server data flow."
+**Example.** A comment "add retry with backoff" on the `api-client` node (`src/api/client.ts`) becomes: "In `src/api/client.ts`, wrap the request path in retry-with-exponential-backoff."
 
 ## Example topics
 

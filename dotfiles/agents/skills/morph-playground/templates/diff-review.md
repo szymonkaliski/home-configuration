@@ -23,7 +23,7 @@ Gather the real change with `git show <commit> -p`, or the branch or PR diff, an
 
 Model the comments as one top-level `useMorph({})` keyed by line or hunk id (per `../SKILL.md`'s State section), written on save, not per keystroke. Act on the committed config as structured review feedback: for each comment, the file, the line, the code, and what the reader said.
 
-**Example.** A comment on `src/handler.py:45` ("this can throw if `tracker` is None") becomes an action: "At `src/handler.py:45`, guard the `tracker.register()` call — the reader flagged a possible None deref."
+**Example.** A comment on `src/handler.py:45` ("this can throw if `tracker` is None") becomes an action: "At `src/handler.py:45`, guard the `tracker.register()` call: the reader flagged a possible None deref."
 
 ## Example topics
 

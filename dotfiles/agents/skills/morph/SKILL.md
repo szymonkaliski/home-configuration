@@ -96,7 +96,7 @@ Serve the file with `morph`, as a background process since it runs indefinitely.
 morph "./tmp/YYYY-MM-DD-<slug>.morph.jsx"
 ```
 
-- One server previews exactly one file. Without `--port` it takes the first free port from 3000 upward; read the printed `ready  previewing <file> at http://localhost:<port>` line for the actual URL. (An explicit `--port` fails fast if the port is busy.)
+- One server previews exactly one file. It serves on port 3000 by default, or the next free port if 3000 is taken; read the printed `ready  previewing <file> at http://localhost:<port>` line for the actual URL. (An explicit `--port` fails fast if the port is busy.)
 - Every save hot-reloads the page with Fast Refresh, and the reader's state survives every edit for as long as the server runs: `useState` is preserved across the reload, and `useMorph` values live in the document itself. So iterate by editing the file in place and keep the same server running for the whole session. Editing a `useState` initializer remounts that whole component and resets all its hooks, since the initializer's source is part of the Fast Refresh signature (`useMorph` values survive, they re-read the file's literal); editing a `useMorph` initializer is how you push a new value to the reader (the page reloads and adopts it, see State channel).
 - morph Prettier-normalizes the file once at startup and reformats it on every change (yours or the reader's), so the document stays Prettier-clean on its own; your edits get normalized too.
 - Restarting the server mid-session is safe: the page shows a `disconnected` badge, reconnects within a second, and replays edits the reader made while it was down only if the file did not change in the meantime; otherwise it drops them and re-adopts the file, visibly rolling back anything the file never received (`useState` values are untouched).
@@ -107,7 +107,7 @@ morph "./tmp/YYYY-MM-DD-<slug>.morph.jsx"
 
 morph has no HTTP state endpoint. The document's own source is the state: an ambient `useMorph(initial)` hook (a `useState` you don't import) whose **initializer literal is rewritten in the file** when the reader interacts. That is the whole channel, both directions:
 
-- **screen → you.** When the reader changes a `useMorph` value (types a question, picks an option), morph rewrites that initializer in the `.jsx` file and logs a `mutate Component.variable` line followed by a word-level diff of exactly what changed (capped at 30 lines). The server runs in the background, so watch its output to see reader activity as it happens; read the `.jsx` file when you need the full current value.
+- **screen → you.** When the reader changes a `useMorph` value (types a question, picks an option), morph rewrites that initializer in the `.jsx` file and logs a `mutate Component.variable` line followed by a diff of exactly what changed (capped at 30 lines): an inline word-level diff when stdout is an interactive TTY with color, or paired `- old` / `+ new` lines when the output is piped or tailed from a file, which is how the watch loop below runs it. The server runs in the background, so watch its output to see reader activity as it happens; read the `.jsx` file when you need the full current value.
 - **you → screen.** To respond to a comment, seed a value, or reset a hook, edit its `useMorph` initializer in the file. morph pushes the new source to the page, which hot-reloads and adopts the new literal. Concurrency runs one way: a reader mutation rebases onto the current file, but your save is a plain write, so after any `mutate` re-read the file and edit fresh rather than writing from a stale copy, which clobbers their edit.
 
 Design for it:
@@ -121,18 +121,27 @@ Design for it:
 
 A margin comment rail is the reusable way the reader talks back and the document gets refined, built directly on the `useMorph` round-trip. It is additive and gates nothing, so it does not break an "everything visible at once" page. The reader questions a block, you answer in the rail and, when the answer belongs in the document, revise the content and leave a short note saying what changed.
 
-**The `Block` wrapper.** One top-level `const [comments, setComments] = useMorph({})`, keyed by block id, each value an array of `{ by, text }` (`by: "you"` for the reader, `by: "claude"` for your replies; nested arrays still round-trip as long as the whole initializer stays a JSON literal). Wrap every block (paragraph, callout, diagram, table) with a stable id; lay content left and the rail right with a CSS grid (`minmax(0,1fr)` plus a fixed rail, stacking under the content on narrow screens, so there is no fragile position measuring).
+**The `Block` wrapper.** One top-level `const [comments, setComments] = useMorph({})` inside the page component (never at module scope: a hook declared outside a component both breaks the page on load and has no enclosing name to derive an identity from), keyed by block id, each value an array of `{ by, text }` (`by: "you"` for the reader, `by: "claude"` for your replies; nested arrays still round-trip as long as the whole initializer stays a JSON literal). Prefer the recipe form of the setter, `setComments(draft => { ... })`, over spreading a new object: mutating `draft` produces granular immer patches the CLI can rebase onto a concurrent edit, while `setComments({ ...comments, ... })` is a single root-replace patch that can silently lose one.
 
 ```jsx
-const [comments, setComments] = useMorph({});
-const addComment = (id, text) =>
-  setComments({
-    ...comments,
-    [id]: [...(comments[id] || []), { by: "you", text }],
-  });
+const CommentsContext = React.createContext(null);
+
+function Page() {
+  const [comments, setComments] = useMorph({});
+  const addComment = (id, text) =>
+    setComments((draft) => {
+      (draft[id] ||= []).push({ by: "you", text });
+    });
+
+  return (
+    <CommentsContext.Provider value={{ comments, addComment }}>
+      {/* ...blocks go here, e.g. <Block id="intro">...</Block> */}
+    </CommentsContext.Provider>
+  );
+}
 
 function Block({ id, children }) {
-  // comments/addComment via context or closure
+  const { comments, addComment } = React.useContext(CommentsContext);
   const thread = comments[id] || [];
   const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);

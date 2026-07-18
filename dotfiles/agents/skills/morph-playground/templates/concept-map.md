@@ -22,9 +22,9 @@ Draggable nodes and reader-drawn edges on an SVG canvas, with a tooltip (descrip
 
 ## Reading it back
 
-The committed config names what the reader knows, is fuzzy on, and doesn't know, plus the relationships they drew. Act on it as a targeted learning request: explain the fuzzy and unknown concepts along the edges they care about, building on what they already know, with concrete code references. Only mention the edges they drew and the concepts they didn't already mark as known.
+Two things round-trip via `useMorph`, each keyed by id and written the moment the reader acts (a cycle-click, an edge finished) rather than gated behind a separate commit step: every node's knowledge level (know / fuzzy / unknown) and the edges the reader drew, each with its connection type. Dragged node positions stay in plain `useState`: they're the reader's own spatial arrangement, not content you need back, so they never enter the file. Act on the persisted state as a targeted learning request: explain the fuzzy and unknown concepts along the edges they care about, building on what they already know, with concrete code references. Only mention the edges they drew and the concepts they didn't already mark as known.
 
-**Example.** With `useState` marked known, `useReducer` fuzzy, `Context` unknown, and an edge `Context —provides→ useReducer`, you'd explain: "You know `useState`; `useReducer` is the same idea for state with many transitions. `Context` (which you flagged unknown) is how a reducer's `dispatch` reaches deep children without prop-drilling, wired up in `store.tsx`." You'd skip `useState` entirely since they already know it.
+**Example.** With `useState` marked known, `useReducer` fuzzy, `Context` unknown, and an edge `Context --provides--> useReducer`, you'd explain: "You know `useState`; `useReducer` is the same idea for state with many transitions. `Context` (which you flagged unknown) is how a reducer's `dispatch` reaches deep children without prop-drilling, wired up in `store.tsx`." You'd skip `useState` entirely since they already know it.
 
 ## Example topics
 

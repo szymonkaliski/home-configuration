@@ -24,7 +24,7 @@ Defaults that already look good on first load, plus 3-5 named presets that each 
 
 Act on the committed config as a direction to a developer, not a spec sheet. If the reader works in Tailwind, hand back Tailwind classes; if raw CSS, CSS properties.
 
-**Example.** From `{ radius: 12, padding: 24, shadow: "medium", hoverLift: true }` you'd write: "Give the card a soft, elevated feel — 12px corner radius, 24px horizontal padding, a medium shadow (`0 4px 12px rgba(0,0,0,0.1)`), and on hover lift it with `translateY(-1px)` and deepen the shadow. In Tailwind: `rounded-xl px-6 shadow-md hover:-translate-y-px hover:shadow-lg`."
+**Example.** From `{ radius: 12, padding: 24, shadow: "medium", hoverLift: true }` you'd write: "Give the card a soft, elevated feel: 12px corner radius, 24px horizontal padding, a medium shadow (`0 4px 12px rgba(0,0,0,0.1)`), and on hover lift it with `translateY(-1px)` and deepen the shadow. In Tailwind: `rounded-xl px-6 shadow-md hover:-translate-y-px hover:shadow-lg`."
 
 ## Example topics
 

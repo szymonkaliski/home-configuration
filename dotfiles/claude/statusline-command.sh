@@ -51,9 +51,15 @@ if [ -n "$five_used" ]; then
   if [ "$p" -ge 80 ]; then color="31"
   elif [ "$p" -ge 50 ]; then color="33"
   else color="32"; fi
-  reset_time=$(date -d "@$five_reset" +%H:%M 2>/dev/null || date -r "$five_reset" +%H:%M 2>/dev/null)
-  if [ -n "$reset_time" ]; then
-    usage=$(printf " \033[${color}m%d%%\033[0m until %s" "$p" "$reset_time")
+  if [ -n "$five_reset" ]; then
+    secs=$(( five_reset - $(date +%s) ))
+    [ "$secs" -lt 0 ] && secs=0
+    h=$(( secs / 3600 )); m=$(( secs % 3600 / 60 ))
+    if [ "$h" -gt 0 ] && [ "$m" -gt 0 ]; then rem="${h}h${m}m"
+    elif [ "$h" -gt 0 ]; then rem="${h}h"
+    elif [ "$m" -gt 0 ]; then rem="${m}m"
+    else rem="<1m"; fi
+    usage=$(printf " \033[${color}m%d%%\033[0m %s left" "$p" "$rem")
   else
     usage=$(printf " \033[${color}m%d%%\033[0m" "$p")
   fi

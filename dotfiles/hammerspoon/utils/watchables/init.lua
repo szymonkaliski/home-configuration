@@ -69,7 +69,7 @@ module.start = function()
     -- wifi    = hs.wifi.watcher.new(updateWiFi),
 
     battery = hs.battery.watcher.new(updateBattery),
-    screen  = hs.screen.watcher.new(updateScreen),
+    screen  = hs.screen.watcher.new(debounce(updateScreen, 1)),
     theme   = hs.distributednotifications.new(updateTheme, "AppleInterfaceThemeChangedNotification"),
     usb     = hs.usb.watcher.new(debounce(updateUSB, 3)),
   }

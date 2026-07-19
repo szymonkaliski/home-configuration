@@ -31,8 +31,10 @@ for file in $files; do
   source ~/.zsh/$file.zsh
 done
 
-# ssh motd
-if [[ -n "$SSH_TTY" && "$(tty)" = "$SSH_TTY" ]] && (( $+commands[motd] )); then
-  motd
+# ssh/mosh dynamic motd
+if (( $+commands[motd] )); then
+  if [[ -n "$SSH_TTY" && "$(tty)" = "$SSH_TTY" ]] || [[ "$(ps -o comm= -p $PPID 2>/dev/null)" = *mosh-server* ]]; then
+    motd
+  fi
 fi
 

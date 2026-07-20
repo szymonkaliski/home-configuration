@@ -21,6 +21,10 @@ sync_host_config() {
   # skip notification logs
   rm -f "$HOST_DIR/claude/notify.log" "$HOST_DIR/opencode/notify.log"
 
+  # VMs auth via the long-lived token, not credentials file
+  # remove it as a VM refreshing it would invalidate the host's session
+  rm -f "$HOST_DIR/claude/.credentials.json"
+
   # extract the default claude code model when starting
   jq -r '.model // empty' "$HOST_DIR/claude/settings.json" 2>/dev/null > "$HOST_DIR/claude/anthropic-model" || true
 

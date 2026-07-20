@@ -36,7 +36,8 @@ if [ -n "$DROPBOX_PATH" ]; then
   export SCREENSHOTS_PATH="$DROPBOX_PATH/Screenshots"
 fi
 
-if [ -f "$HOME/.claude/long-lived-oauth-token" ]; then
+# only use the env if we don't have credentials
+if [ -f "$HOME/.claude/long-lived-oauth-token" ] && [ ! -f "$HOME/.claude/.credentials.json" ]; then
   export CLAUDE_CODE_OAUTH_TOKEN="$(cat "$HOME/.claude/long-lived-oauth-token")"
 fi
 

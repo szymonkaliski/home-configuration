@@ -22,7 +22,11 @@ sync_host_config() {
   rm -f "$HOST_DIR/claude/notify.log" "$HOST_DIR/opencode/notify.log"
 
   # VMs auth via the long-lived token, not credentials file
-  # remove it as a VM refreshing it would invalidate the host's session
+  # remove it as a VM refreshing it would invalidate the host's session;
+  # keep the plan tier around: token-only sessions have inference-only scope,
+  # can't fetch the plan, and would gate fable behind usage credits
+  # (anthropics/claude-code#79360)
+  jq -r '.claudeAiOauth.subscriptionType // empty' "$HOST_DIR/claude/.credentials.json" 2>/dev/null > "$HOST_DIR/claude/subscription-type" || true
   rm -f "$HOST_DIR/claude/.credentials.json"
 
   # extract the default claude code model when starting

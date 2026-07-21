@@ -11,6 +11,14 @@ if [ -f /mnt/host/claude/long-lived-oauth-token ]; then
   echo "export CLAUDE_CODE_OAUTH_TOKEN=$(cat /mnt/host/claude/long-lived-oauth-token)" >> /home/szymon/.bash_profile
 fi
 
+# the setup-token has inference-only scope, so claude code can't fetch the
+# plan tier and would gate fable behind usage credits (claude-code#79360);
+# CLAUDE_CODE_SUBSCRIPTION_TYPE tells it the plan directly
+subscription_type="$(cat /mnt/host/claude/subscription-type 2>/dev/null)"
+if [ -n "$subscription_type" ]; then
+  echo "export CLAUDE_CODE_SUBSCRIPTION_TYPE=\"$subscription_type\"" >> /home/szymon/.bash_profile
+fi
+
 anthropic_model="$(cat /mnt/host/claude/anthropic-model 2>/dev/null)"
 if [ -n "$anthropic_model" ]; then
   echo "export ANTHROPIC_MODEL=\"$anthropic_model\"" >> /home/szymon/.bash_profile

@@ -2,6 +2,8 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
 
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+
     home-manager = {
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -27,12 +29,24 @@
   outputs =
     {
       nixpkgs,
+      nixpkgs-unstable,
       home-manager,
       nix-index-database,
       microvm,
       sops-nix,
       ...
     }:
+    let
+      # antigravity is not in nixos-26.05, pull from unstable;
+      # separate pkgs instance, so it needs its own allowUnfree
+      antigravityOverlay = final: prev: {
+        antigravity-cli =
+          (import nixpkgs-unstable {
+            inherit (prev.stdenv.hostPlatform) system;
+            config.allowUnfree = true;
+          }).antigravity-cli;
+      };
+    in
     {
       formatter.aarch64-darwin = nixpkgs.legacyPackages.aarch64-darwin.nixfmt;
       formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt;
@@ -47,6 +61,7 @@
                 # https://github.com/NixOS/nixpkgs/issues/475999
                 direnv = prev.direnv.overrideAttrs { doCheck = false; };
               })
+              antigravityOverlay
             ];
           };
           extraSpecialArgs = {
@@ -62,7 +77,10 @@
         };
 
         "szymon@minix" = home-manager.lib.homeManagerConfiguration {
-          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          pkgs = import nixpkgs {
+            system = "x86_64-linux";
+            overlays = [ antigravityOverlay ];
+          };
           extraSpecialArgs = {
             repoRoot = "/home/szymon/Projects/home-configuration";
           };

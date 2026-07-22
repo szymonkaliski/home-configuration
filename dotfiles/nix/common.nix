@@ -25,6 +25,7 @@ in
 
   home.packages = [
     pkgs.age
+    pkgs.antigravity-cli
     pkgs.bat
     pkgs.difftastic
     pkgs.fd
@@ -97,11 +98,13 @@ in
     ".claude/settings.json".source = link "${dotfileDir}/claude/settings.json";
     ".claude/notify.js".source = link "${dotfileDir}/claude/notify.js";
     ".claude/statusline-command.sh".source = link "${dotfileDir}/claude/statusline-command.sh";
+    ".gemini/config/AGENTS.md".source = link "${dotfileDir}/agents/AGENTS.md";
   }
   # skills linked one-by-one so the destination dirs stay real directories;
   # machine-local additions can then sit alongside without living in this repo
   // skillLinks ".claude/skills"
-  // skillLinks ".config/opencode/skills";
+  // skillLinks ".config/opencode/skills"
+  // skillLinks ".gemini/config/skills";
 
   xdg.configFile = {
     "nvim".source = link "${dotfileDir}/vim";

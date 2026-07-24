@@ -23,7 +23,20 @@ command! SpellEN :setlocal spelllang=en | setlocal spell
 command! Todo :call utils#find_todo()
 
 " plug
-command! PlugUp :PlugUpdate | PlugUpgrade | CocUpdate
+function! PlugUp()
+  PlugUpdate
+  PlugUpgrade
+  if coc#rpc#ready()
+    CocUpdate
+  else
+    augroup PlugUpCocUpdate
+      autocmd!
+      autocmd User CocNvimInit ++once CocUpdate
+    augroup END
+  endif
+endfunction
+
+command! PlugUp :call PlugUp()
 
 " get current path and line number
 function! PWD()

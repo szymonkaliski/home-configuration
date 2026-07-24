@@ -54,6 +54,7 @@ in
   };
 
   environment.systemPackages = with pkgs; [
+    antigravity-cli
     chromium # for playwright MCP
     curl
     git

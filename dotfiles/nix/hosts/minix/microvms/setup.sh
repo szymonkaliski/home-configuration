@@ -56,6 +56,17 @@ if [ -d /mnt/host/gcloud ]; then
   cp -rT /mnt/host/gcloud /home/szymon/.config/gcloud
 fi
 
+# gemini config
+if [ -d /mnt/host/gemini ]; then
+  cp -rT /mnt/host/gemini /home/szymon/.gemini
+
+  # the agy wrapper regenerates AGENTS.md on each launch for extra
+  # prompting, keep the base around so we do not keep appending
+  if [ -f /home/szymon/.gemini/config/AGENTS.md ]; then
+    cp /home/szymon/.gemini/config/AGENTS.md /home/szymon/.gemini/config/AGENTS.base.md
+  fi
+fi
+
 # patch agent configs for the VM environment:
 # - claude: inject chromium path for playwright mcp, trust /workspace so it doesn't prompt
 # - opencode: auto-approve permissions (the VM is an ephemeral sandbox)
@@ -128,6 +139,20 @@ fi
 exec npx -y opencode-ai@latest "$@"
 EOF
 chmod +x /home/szymon/.bin/opencode
+
+cat << 'EOF' > /home/szymon/.bin/agy
+#!/bin/sh
+export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
+. /home/szymon/.bin/vm-context.sh
+mkdir -p /home/szymon/.gemini/config
+if [ -f /home/szymon/.gemini/config/AGENTS.base.md ]; then
+  echo -e "$vm_context\n\n$(cat /home/szymon/.gemini/config/AGENTS.base.md)" > /home/szymon/.gemini/config/AGENTS.md
+else
+  echo "$vm_context" > /home/szymon/.gemini/config/AGENTS.md
+fi
+exec /run/current-system/sw/bin/agy --dangerously-skip-permissions "$@"
+EOF
+chmod +x /home/szymon/.bin/agy
 
 chown -R szymon:users /home/szymon
 

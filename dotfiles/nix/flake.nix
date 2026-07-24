@@ -98,6 +98,7 @@
         specialArgs = { inherit microvm; };
 
         modules = [
+          { nixpkgs.overlays = [ antigravityOverlay ]; }
           ./hosts/minix/system.nix
           ./hosts/minix/hardware-configuration.nix
           ./hosts/minix/microvms

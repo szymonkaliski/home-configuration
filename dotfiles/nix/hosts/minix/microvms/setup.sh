@@ -38,12 +38,6 @@ if [ -d /mnt/host/opencode ]; then
   mkdir -p /home/szymon/.config
   cp -rT /mnt/host/opencode /home/szymon/.config/opencode
 
-  # the opencode wrapper regenerates AGENTS.md from each launch for extra
-  # prompting, keep the base around so we do not keep appending
-  if [ -f /home/szymon/.config/opencode/AGENTS.md ]; then
-    cp /home/szymon/.config/opencode/AGENTS.md /home/szymon/.config/opencode/AGENTS.base.md
-  fi
-
   if [ -f /home/szymon/.config/opencode/gemini_api_key ]; then
     # opencode's google provider (via @ai-sdk/google) reads GOOGLE_GENERATIVE_AI_API_KEY
     echo "export GOOGLE_GENERATIVE_AI_API_KEY=\"$(cat /home/szymon/.config/opencode/gemini_api_key)\"" >> /home/szymon/.bash_profile
@@ -59,13 +53,33 @@ fi
 # gemini config
 if [ -d /mnt/host/gemini ]; then
   cp -rT /mnt/host/gemini /home/szymon/.gemini
-
-  # the agy wrapper regenerates AGENTS.md on each launch for extra
-  # prompting, keep the base around so we do not keep appending
-  if [ -f /home/szymon/.gemini/config/AGENTS.md ]; then
-    cp /home/szymon/.gemini/config/AGENTS.md /home/szymon/.gemini/config/AGENTS.base.md
-  fi
 fi
+
+# single cross-harness instructions file: VM context + the shared AGENTS.md,
+# with each harness's path symlinked at it, mirroring how the host symlinks
+# dotfiles/agents/AGENTS.md
+vm_name="$(uname -n)"
+ts_suffix="$(cat /mnt/host/ts-magicdns-suffix 2>/dev/null)"
+
+vm_context="You are running inside an ephemeral, sandboxed NixOS microVM named '${vm_name}'."
+if [ -n "$ts_suffix" ]; then
+  ts_dns="${vm_name}.${ts_suffix}"
+  vm_context="${vm_context} Its private Tailscale hostname is '${ts_dns}', reachable only from devices on the same tailnet (not the public internet). Any TCP port you listen on is automatically published on the tailnet at https://${ts_dns}:<PORT> (same port number, TLS-terminated) by a background watcher, so to share a running dev server you just need to listen on a port."
+  vm_context="${vm_context} That serve is PRIVATE to the tailnet. To make a port public (reachable by anyone, not just the tailnet) when asked to funnel it, run 'tailscale funnel --bg --https=443 http://127.0.0.1:<PORT>'; it then lives at https://${ts_dns}/ . Stop with 'tailscale funnel --https=443 off'. Only one port can be funnelled at a time."
+fi
+
+mkdir -p /home/szymon/.config/agents /home/szymon/.claude /home/szymon/.config/opencode /home/szymon/.gemini/config
+{
+  echo "$vm_context"
+  if [ -f /mnt/host/AGENTS.md ]; then
+    echo ""
+    cat /mnt/host/AGENTS.md
+  fi
+} > /home/szymon/.config/agents/AGENTS.md
+
+ln -sf /home/szymon/.config/agents/AGENTS.md /home/szymon/.claude/CLAUDE.md
+ln -sf /home/szymon/.config/agents/AGENTS.md /home/szymon/.config/opencode/AGENTS.md
+ln -sf /home/szymon/.config/agents/AGENTS.md /home/szymon/.gemini/config/AGENTS.md
 
 # patch agent configs for the VM environment:
 # - claude: inject chromium path for playwright mcp, trust /workspace so it doesn't prompt
@@ -103,39 +117,19 @@ if (fs.existsSync(opencodePath)) {
 }
 EOF
 
-# create executable wrappers for claude and opencode
+# create executable wrappers for the agent CLIs
 mkdir -p /home/szymon/.bin
-
-# shared tailnet/funnel context, sourced by both wrappers
-cat << 'EOF' > /home/szymon/.bin/vm-context.sh
-vm_name="$(hostname -s)"
-ts_dns="$(tailscale status --json 2>/dev/null | jq -r '.Self.DNSName // empty' | sed 's/\.$//')"
-
-vm_context="You are running inside an ephemeral, sandboxed NixOS microVM named '${vm_name}'."
-if [ -n "$ts_dns" ]; then
-  vm_context="${vm_context} Its private Tailscale hostname is '${ts_dns}', reachable only from devices on the same tailnet (not the public internet). Any TCP port you listen on is automatically published on the tailnet at https://${ts_dns}:<PORT> (same port number, TLS-terminated) by a background watcher, so to share a running dev server you just need to listen on a port."
-  vm_context="${vm_context} That serve is PRIVATE to the tailnet. To make a port public (reachable by anyone, not just the tailnet) when asked to funnel it, run 'tailscale funnel --bg --https=443 http://127.0.0.1:<PORT>'; it then lives at https://${ts_dns}/ . Stop with 'tailscale funnel --https=443 off'. Only one port can be funnelled at a time."
-fi
-EOF
 
 cat << 'EOF' > /home/szymon/.bin/claude
 #!/bin/sh
 export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
-. /home/szymon/.bin/vm-context.sh
-exec npx -y @anthropic-ai/claude-code@latest --dangerously-skip-permissions --effort ultracode --append-system-prompt "$vm_context" "$@"
+exec npx -y @anthropic-ai/claude-code@latest --dangerously-skip-permissions --effort ultracode "$@"
 EOF
 chmod +x /home/szymon/.bin/claude
 
 cat << 'EOF' > /home/szymon/.bin/opencode
 #!/bin/sh
 export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
-. /home/szymon/.bin/vm-context.sh
-mkdir -p /home/szymon/.config/opencode
-if [ -f /home/szymon/.config/opencode/AGENTS.base.md ]; then
-  echo -e "$vm_context\n\n$(cat /home/szymon/.config/opencode/AGENTS.base.md)" > /home/szymon/.config/opencode/AGENTS.md
-else
-  echo "$vm_context" > /home/szymon/.config/opencode/AGENTS.md
-fi
 exec npx -y opencode-ai@latest "$@"
 EOF
 chmod +x /home/szymon/.bin/opencode
@@ -143,13 +137,6 @@ chmod +x /home/szymon/.bin/opencode
 cat << 'EOF' > /home/szymon/.bin/agy
 #!/bin/sh
 export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
-. /home/szymon/.bin/vm-context.sh
-mkdir -p /home/szymon/.gemini/config
-if [ -f /home/szymon/.gemini/config/AGENTS.base.md ]; then
-  echo -e "$vm_context\n\n$(cat /home/szymon/.gemini/config/AGENTS.base.md)" > /home/szymon/.gemini/config/AGENTS.md
-else
-  echo "$vm_context" > /home/szymon/.gemini/config/AGENTS.md
-fi
 exec /run/current-system/sw/bin/agy --dangerously-skip-permissions "$@"
 EOF
 chmod +x /home/szymon/.bin/agy

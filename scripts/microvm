@@ -7,6 +7,7 @@ SSH_OPTS=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLeve
 MAX_VMS=4
 
 REPO_SETUP_SH="$PROJECTS_PATH/home-configuration/dotfiles/nix/hosts/minix/microvms/setup.sh"
+REPO_AGENTS_MD="$PROJECTS_PATH/home-configuration/dotfiles/agents/AGENTS.md"
 
 sync_host_config() {
   mkdir -p "$HOST_DIR"
@@ -36,6 +37,14 @@ sync_host_config() {
 
   # don't ship opencode's regenerable npm state
   rm -rf "$HOST_DIR/opencode/node_modules" "$HOST_DIR/opencode/package.json" "$HOST_DIR/opencode/package-lock.json"
+
+  # single cross-harness instructions file; setup.sh merges in the VM context
+  # and symlinks each harness's path at it
+  command cp -L "$REPO_AGENTS_MD" "$HOST_DIR/AGENTS.md"
+  rm -f "$HOST_DIR/claude/CLAUDE.md" "$HOST_DIR/opencode/AGENTS.md" "$HOST_DIR/gemini/config/AGENTS.md"
+
+  # the VM's tailnet DNS name is <vm hostname> + this suffix
+  tailscale status --json 2>/dev/null | jq -r '.MagicDNSSuffix // empty' > "$HOST_DIR/ts-magicdns-suffix" || true
 
   {
     echo "#!/usr/bin/env bash"

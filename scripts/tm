@@ -71,7 +71,10 @@ run() {
   fi
 
   if [[ $session == "" ]] && [ -n "$TMUX" ]; then
-    TMUX=$(tmux new-session -d -s "$title")
+    # keep $TMUX: it names both the socket and the calling client, so clearing it
+    # sends switch-client to the default socket with no client to move (which fails
+    # outright from a popup, where the caller's tty is not a client tty)
+    tmux new-session -d -s "$title"
     setup_session "$basedir" "$title"
     tmux switch-client -t "$title"
     return

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+# pick a frecent directory (z) and hand it to `tm`, which switches to the session
+
+# z's data lives in the shell function _z, so source the plugin
+if [ -f "$HOME/.zsh/plugins/z/z.sh" ]; then
+  . "$HOME/.zsh/plugins/z/z.sh"
+else
+  echo "z is missing (~/.zsh/plugins/z/z.sh); run setup.sh" >&2
+  read -r -n 1
+  exit 1
+fi
+
+# z lists ascending by rank, so tac puts the most frecent first
+DIR=$(_z -l 2>&1 | sed -n 's/^[ 0-9.,]*//p' | grep -v '^common:' | tac \
+  | fzf --no-sort --exit-0 --query="$1" --prompt="jump > " --reverse) || exit 0
+
+[ -n "$DIR" ] && [ -d "$DIR" ] || exit 0
+cd "$DIR" || exit 0
+exec tm
+

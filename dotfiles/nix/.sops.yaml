@@ -20,3 +20,11 @@ creation_rules:
           - *minix
           - *orchid
           - *recovery
+  # whole-file secret rather than a key inside shared.yaml,
+  # so `sops` opens it as a plain ssh config
+  - path_regex: secrets/ssh-config$
+    key_groups:
+      - age:
+          - *minix
+          - *orchid
+          - *recovery

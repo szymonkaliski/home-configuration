@@ -80,6 +80,17 @@ in
     !include ${config.sops.secrets.nix_access_tokens.path}
   '';
 
+  # the ssh config names hosts, users and ports for machines outside this repo,
+  # which is public, so it ships as a whole encrypted file rather than a plain
+  # dotfile. binary format means `sops secrets/ssh-config` edits it as ordinary
+  # ssh config instead of a YAML block scalar
+  sops.secrets.ssh_config = {
+    format = "binary";
+    sopsFile = ./secrets/ssh-config;
+    path = "${config.home.homeDirectory}/.ssh/config";
+    mode = "0600";
+  };
+
   home.file = {
     ".hushlogin".text = "";
     ".dircolors".source = link "${dotfileDir}/dircolors";

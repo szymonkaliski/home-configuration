@@ -54,16 +54,17 @@ The age private key is per-machine and stays at `~/.config/sops/age/keys.txt`.
    # this prints the public key: age1...
    ```
 2. Add the new pubkey to `dotfiles/nix/.sops.yaml` under `keys:` and reference it from the appropriate `creation_rules` `key_groups`.
-3. Re-encrypt the existing yamls so the new machine can decrypt them:
+3. Re-encrypt the existing secrets so the new machine can decrypt them:
    ```bash
    cd dotfiles/nix
    nix shell nixpkgs#sops -c sops updatekeys secrets/minix.yaml
    nix shell nixpkgs#sops -c sops updatekeys secrets/shared.yaml
+   nix shell nixpkgs#sops -c sops updatekeys secrets/ssh-config
    ```
 
 ### Recovery age key
 
-A recovery age key is in the recipient list of every `dotfiles/nix/secrets/*.yaml`.
+A recovery age key is in the recipient list of every file under `dotfiles/nix/secrets/`.
 Its private half is in the password manager.
 
 To restore from recovery key:

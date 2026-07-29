@@ -30,7 +30,7 @@ Never call `open`. Read the `ready` line for the real URL and tell the reader. P
 Then arm the watch, in the same turn, before you go back to editing:
 
 ```bash
-tail -n0 -F <morph-background-output> | grep --line-buffered -E "^[0-9:]{8} (mutate|error|skip|ask)"
+tail -n0 -F <morph-background-output> | grep --line-buffered -E "^[0-9:]{8} (mutate|error|skip|ask|ok)"
 ```
 
 Piped output carries no colour, one event per line as `HH:MM:SS <tag> <message>`:
@@ -40,15 +40,32 @@ Piped output carries no colour, one event per line as `HH:MM:SS <tag> <message>`
 | `mutate` | the reader changed a `useMorph` value       | read the `.jsx` for the full value, then edit the file to respond |
 | `ask`    | a `useShell` hook is waiting on approval    | tell the reader it is waiting; they may be on another device      |
 | `skip`   | a change was refused, usually a non-literal | fix the initializer; the reader watched it roll back              |
-| `error`  | an edit broke the preview                   | fix until `ok     preview recovered` follows                      |
+| `error`  | an edit broke the preview                   | fix until `ok` follows                                            |
+| `ok`     | the preview recovered after an `error`      | nothing, the fix landed                                           |
 
-Treat a `mutate` as an interruption worth handling now, not something to batch until the reader asks. `error` is urgent: a transpile or load failure keeps the last good render, but a throw during render blanks the page. Your own file edits log `update`, not `mutate`, so they never echo back as false events.
+**The watch does not interrupt you. It is a log, and nothing delivers it.** A backgrounded `tail -F | grep` never exits, and a harness that re-invokes you when a background command *exits* will therefore never re-invoke you for this one. Events pile up in the output file and stay there, unread, until you go and look. Arming the watch is necessary and is not sufficient.
+
+So read it, deliberately, at these three moments:
+
+```bash
+cat <watch-background-output>          # every event so far, one line each
+```
+
+- **Before every reply to the reader.** They may have commented while you were working, and answering without having read is how you tell someone you are listening while ignoring them.
+- **After finishing any unit of work**, before starting the next one.
+- **Before saying you are done** or asking what to do next.
+
+Then read the `.jsx` for the values behind the events. Never tell the reader their comments "reach you" or that you are "watching" unless you have just read the log. You are polling it, and saying so is both honest and accurate.
+
+Treat a `mutate` you find as an interruption worth handling now, not something to batch until the reader asks. `error` is urgent: a transpile or load failure keeps the last good render, but a throw during render blanks the page. Your own file edits log `update`, not `mutate`, so they never echo back as false events.
 
 The watch lives only as long as this session. Tell the reader that, and stop it when they are done.
 
 Keep one server for the whole session. Every save hot-reloads with Fast Refresh and the reader's state survives: `useState` is preserved, `useMorph` values live in the file. Editing a `useState` initializer remounts that component and resets its hooks; editing a `useMorph` initializer is how you push a new value to the reader.
 
-**Do not poll to confirm your own edit rendered. Make the edit and move on.** This is the biggest time-sink to avoid. Do not run esbuild, tsc, or Prettier (morph reformats the file itself), do not open a browser or screenshot the page, and do not re-read the output hunting for a clean render. This is not in tension with the standing watch: that watch is passive and already tells you about failures, so an `error` reaches you either way. Never wait to confirm an error's absence.
+**Do not poll to confirm your own edit rendered. Make the edit and move on.** This is the biggest time-sink to avoid. Do not run esbuild, tsc, or Prettier (morph reformats the file itself), do not open a browser or screenshot the page, and do not re-read the output hunting for a clean render. Never wait to confirm an error's absence.
+
+That is about your own output, and it does not license skipping the reader's. Reading the watch log at the three moments above is the opposite habit and it is required: you are checking for something that has already happened, not waiting for something that might.
 
 ## State channel: useMorph
 

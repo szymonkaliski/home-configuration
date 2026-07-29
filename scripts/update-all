@@ -90,6 +90,25 @@ elif [[ $HOSTNAME == "minix" ]]; then
   echo
 
   popd > /dev/null || exit 1
+elif [[ $HOSTNAME == "berry" ]]; then
+  echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"
+
+  pushd ~/.config/home-manager > /dev/null || exit 1
+
+  SYSTEM_BEFORE=$(readlink -f /run/current-system 2>/dev/null)
+  HM_BEFORE=$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null)
+
+  nix flake update
+  sudo nixos-rebuild switch --flake .#berry
+  home-manager switch --flake .#szymon@berry
+
+  SYSTEM_AFTER=$(readlink -f /nix/var/nix/profiles/system 2>/dev/null)
+  HM_AFTER=$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null)
+  nvd_diff "system" "$SYSTEM_BEFORE" "$SYSTEM_AFTER"
+  nvd_diff "home-manager" "$HM_BEFORE" "$HM_AFTER"
+  echo
+
+  popd > /dev/null || exit 1
 fi
 
 if [ -d ~/.zsh/plugins ]; then

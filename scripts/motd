@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 dim=$(tput setaf 8)
+green=$(tput setaf 2)
 yellow=$(tput setaf 3)
 blue=$(tput setaf 4)
 red=$(tput setaf 1)
@@ -12,6 +13,8 @@ os=$(uname)
 case $hostname in
   minix)  host_color=$yellow ;;
   orchid) host_color=$blue ;;
+  berry)  host_color=$green ;;
+  *)      host_color=$reset ;;
 esac
 
 if [[ $os == "Linux" ]]; then
@@ -27,7 +30,7 @@ if [[ $os == "Linux" ]]; then
   for hwmon in /sys/class/hwmon/hwmon*/; do
     read -r name < "${hwmon}name"
     case $name in
-      coretemp)
+      coretemp | cpu_thermal)
         read -r raw < "${hwmon}temp1_input"
         cpu_temp=$((raw / 1000))
         ;;

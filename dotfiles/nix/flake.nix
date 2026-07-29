@@ -24,16 +24,22 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nixos-hardware = {
+      url = "github:NixOS/nixos-hardware";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
     {
+      self,
       nixpkgs,
       nixpkgs-unstable,
       home-manager,
       nix-index-database,
       microvm,
       sops-nix,
+      nixos-hardware,
       ...
     }:
     let
@@ -50,6 +56,10 @@
     {
       formatter.aarch64-darwin = nixpkgs.legacyPackages.aarch64-darwin.nixfmt;
       formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt;
+      formatter.aarch64-linux = nixpkgs.legacyPackages.aarch64-linux.nixfmt;
+
+      # written to an sd card for Raspberry Pi
+      packages.aarch64-linux.berry-sd-image = self.nixosConfigurations.berry.config.system.build.sdImage;
 
       homeConfigurations = {
         "szymon@orchid" = home-manager.lib.homeManagerConfiguration {
@@ -92,6 +102,30 @@
             { nixpkgs.config.allowUnfree = true; }
           ];
         };
+
+        "szymon@berry" = home-manager.lib.homeManagerConfiguration {
+          pkgs = import nixpkgs {
+            system = "aarch64-linux";
+            overlays = [ antigravityOverlay ];
+          };
+          extraSpecialArgs = {
+            repoRoot = "/home/szymon/Projects/home-configuration";
+          };
+
+          modules = [
+            ./hosts/berry/home.nix
+            nix-index-database.homeModules.nix-index
+            sops-nix.homeManagerModules.sops
+            { nixpkgs.config.allowUnfree = true; }
+          ];
+        };
+      };
+
+      nixosConfigurations.berry = nixpkgs.lib.nixosSystem {
+        modules = [
+          ./hosts/berry/system.nix
+          nixos-hardware.nixosModules.raspberry-pi-5
+        ];
       };
 
       nixosConfigurations.minix = nixpkgs.lib.nixosSystem {

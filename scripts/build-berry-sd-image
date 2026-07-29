@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# aarch64 images are assembled by running aarch64 binaries, which needs the
+# qemu binfmt emulation that only minix carries
+if [ "$(hostname -s)" != "minix" ]; then
+  echo "SD images are built on minix, which has aarch64 emulation registered."
+  exit 1
+fi
+
+if [ ! -e /run/binfmt/aarch64-linux ]; then
+  echo "aarch64 binfmt is not registered; switch minix first."
+  exit 1
+fi
+
+cd ~/.config/home-manager
+
+# --no-link so no result symlink is left behind in the repo
+outpath=$(nix build .#packages.aarch64-linux.berry-sd-image --no-link --print-out-paths --print-build-logs)
+
+img=$(echo "$outpath"/sd-image/*.img)
+if [ ! -f "$img" ]; then
+  echo "no .img under $outpath/sd-image"
+  exit 1
+fi
+
+# the store hash pins the exact config this image came from
+out="$HOME/Downloads/berry-$(date +%Y%m%d)-$(basename "$outpath" | cut -c1-7).img"
+
+mkdir -p "$(dirname "$out")"
+cp "$img" "$out"
+chmod u+w "$out"
+
+echo
+echo "$(tput setaf 2)Wrote$(tput sgr0) $out ($(du -h "$out" | cut -f1))"

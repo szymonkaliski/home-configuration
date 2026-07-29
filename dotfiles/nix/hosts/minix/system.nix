@@ -256,6 +256,9 @@ in
     freeSwapThreshold = 5;
   };
 
+  # qemu user for aarch64 emulation, for Raspberry Pi builds
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+
   nix.settings.download-buffer-size = 512 * 1024 * 1024; # 512 MiB
   nix.settings.experimental-features = [
     "nix-command"

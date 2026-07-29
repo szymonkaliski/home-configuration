@@ -5,7 +5,7 @@ Run `hostname -s` to detect which one you're on.
 
 ## Key paths
 
-- `setup.sh` - bootstrap setup for Nix, home-manager, etc.
+- `setup.sh <orchid|minix|berry>` - bootstrap setup for Nix, home-manager, etc.
 - `dotfiles/` - dotfiles used on various machines
 - `scripts/` - shell scripts symlinked to `~/.bin`
 
@@ -27,5 +27,20 @@ macOS - home-manager:
 
 ```sh
 home-manager switch --flake ~/.config/home-manager#szymon@orchid
+```
+
+Raspberry Pi - system and home-manager:
+
+```sh
+sudo nixos-rebuild switch --flake ~/.config/home-manager#berry
+home-manager switch --flake ~/.config/home-manager#szymon@berry
+```
+
+## Building berry's SD card
+
+berry's SD card image can be generated on minix:
+
+```sh
+ssh minix '~/.bin/build-berry-sd-image'
 ```
 

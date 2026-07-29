@@ -22,7 +22,7 @@ if [ "$(whoami)" = "root" ]; then
   promptcolor="31"
 fi
 
-cwd_with_tilde=$(echo "$cwd" | sed "s|^$HOME|~|")
+cwd_with_tilde=${cwd/#$HOME/\~}
 pwd_display=$(echo "$cwd_with_tilde" | awk -F'/' '{
   n = NF
   if (n <= 3) {

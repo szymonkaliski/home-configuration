@@ -4,6 +4,7 @@
 
 # z's data lives in the shell function _z, so source the plugin
 if [ -f "$HOME/.zsh/plugins/z/z.sh" ]; then
+  # shellcheck disable=SC1091
   . "$HOME/.zsh/plugins/z/z.sh"
 else
   echo "z is missing (~/.zsh/plugins/z/z.sh); run setup.sh" >&2

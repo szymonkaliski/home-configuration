@@ -20,7 +20,7 @@ if [ "$1" = "handler" ]; then
         echo $! > "$OLLAMA_PID_FILE"
         
         # wait for it to be ready
-        for i in {1..50}; do
+        for _ in {1..50}; do
             if nc -z 127.0.0.1 11435 2>/dev/null; then break; fi
             sleep 0.1
         done

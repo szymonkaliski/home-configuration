@@ -11,4 +11,4 @@ fi
 NODE=/Users/szymon/.nix-profile/bin/node
 APP=/Users/szymon/.npm/bin/timav
 
-DEBUG=* $NODE $APP cache
+DEBUG="*" $NODE $APP cache

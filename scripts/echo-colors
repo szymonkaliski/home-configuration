@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
+# single-quoted lines below print tput syntax literally, not executed
 
 echo
 echo -e "$(tput bold) reg  bld  und   tput-command-colors$(tput sgr0)"
 
 for i in $(seq 1 7); do
-  echo " $(tput setaf $i)Text$(tput sgr0) $(tput bold)$(tput setaf $i)Text$(tput sgr0) $(tput sgr 0 1)$(tput setaf $i)Text$(tput sgr0)  \$(tput setaf $i)"
+  echo " $(tput setaf "$i")Text$(tput sgr0) $(tput bold)$(tput setaf "$i")Text$(tput sgr0) $(tput sgr 0 1)$(tput setaf "$i")Text$(tput sgr0)  \$(tput setaf $i)"
 done
 
 echo ' Bold            $(tput bold)'

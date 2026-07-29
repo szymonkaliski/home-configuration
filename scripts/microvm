@@ -85,7 +85,7 @@ cmd_start() {
   ln -s "$PROJECT" "$VM_BASE/vm-${VM}/workspace"
   sync_host_config
   t0=$SECONDS
-  printf "vm-${VM} (10.100.0.${VM}) ${PROJECT}\n"
+  printf "vm-%s (10.100.0.%s) %s\n" "$VM" "$VM" "$PROJECT"
   printf "starting..."
   systemctl reset-failed "microvm@vm-${VM}" 2>/dev/null || true
   systemctl start --no-block "microvm@vm-${VM}"

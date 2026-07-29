@@ -166,6 +166,6 @@ if (( ${#failed[@]} > 0 )); then
   done
 fi
 if [[ -n $current && -n $latest && $current != "$latest" ]]; then
-  printf " ${red}nixos${reset} reboot needed (new generation pending)\n"
+  printf " %snixos%s reboot needed (new generation pending)\n" "$red" "$reset"
 fi
 echo

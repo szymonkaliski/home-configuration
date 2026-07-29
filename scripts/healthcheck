@@ -4,6 +4,9 @@
 # systemd OnFailure=notify-failure@%N.service - this script only verifies
 # that things are *actually doing their job*.
 
+# every $ below belongs to a nested `bash -c '...'` body, not to this shell
+# shellcheck disable=SC2016
+
 [[ $(hostname -s) != "minix" ]] && exit 0
 
 if [[ -t 1 ]]; then
@@ -12,7 +15,7 @@ if [[ -t 1 ]]; then
   dim=$'\033[2m'
   reset=$'\033[0m'
 else
-  green= red= dim= reset=
+  green='' red='' dim='' reset=''
 fi
 
 tmpdir=$(mktemp -d)

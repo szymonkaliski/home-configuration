@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cd "$(dirname "${BASH_SOURCE[0]}")"
+cd "$(dirname "${BASH_SOURCE[0]}")" || exit
 
 DOTFILE_DIR="$(pwd)/dotfiles"
 HOSTNAME="$(hostname -s)"
@@ -19,14 +19,14 @@ function gitWrapped() {
 function askBeforeRunning() {
   SCRIPT=$1
 
-  read -p "$(tput setaf 3)Do you want to execute $SCRIPT?$(tput sgr0) (y/n) " RESP
+  read -r -p "$(tput setaf 3)Do you want to execute $SCRIPT?$(tput sgr0) (y/n) " RESP
   if [ "$RESP" == "y" ]; then
-    ./$SCRIPT
+    "./$SCRIPT"
   fi
 }
 
 if [[ $HOSTNAME == "nixos" ]]; then
-  read -p "$(tput setaf 3)Hostname is 'nixos' (fresh install?). Set up as minix?$(tput sgr0) (y/n) " RESP
+  read -r -p "$(tput setaf 3)Hostname is 'nixos' (fresh install?). Set up as minix?$(tput sgr0) (y/n) " RESP
   if [ "$RESP" != "y" ]; then
     echo "Aborting."
     exit 0
@@ -34,11 +34,11 @@ if [[ $HOSTNAME == "nixos" ]]; then
 fi
 
 if command -v nix &> /dev/null; then
-  read -p "$(tput setaf 3)Do you want to set up home-manager?$(tput sgr0) (y/n) " RESP
+  read -r -p "$(tput setaf 3)Do you want to set up home-manager?$(tput sgr0) (y/n) " RESP
 
   if [ "$RESP" == "y" ]; then
     ln -sni "$DOTFILE_DIR/nix" ~/.config/home-manager
-    pushd ~/.config/home-manager
+    pushd ~/.config/home-manager || exit
 
     if [[ $HOSTNAME == "orchid" ]]; then
       nix run home-manager -- switch --flake .#szymon@orchid
@@ -55,7 +55,7 @@ if command -v nix &> /dev/null; then
       echo "No home-manager configuration found for this machine!"
     fi
 
-    popd
+    popd || exit
   fi
 fi
 
@@ -67,7 +67,7 @@ fi
 
 if [ -d ~/.zsh/ ]; then
   mkdir -p ~/.zsh/plugins/
-  pushd ~/.zsh/plugins/ > /dev/null
+  pushd ~/.zsh/plugins/ > /dev/null || exit
 
   gitWrapped clone https://github.com/mafredri/z -b zsh-flock
   gitWrapped clone https://github.com/chriskempson/base16-shell
@@ -76,15 +76,15 @@ if [ -d ~/.zsh/ ]; then
   gitWrapped clone https://github.com/zdharma-continuum/fast-syntax-highlighting
   gitWrapped clone https://github.com/romkatv/zsh-defer
 
-  popd > /dev/null
+  popd > /dev/null || exit
 fi
 
 mkdir -p "$DOTFILE_DIR/agents/skills-vendor"
-pushd "$DOTFILE_DIR/agents/skills-vendor" > /dev/null
+pushd "$DOTFILE_DIR/agents/skills-vendor" > /dev/null || exit
 
 gitWrapped clone https://github.com/mattpocock/skills mattpocock-skills
 
-popd > /dev/null
+popd > /dev/null || exit
 
 if command -v npm &> /dev/null; then
   askBeforeRunning ./scripts/npm-sync
@@ -99,7 +99,7 @@ if [[ $HOSTNAME == "orchid" ]]; then
   # which causes a password prompt at every boot, /nix store is public anyway
   # so we can decrypt it
   if [[ "$(diskutil info 'Nix Store' 2>/dev/null | awk -F': +' '/FileVault:/{print $2}')" == "Yes" ]]; then
-    read -p "$(tput setaf 3)Decrypt the Nix Store volume?$(tput sgr0) (y/n) " RESP
+    read -r -p "$(tput setaf 3)Decrypt the Nix Store volume?$(tput sgr0) (y/n) " RESP
     if [ "$RESP" == "y" ]; then
       security find-generic-password -s "Nix Store" -w /Library/Keychains/System.keychain | sudo diskutil apfs decryptVolume "Nix Store" -stdinpassphrase
     fi

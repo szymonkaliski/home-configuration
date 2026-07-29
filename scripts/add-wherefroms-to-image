@@ -16,7 +16,7 @@ XML="$HOME/.nix-profile/bin/xml"
 
 ESCAPED_URL=$(echo "$URL" | $XML esc)
 
-HEX=$((cat << EOF
+HEX=$( (cat << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">

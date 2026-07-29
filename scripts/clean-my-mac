@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # simple interactive mac cleanup script
 
-read -p "$(tput setaf 3)Clean packager caches?$(tput sgr0) (y/n) " RESP
+read -rp "$(tput setaf 3)Clean packager caches?$(tput sgr0) (y/n) " RESP
 if [ "$RESP" == "y" ]; then
   if hash yarn > /dev/null; then
     yarn cache clean
@@ -20,27 +20,27 @@ if [ "$RESP" == "y" ]; then
   fi
 fi
 
-read -p "$(tput setaf 3)Clean docker caches?$(tput sgr0) (y/n) " RESP
+read -rp "$(tput setaf 3)Clean docker caches?$(tput sgr0) (y/n) " RESP
 if [ "$RESP" == "y" ]; then
   docker system prune
 fi
 
-read -p "$(tput setaf 3)Clean nix garbage?$(tput sgr0) (y/n) " RESP
+read -rp "$(tput setaf 3)Clean nix garbage?$(tput sgr0) (y/n) " RESP
 if [ "$RESP" == "y" ]; then
   nix-collect-garbage
 fi
 
-read -p "$(tput setaf 3)Clean xcode caches?$(tput sgr0) (y/n) " RESP
+read -rp "$(tput setaf 3)Clean xcode caches?$(tput sgr0) (y/n) " RESP
 if [ "$RESP" == "y" ]; then
   xcrun simctl delete unavailable
 fi
 
-read -p "$(tput setaf 3)Run periodic scripts?$(tput sgr0) (y/n) " RESP
+read -rp "$(tput setaf 3)Run periodic scripts?$(tput sgr0) (y/n) " RESP
 if [ "$RESP" == "y" ]; then
   sudo periodic daily weekly monthly
 fi
 
-read -p "$(tput setaf 3)Rebuild Spotlight?$(tput sgr0) (y/n) " RESP
+read -rp "$(tput setaf 3)Rebuild Spotlight?$(tput sgr0) (y/n) " RESP
 if [ "$RESP" == "y" ]; then
   sudo mdutil -E /
 fi

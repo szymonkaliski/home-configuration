@@ -79,6 +79,13 @@ if [ -d ~/.zsh/ ]; then
   popd > /dev/null
 fi
 
+mkdir -p "$DOTFILE_DIR/agents/skills-vendor"
+pushd "$DOTFILE_DIR/agents/skills-vendor" > /dev/null
+
+gitWrapped clone https://github.com/mattpocock/skills mattpocock-skills
+
+popd > /dev/null
+
 if command -v npm &> /dev/null; then
   askBeforeRunning ./scripts/npm-sync
 fi

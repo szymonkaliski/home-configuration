@@ -44,7 +44,16 @@ nvd_diff() {
 
 # pull the home-configuration repo first (resolve symlink to find repo root)
 REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
-gitUpdate "$(dirname "$(dirname "$REAL_SCRIPT")")"
+REPO_DIR="$(dirname "$(dirname "$REAL_SCRIPT")")"
+gitUpdate "$REPO_DIR"
+
+# skill dirs under agents/skills are symlinks into these clones, so a missing
+# clone is a missing skill - setup.sh does the cloning
+if [ -d "$REPO_DIR/dotfiles/agents/skills-vendor" ]; then
+  for i in "$REPO_DIR"/dotfiles/agents/skills-vendor/*; do
+    gitUpdate "$i"
+  done
+fi
 
 if [[ $HOSTNAME == "orchid" ]]; then
   echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"

@@ -7,6 +7,9 @@
 # zsh plugins
 **/zsh/plugins/
 
+# upstream agent skills, cloned by setup.sh and pulled by update-all
+**/agents/skills-vendor/
+
 # vim
 **/vim/autoload/plug.vim*
 **/vim/backup/

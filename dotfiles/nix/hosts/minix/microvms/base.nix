@@ -14,6 +14,7 @@
 
 let
   net = import ../net.nix;
+  keys = import ../../../keys.nix;
   tailscaleAutoServe = pkgs.writeShellApplication {
     name = "tailscale-auto-serve";
     runtimeInputs = with pkgs; [
@@ -71,9 +72,7 @@ in
     uid = 1000;
     shell = pkgs.bash;
     extraGroups = [ "wheel" ];
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJUJt+pQbfy7QwY8EieP5EmX1suXdt9bDECsokG6x/3L szymon@minix"
-    ];
+    openssh.authorizedKeys.keys = [ keys.minix ];
   };
   security.sudo.wheelNeedsPassword = false;
 

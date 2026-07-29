@@ -97,22 +97,18 @@ Ephemeral NixOS VMs (pool of 4) for running coding agents and other potentially 
 
 ### First-time setup
 
-1. Generate an SSH keypair:
-   ```bash
-   ssh-keygen -t ed25519
-   ```
-   Then replace the public key in `microvms/base.nix` under `users.users.szymon.openssh.authorizedKeys.keys` with the contents of `~/.ssh/id_ed25519.pub`, and rebuild:
-   ```bash
-   sudo nixos-rebuild switch --flake .#minix
-   ```
-2. Add to `~/.ssh/config`:
-   ```
-   Host vm-?
-     User szymon
-     StrictHostKeyChecking no
-     UserKnownHostsFile /dev/null
-     LogLevel ERROR
-   ```
+`keys.minix` in `keys.nix` is the key that opens the VMs, and the `Host vm-?` block lives in `secrets/ssh-config`.
+A fresh minix needs its keypair regenerated:
+
+```bash
+ssh-keygen -t ed25519
+```
+
+Set `keys.minix` to the contents of `~/.ssh/id_ed25519.pub`, then:
+
+```bash
+sudo nixos-rebuild switch --flake .#minix
+```
 
 ### Usage
 

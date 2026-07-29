@@ -8,6 +8,7 @@ let
   mqtt = import ../../mqtt.nix;
   ports = import ./ports.nix;
   net = import ./net.nix;
+  keys = import ../../keys.nix;
   homepageRoot = import ./homepage {
     inherit pkgs lib;
     title = "minix";
@@ -225,6 +226,7 @@ in
     ];
     shell = pkgs.zsh;
     linger = true;
+    openssh.authorizedKeys.keys = [ keys.orchid ];
   };
 
   programs.zsh.enable = true;

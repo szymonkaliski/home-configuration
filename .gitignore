@@ -22,3 +22,10 @@
 # auto-generated plist files
 launchctls/*.plist
 
+# temp files
+tmp/
+
+# nix build output symlinks
+result
+result-*
+

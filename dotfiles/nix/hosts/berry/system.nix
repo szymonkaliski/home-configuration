@@ -1,91 +1,17 @@
 {
   config,
-  lib,
   pkgs,
-  modulesPath,
   ...
 }:
 let
   keys = import ../../keys.nix;
 in
 {
-  imports = [
-    "${modulesPath}/installer/sd-card/sd-image-aarch64.nix"
-  ];
-
-  hardware.raspberry-pi.firmware.uboot.enable = true;
-
-  # rp1_pci needs mainline's dtb, not the firmware's vendor one, or it probes
-  # -EINVAL and there is no ethernet, USB or GPIO
-  # config.txt dtoverlay/dtparam lines stop applying
-  boot.loader.generic-extlinux-compatible.useGenerationDeviceTree = true;
-
-  # mainline's dtb has no thermal sensor, and GET_THROTTLED fails on a Pi 5 so
-  # raspberrypi-hwmon never registers; describing the AVS block is enough
-  # no trip points: calibration is unverified and a critical one would power the
-  # board off on a bogus reading
-  hardware.deviceTree.overlays = [
-    {
-      name = "bcm2712-avs-thermal";
-      dtsText = ''
-        /dts-v1/;
-        /plugin/;
-
-        / {
-          compatible = "raspberrypi,5-model-b", "brcm,bcm2712";
-
-          fragment@0 {
-            target-path = "/soc@107c000000";
-            __overlay__ {
-              avs-monitor@7d542000 {
-                compatible = "brcm,bcm2711-avs-monitor", "syscon", "simple-mfd";
-                reg = <0x7d542000 0xf00>;
-                status = "okay";
-
-                avs_thermal: thermal {
-                  compatible = "brcm,bcm2711-thermal";
-                  #thermal-sensor-cells = <0>;
-                };
-              };
-            };
-          };
-
-          fragment@1 {
-            target-path = "/";
-            __overlay__ {
-              thermal-zones {
-                cpu-thermal {
-                  polling-delay-passive = <1000>;
-                  polling-delay = <1000>;
-                  coefficients = <(-550) 450000>;
-                  thermal-sensors = <&avs_thermal>;
-                };
-              };
-            };
-          };
-        };
-      '';
-    }
-  ];
-
-  # repopulate the firmware partition on every switch, so u-boot and the GPU
-  # blobs track the flake instead of staying frozen at whatever was flashed
-  hardware.raspberry-pi.firmware.enable = true;
-  fileSystems."/boot/firmware".options = lib.mkForce [ "nofail" ];
-
-  # sd-image.nix sets hardware.enableAllHardware, which drags in ZFS, which we
-  # do not use
-  boot.supportedFilesystems.zfs = lib.mkForce false;
-
-  # nixos-hardware's rpi-5 profile defaults to the vendor tree at 6.18.34, which
-  # nothing built against 26.05, so it would compile a kernel on the Pi; mainline
-  # 6.18.40 carries RP1 support and comes prebuilt from the cache
-  boot.kernelPackages = pkgs.linuxPackages;
+  # kernel, firmware, device trees and bootloader all come from
+  # nixos-raspberrypi's vendor stack, wired up in flake.nix
 
   # create plain .img for flashing
   sdImage.compressImage = false;
-
-  nixpkgs.hostPlatform = "aarch64-linux";
 
   networking.hostName = "berry";
   networking.useDHCP = false;

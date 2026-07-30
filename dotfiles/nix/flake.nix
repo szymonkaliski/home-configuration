@@ -28,6 +28,18 @@
       url = "github:NixOS/nixos-hardware";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # develop, not main: main pins nixos-25.11 while develop tracks 26.05 like
+    # the rest of the hosts. deliberately not following our nixpkgs, the prebuilt
+    # vendor kernel in their cachix only exists for the nixpkgs they pin
+    nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/develop";
+  };
+
+  nixConfig = {
+    extra-substituters = [ "https://nixos-raspberrypi.cachix.org" ];
+    extra-trusted-public-keys = [
+      "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
+    ];
   };
 
   outputs =
@@ -40,6 +52,7 @@
       microvm,
       sops-nix,
       nixos-hardware,
+      nixos-raspberrypi,
       ...
     }:
     let
@@ -121,10 +134,17 @@
         };
       };
 
-      nixosConfigurations.berry = nixpkgs.lib.nixosSystem {
+      # nixos-raspberrypi's own nixosSystem, so the vendor kernel and firmware
+      # resolve against the nixpkgs their cachix was built with
+      nixosConfigurations.berry = nixos-raspberrypi.lib.nixosSystem {
         modules = [
+          {
+            imports = with nixos-raspberrypi.nixosModules; [
+              raspberry-pi-5.base
+              sd-image
+            ];
+          }
           ./hosts/berry/system.nix
-          nixos-hardware.nixosModules.raspberry-pi-5
           sops-nix.nixosModules.sops
         ];
       };

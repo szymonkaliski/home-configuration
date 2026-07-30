@@ -260,6 +260,13 @@ in
   boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
   nix.settings.download-buffer-size = 512 * 1024 * 1024; # 512 MiB
+
+  # berry's sd image is built here, and its vendor kernel only exists prebuilt
+  # in this cache; without it the kernel would compile under qemu emulation
+  nix.settings.substituters = [ "https://nixos-raspberrypi.cachix.org" ];
+  nix.settings.trusted-public-keys = [
+    "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
+  ];
   nix.settings.experimental-features = [
     "nix-command"
     "flakes"

@@ -17,7 +17,7 @@ fi
 cd ~/.config/home-manager
 
 # --no-link so no result symlink is left behind in the repo
-outpath=$(nix build .#packages.aarch64-linux.berry-sd-image --no-link --print-out-paths --print-build-logs)
+outpath=$(nix build .#packages.aarch64-linux.berry-sd-image --no-link --print-out-paths --print-build-logs --accept-flake-config)
 
 img=$(echo "$outpath"/sd-image/*.img)
 if [ ! -f "$img" ]; then

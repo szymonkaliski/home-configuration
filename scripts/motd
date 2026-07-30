@@ -28,6 +28,7 @@ if [[ $os == "Linux" ]]; then
 
   # temps
   for hwmon in /sys/class/hwmon/hwmon*/; do
+    [ -e "${hwmon}name" ] || continue
     read -r name < "${hwmon}name"
     case $name in
       coretemp | cpu_thermal)

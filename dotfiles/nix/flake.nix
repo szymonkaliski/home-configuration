@@ -125,6 +125,7 @@
         modules = [
           ./hosts/berry/system.nix
           nixos-hardware.nixosModules.raspberry-pi-5
+          sops-nix.nixosModules.sops
         ];
       };
 

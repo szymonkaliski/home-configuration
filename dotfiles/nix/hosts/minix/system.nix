@@ -351,7 +351,10 @@ in
   sops.defaultSopsFile = ../../secrets/minix.yaml;
   sops.age.keyFile = "${config.users.users.szymon.home}/.config/sops/age/keys.txt";
 
-  sops.secrets.tailscale_authkey = { };
+  # berry consumes the same key
+  sops.secrets.tailscale_authkey = {
+    sopsFile = ../../secrets/shared.yaml;
+  };
   sops.secrets.pushover_token_vm = { };
   sops.secrets.pushover_token_user = { };
   sops.secrets.searx_secret_key = { };

@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   pkgs,
   modulesPath,
@@ -14,14 +15,58 @@ in
 
   hardware.raspberry-pi.firmware.uboot.enable = true;
 
-  # mainline's rp1_pci applies bcm2712-rpi-5-b-ovl-rp1.dtb at runtime and
-  # resolves it against the clk_rp1_xosc label, which only mainline's own device
-  # tree carries; the vendor dtb describes RP1 under a different topology
-  # entirely. nixos-hardware defaults this to false so the firmware's vendor dtb
-  # reaches the kernel with config.txt dtoverlays merged in, which makes RP1 fail
-  # to probe (-EINVAL) and leaves the board with no ethernet, USB or GPIO.
-  # Cost of true: config.txt dtoverlay/dtparam lines no longer apply.
+  # rp1_pci needs mainline's dtb, not the firmware's vendor one, or it probes
+  # -EINVAL and there is no ethernet, USB or GPIO
+  # config.txt dtoverlay/dtparam lines stop applying
   boot.loader.generic-extlinux-compatible.useGenerationDeviceTree = true;
+
+  # mainline's dtb has no thermal sensor, and GET_THROTTLED fails on a Pi 5 so
+  # raspberrypi-hwmon never registers; describing the AVS block is enough
+  # no trip points: calibration is unverified and a critical one would power the
+  # board off on a bogus reading
+  hardware.deviceTree.overlays = [
+    {
+      name = "bcm2712-avs-thermal";
+      dtsText = ''
+        /dts-v1/;
+        /plugin/;
+
+        / {
+          compatible = "raspberrypi,5-model-b", "brcm,bcm2712";
+
+          fragment@0 {
+            target-path = "/soc@107c000000";
+            __overlay__ {
+              avs-monitor@7d542000 {
+                compatible = "brcm,bcm2711-avs-monitor", "syscon", "simple-mfd";
+                reg = <0x7d542000 0xf00>;
+                status = "okay";
+
+                avs_thermal: thermal {
+                  compatible = "brcm,bcm2711-thermal";
+                  #thermal-sensor-cells = <0>;
+                };
+              };
+            };
+          };
+
+          fragment@1 {
+            target-path = "/";
+            __overlay__ {
+              thermal-zones {
+                cpu-thermal {
+                  polling-delay-passive = <1000>;
+                  polling-delay = <1000>;
+                  coefficients = <(-550) 450000>;
+                  thermal-sensors = <&avs_thermal>;
+                };
+              };
+            };
+          };
+        };
+      '';
+    }
+  ];
 
   # repopulate the firmware partition on every switch, so u-boot and the GPU
   # blobs track the flake instead of staying frozen at whatever was flashed
@@ -61,7 +106,13 @@ in
     publish.addresses = true;
   };
 
+  sops.defaultSopsFile = ../../secrets/shared.yaml;
+  sops.age.keyFile = "${config.users.users.szymon.home}/.config/sops/age/keys.txt";
+  sops.secrets.tailscale_authkey = { };
+
+  # the key must be reusable, minix consumes it too
   services.tailscale.enable = true;
+  services.tailscale.authKeyFile = config.sops.secrets.tailscale_authkey.path;
 
   services.openssh.enable = true;
   services.openssh.settings.PasswordAuthentication = false;

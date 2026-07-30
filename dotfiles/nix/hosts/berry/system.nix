@@ -14,6 +14,15 @@ in
 
   hardware.raspberry-pi.firmware.uboot.enable = true;
 
+  # mainline's rp1_pci applies bcm2712-rpi-5-b-ovl-rp1.dtb at runtime and
+  # resolves it against the clk_rp1_xosc label, which only mainline's own device
+  # tree carries; the vendor dtb describes RP1 under a different topology
+  # entirely. nixos-hardware defaults this to false so the firmware's vendor dtb
+  # reaches the kernel with config.txt dtoverlays merged in, which makes RP1 fail
+  # to probe (-EINVAL) and leaves the board with no ethernet, USB or GPIO.
+  # Cost of true: config.txt dtoverlay/dtparam lines no longer apply.
+  boot.loader.generic-extlinux-compatible.useGenerationDeviceTree = true;
+
   # repopulate the firmware partition on every switch, so u-boot and the GPU
   # blobs track the flake instead of staying frozen at whatever was flashed
   hardware.raspberry-pi.firmware.enable = true;

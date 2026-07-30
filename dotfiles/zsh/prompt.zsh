@@ -1,7 +1,10 @@
+# keep in sync with scripts/motd
 if [ "${HOST%%.*}" = "orchid" ]; then
   PROMPTCOLOR=blue
 elif [ "${HOST%%.*}" = "minix" ]; then
   PROMPTCOLOR=yellow
+elif [ "${HOST%%.*}" = "berry" ]; then
+  PROMPTCOLOR=green
 else
   PROMPTCOLOR=magenta
 fi

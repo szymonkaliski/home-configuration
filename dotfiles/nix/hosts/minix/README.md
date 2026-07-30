@@ -9,9 +9,10 @@
    mkdir -p ~/Projects
    nix --extra-experimental-features "nix-command flakes" run nixpkgs#git -- clone https://github.com/szymonkaliski/home-configuration.git ~/Projects/home-configuration
    ```
-4. Run `./setup.sh` - it copies `hardware-configuration.nix` from `/etc/nixos/`, git-tracks it, and runs `nixos-rebuild switch`. The first rebuild will fail until secrets are in place (next step).
+4. Run `./bootstrap.sh minix` - it copies `hardware-configuration.nix` from `/etc/nixos/`, git-tracks it, and runs `nixos-rebuild switch`. The first rebuild will fail until secrets are in place (next step).
 5. Set up SOPS secrets (see [Secrets](#secrets) below)
 6. Re-run the rebuild: `sudo nixos-rebuild switch --flake .#minix`
+7. Start a new shell (so the linked zsh environment is loaded), then run `./setup.sh minix` for the zsh/vim plugins, vendored skills and npm globals
 
 ## Updating
 

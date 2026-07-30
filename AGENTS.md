@@ -5,7 +5,8 @@ Run `hostname -s` to detect which one you're on.
 
 ## Key paths
 
-- `setup.sh <orchid|minix|berry>` - bootstrap setup for Nix, home-manager, etc.
+- `bootstrap.sh <orchid|minix|berry>` - bare machine bootstrap: age key, home-manager symlink, system/home-manager switches
+- `setup.sh <orchid|minix|berry>` - run from a new shell after bootstrap: vim/zsh plugins, vendored skills, npm, macOS extras
 - `dotfiles/` - dotfiles used on various machines
 - `scripts/` - shell scripts symlinked to `~/.bin`
 

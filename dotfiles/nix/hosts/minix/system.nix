@@ -129,6 +129,7 @@ in
     networkConfig = {
       DHCP = "ipv4";
       IPv6AcceptRA = false;
+      LinkLocalAddressing = "no";
     };
     dhcpV4Config = {
       UseRoutes = false;
@@ -186,6 +187,9 @@ in
   # avahi already provides mDNS; disable resolved's so they don't both respond
   services.resolved.settings.Resolve.MulticastDNS = "no";
 
+  # llmnr answers single-label names with link-local addresses, racing magicdns
+  services.resolved.settings.Resolve.LLMNR = "no";
+
   # microvm lifecycle is granted via polkit below; the cleanup rm's need root
   security.sudo.extraRules = [
     {
@@ -226,6 +230,15 @@ in
     shell = pkgs.zsh;
     linger = true;
     openssh.authorizedKeys.keys = [ keys.orchid ];
+  };
+
+  # berry offloads its builds here; the module confines the nix-ssh user to
+  # `nix-daemon --stdio` via sshd, and trusted lets berry push unsigned paths
+  nix.sshServe = {
+    enable = true;
+    protocol = "ssh-ng";
+    trusted = true;
+    keys = [ keys.berryBuilder ];
   };
 
   programs.zsh.enable = true;

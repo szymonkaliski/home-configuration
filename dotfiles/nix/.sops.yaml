@@ -23,6 +23,24 @@ creation_rules:
           - *orchid
           - *recovery
   # whole-file secret rather than a key inside shared.yaml,
+  # so `sops` opens it as a plain wpa_supplicant network block
+  - path_regex: secrets/wireless-conf$
+    key_groups:
+      - age:
+          - *berry
+          - *minix
+          - *orchid
+          - *recovery
+  # whole-file secret rather than a key inside shared.yaml,
+  # so `sops` opens it as a plain openssh private key
+  - path_regex: secrets/nix-builder-key$
+    key_groups:
+      - age:
+          - *berry
+          - *minix
+          - *orchid
+          - *recovery
+  # whole-file secret rather than a key inside shared.yaml,
   # so `sops` opens it as a plain ssh config
   - path_regex: secrets/ssh-config$
     key_groups:

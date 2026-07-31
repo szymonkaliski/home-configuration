@@ -24,11 +24,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nixos-hardware = {
-      url = "github:NixOS/nixos-hardware";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # develop, not main: main pins nixos-25.11 while develop tracks 26.05 like
     # the rest of the hosts. deliberately not following our nixpkgs, the prebuilt
     # vendor kernel in their cachix only exists for the nixpkgs they pin
@@ -51,7 +46,6 @@
       nix-index-database,
       microvm,
       sops-nix,
-      nixos-hardware,
       nixos-raspberrypi,
       ...
     }:

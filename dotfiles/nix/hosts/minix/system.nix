@@ -357,8 +357,7 @@ in
   sops.defaultSopsFile = ../../secrets/minix.yaml;
   sops.age.keyFile = "${config.users.users.szymon.home}/.config/sops/age/keys.txt";
 
-  # ephemeral, for the microvm pool
-  sops.secrets.tailscale_authkey = { };
+  sops.secrets.tailscale_authkey_vm_ephemeral = { };
   sops.secrets.pushover_token_vm = { };
   sops.secrets.pushover_token_user = { };
   sops.secrets.searx_secret_key = { };
@@ -374,7 +373,7 @@ in
     dir=${config.users.users.szymon.home}/MicroVMs/host
     mkdir -p "$dir"
 
-    cp ${config.sops.secrets.tailscale_authkey.path} "$dir/ts-authkey"
+    cp ${config.sops.secrets.tailscale_authkey_vm_ephemeral.path} "$dir/ts-authkey"
 
     printf 'PUSHOVER_TOKEN=%s\nPUSHOVER_USER=%s\n' \
       "$(cat ${config.sops.secrets.pushover_token_vm.path})" \

@@ -6,8 +6,7 @@ let
   keys = import ../../keys.nix;
 in
 {
-  # kernel, firmware, device trees and bootloader all come from
-  # nixos-raspberrypi's vendor stack, wired up in flake.nix
+  # kernel, firmware, device trees and bootloader come from nixos-raspberrypi
 
   # create plain .img for flashing
   sdImage.compressImage = false;
@@ -31,8 +30,6 @@ in
     publish.addresses = true;
   };
 
-  # authenticated by hand with `tailscale up`; the only auth key we have is the
-  # microvms' ephemeral one, which would deregister berry whenever it drops
   services.tailscale.enable = true;
 
   services.openssh.enable = true;
@@ -54,6 +51,7 @@ in
   security.sudo.wheelNeedsPassword = false;
 
   programs.zsh.enable = true;
+
   # /etc/zshrc otherwise runs a full `compinit` (~40-50ms security audit)
   # before our own; dotfiles/zsh/completion.zsh extends fpath and runs compinit
   # itself, so skip the redundant global one

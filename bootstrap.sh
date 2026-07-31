@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 
-# brings a bare machine up to a working shell environment: age identity,
-# home-manager symlink, system and home-manager switches
-# everything that needs that environment lives in ./setup.sh, which has to run
-# from a shell started after this script finishes
+# brings a bare machine up to a working shell environment:
+# age identity, home-manager symlink, system and home-manager switches
 
 cd "$(dirname "${BASH_SOURCE[0]}")" || exit
 
@@ -107,5 +105,5 @@ fi
 echo
 echo "Bootstrap done!"
 echo
-echo "$(tput setaf 3)Start a new shell$(tput sgr0) so the freshly linked zsh environment is loaded, then run:"
+echo "$(tput setaf 3)Start a new shell$(tput sgr0) so the freshly linked environment is loaded, then run:"
 echo "  ./setup.sh $HOST"

@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-# everything that needs the shell environment home-manager links (PATH,
-# NPM_CONFIG_PREFIX, PROJECTS_PATH) to already exist
-# run ./bootstrap.sh first, then this from a shell started after it
+# everything that needs the shell environment home-manager links to already exist
 
 cd "$(dirname "${BASH_SOURCE[0]}")" || exit
 
@@ -85,8 +83,7 @@ if command -v npm &> /dev/null; then
   askBeforeRunning ./scripts/npm-sync
 fi
 
-# the only auth key we hold is the microvms' ephemeral one, so permanent hosts
-# log in by hand. orchid is excluded, its tailscale is the gui app
+# auth tailscale through the interactive CLI on linux if needed
 if [[ $HOST == "minix" || $HOST == "berry" ]] && command -v tailscale &> /dev/null; then
   if tailscale status --json 2> /dev/null | grep -q '"BackendState": *"Running"'; then
     echo "Tailscale already up: $(tailscale status --peers=false 2> /dev/null | awk 'NR==1{print $1, $2}')"
@@ -99,8 +96,7 @@ if [[ $HOST == "minix" || $HOST == "berry" ]] && command -v tailscale &> /dev/nu
   fi
 fi
 
-# dropboxd prints a cli_link_nonce url until the account is linked, there is no
-# way to do it non-interactively
+# auth Dropbox on minix if needed
 if [[ $HOST == "minix" ]] && command -v dropbox &> /dev/null; then
   read -rp "$(tput setaf 3)Link Dropbox?$(tput sgr0) (y/N) " RESP
 

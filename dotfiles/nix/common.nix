@@ -67,11 +67,7 @@ in
     nix-direnv.enable = true;
   };
 
-  # GitHub PAT so fetches use api.github.com (avoids the unauth rate limit +
-  # routes around github.com/archive 5xx). Written into the user nix.conf
-  # directly rather than via nix.extraOptions so it stays out of home-manager's
-  # nix.package/Determinate-Nix machinery. !include tolerates the secret being
-  # absent so nix never breaks if sops hasn't populated it yet.
+  # GitHub PAT so fetches use api.github.com
   sops.secrets.nix_access_tokens = {
     sopsFile = ./secrets/shared.yaml;
   };
@@ -80,10 +76,8 @@ in
     !include ${config.sops.secrets.nix_access_tokens.path}
   '';
 
-  # the ssh config names hosts, users and ports for machines outside this repo,
-  # which is public, so it ships as a whole encrypted file rather than a plain
-  # dotfile. binary format means `sops secrets/ssh-config` edits it as ordinary
-  # ssh config instead of a YAML block scalar
+  # binary format means `sops secrets/ssh-config` edits it as ordinary ssh
+  # config instead of YAML
   sops.secrets.ssh_config = {
     format = "binary";
     sopsFile = ./secrets/ssh-config;

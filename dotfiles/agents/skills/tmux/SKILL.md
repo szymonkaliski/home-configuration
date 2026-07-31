@@ -38,7 +38,10 @@ You are usually inside the user's own tmux session, on purpose: it is a shared s
 ## New panes and long-running work
 
 - create splits with `tmux-smart-split` (wraps `split-window`, picks horizontal/vertical from pane proportions, `-d <dir>` sets the working directory) - never call `tmux split-window` directly
-- grab the new pane's id at creation: `tmux-smart-split -P -F '#{pane_id}' 'command'`
+- grab the new pane's id at creation: `tmux-smart-split -t "$TMUX_PANE" -P -F '#{pane_id}' 'command'`
+- always target your own pane: `tmux-smart-split -t "$TMUX_PANE" ...` - untargeted it splits whatever pane is ACTIVE, which is often not yours: another window of your session can be active, and the split lands there
+- orientation is measured from the active pane regardless of `-t`, so a targeted split can pick the wrong proportions - harmless, placement is what matters
+- after creating a pane, confirm where it landed: grab `#{window_id}` at creation (`-P -F '#{pane_id} #{window_id}'`) and compare against `tmux display-message -p -t "$TMUX_PANE" '#{window_id}'`
 - use a split for anything interactive (REPLs, TUIs), anything long-lived (servers, watchers), or commands that would outlive the shell tool timeout; keep the pane alive after exit with `command; echo "exited: $?"; sleep infinity` when you still need to read its output
 - for chatty processes whose output would scroll past the history limit, stream it to a file instead: `tmux pipe-pane -t '%3' "cat >> $PWD/tmp/pane.log"` (rerun with no command to stop) - the command runs from the tmux server's cwd, so the path must be absolute
 

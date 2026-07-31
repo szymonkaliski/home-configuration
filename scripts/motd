@@ -39,6 +39,10 @@ if [[ $os == "Linux" ]]; then
         read -r raw < "${hwmon}temp1_input"
         nvme_temp=$((raw / 1000))
         ;;
+      rp1_adc)
+        read -r raw < "${hwmon}temp1_input"
+        rp1_temp=$((raw / 1000))
+        ;;
       acpitz)
         read -r raw < "${hwmon}temp1_input"
         board_temp=$((raw / 1000))
@@ -57,9 +61,12 @@ if [[ $os == "Linux" ]]; then
   done < /proc/meminfo
 
   # disk
-  read -r _ disk_total disk_used _ < <(df -BG / | tail -1)
+  read -r disk_dev disk_total disk_used _ < <(df -BG / | tail -1)
   disk_total=${disk_total%G}
   disk_used=${disk_used%G}
+  case $disk_dev in
+    /dev/mmcblk*) disk_label=sd ;;
+  esac
 
   # microvms
   vms=()
@@ -135,6 +142,7 @@ pad=${#disk_total}
 temps=()
 [[ -n $cpu_temp ]]  && temps+=("$(printf "cpu  %2s ${dim}°C${reset}" "$cpu_temp")")
 [[ -n $nvme_temp ]] && temps+=("$(printf "ssd  %2s ${dim}°C${reset}" "$nvme_temp")")
+[[ -n $rp1_temp ]] && temps+=("$(printf "rp1  %2s ${dim}°C${reset}" "$rp1_temp")")
 [[ -n $board_temp ]] && temps+=("$(printf "mb   %2s ${dim}°C${reset}" "$board_temp")")
 if (( ${#temps[@]} > 0 )); then
   printf "  ${dim}temp${reset} %s\n" "${temps[0]}"
@@ -147,7 +155,7 @@ printf "   ${dim}ram${reset} %${pad}s ${dim}/${reset} %${pad}s ${dim}GB${reset}\
 if (( ${swap_total:-0} > 0 )); then
   printf "  ${dim}swap${reset} %${pad}s ${dim}/${reset} %${pad}s ${dim}GB${reset}\n" "$swap_used" "$swap_total"
 fi
-printf "   ${dim}ssd${reset} %${pad}s ${dim}/${reset} %${pad}s ${dim}GB${reset}\n" "$disk_used" "$disk_total"
+printf "  ${dim}%4s${reset} %${pad}s ${dim}/${reset} %${pad}s ${dim}GB${reset}\n" "${disk_label:-ssd}" "$disk_used" "$disk_total"
 if (( ${#vms[@]} > 0 )); then
   echo
   printf "   ${dim}vms${reset} %s ${dim}%s${reset}\n" "${vms[0]}" "${vm_projects[0]}"

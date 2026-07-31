@@ -85,6 +85,20 @@ if command -v npm &> /dev/null; then
   askBeforeRunning ./scripts/npm-sync
 fi
 
+# the only auth key we hold is the microvms' ephemeral one, so permanent hosts
+# log in by hand. orchid is excluded, its tailscale is the gui app
+if [[ $HOST == "minix" || $HOST == "berry" ]] && command -v tailscale &> /dev/null; then
+  if tailscale status --json 2> /dev/null | grep -q '"BackendState": *"Running"'; then
+    echo "Tailscale already up: $(tailscale status --peers=false 2> /dev/null | awk 'NR==1{print $1, $2}')"
+  else
+    read -rp "$(tput setaf 3)Log in to tailscale?$(tput sgr0) (y/N) " RESP
+
+    if [ "$RESP" == "y" ] || [ "$RESP" == "Y" ]; then
+      sudo tailscale up
+    fi
+  fi
+fi
+
 # dropboxd prints a cli_link_nonce url until the account is linked, there is no
 # way to do it non-interactively
 if [[ $HOST == "minix" ]] && command -v dropbox &> /dev/null; then

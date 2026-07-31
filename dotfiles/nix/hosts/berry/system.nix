@@ -1,5 +1,4 @@
 {
-  config,
   pkgs,
   ...
 }:
@@ -32,13 +31,9 @@ in
     publish.addresses = true;
   };
 
-  sops.defaultSopsFile = ../../secrets/shared.yaml;
-  sops.age.keyFile = "${config.users.users.szymon.home}/.config/sops/age/keys.txt";
-  sops.secrets.tailscale_authkey = { };
-
-  # the key must be reusable, minix consumes it too
+  # authenticated by hand with `tailscale up`; the only auth key we have is the
+  # microvms' ephemeral one, which would deregister berry whenever it drops
   services.tailscale.enable = true;
-  services.tailscale.authKeyFile = config.sops.secrets.tailscale_authkey.path;
 
   services.openssh.enable = true;
   services.openssh.settings.PasswordAuthentication = false;

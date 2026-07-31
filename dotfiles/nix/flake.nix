@@ -145,7 +145,6 @@
             ];
           }
           ./hosts/berry/system.nix
-          sops-nix.nixosModules.sops
         ];
       };
 

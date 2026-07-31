@@ -174,7 +174,6 @@ in
   # tailscale with exit node
   services.tailscale.enable = true;
   services.tailscale.useRoutingFeatures = "server";
-  services.tailscale.authKeyFile = config.sops.secrets.tailscale_authkey.path;
   services.tailscale.extraUpFlags = [ "--advertise-exit-node" ];
 
   networking.nameservers = [ "127.0.0.1" ];
@@ -358,10 +357,8 @@ in
   sops.defaultSopsFile = ../../secrets/minix.yaml;
   sops.age.keyFile = "${config.users.users.szymon.home}/.config/sops/age/keys.txt";
 
-  # berry consumes the same key
-  sops.secrets.tailscale_authkey = {
-    sopsFile = ../../secrets/shared.yaml;
-  };
+  # ephemeral, for the microvm pool
+  sops.secrets.tailscale_authkey = { };
   sops.secrets.pushover_token_vm = { };
   sops.secrets.pushover_token_user = { };
   sops.secrets.searx_secret_key = { };

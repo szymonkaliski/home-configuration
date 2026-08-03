@@ -52,26 +52,6 @@ function askBeforeRunning() {
   fi
 }
 
-if [ -d ~/.vim/ ]; then
-  curl -fLo ~/.vim/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-  echo
-  echo "On first (n)vim open execute :PlugInstall"
-fi
-
-if [ -d ~/.zsh/ ]; then
-  mkdir -p ~/.zsh/plugins/
-  pushd ~/.zsh/plugins/ > /dev/null || exit
-
-  gitWrapped clone https://github.com/mafredri/z -b zsh-flock
-  gitWrapped clone https://github.com/chriskempson/base16-shell
-  gitWrapped clone https://github.com/hlissner/zsh-autopair
-  gitWrapped clone https://github.com/romkatv/gitstatus
-  gitWrapped clone https://github.com/zdharma-continuum/fast-syntax-highlighting
-  gitWrapped clone https://github.com/romkatv/zsh-defer
-
-  popd > /dev/null || exit
-fi
-
 mkdir -p "$DOTFILE_DIR/agents/skills-vendor"
 pushd "$DOTFILE_DIR/agents/skills-vendor" > /dev/null || exit
 
@@ -80,7 +60,7 @@ gitWrapped clone https://github.com/mattpocock/skills mattpocock-skills
 popd > /dev/null || exit
 
 if command -v npm &> /dev/null; then
-  askBeforeRunning ./scripts/npm-sync
+  askBeforeRunning ./bin/npm-sync
 fi
 
 # auth tailscale through the interactive CLI on linux if needed
@@ -132,9 +112,38 @@ if [[ $HOST == "minix" ]] && command -v dropbox &> /dev/null; then
 fi
 
 if [[ $HOST == "orchid" ]]; then
-  askBeforeRunning ./launchctls/reinstall-launchctls.sh
-  askBeforeRunning ./terminfos/generate-terminfos.sh
-  askBeforeRunning ./scripts/setup-osx
+  # user-level `defaults` live in targets.darwin.defaults (hosts/orchid/home.nix);
+  # only sudo-requiring, system-domain macOS setup belongs here
+  read -rp "$(tput setaf 3)Pin the hostname and install the ECN-disable daemon?$(tput sgr0) (y/N) " RESP
+  if [ "$RESP" == "y" ] || [ "$RESP" == "Y" ]; then
+    # pin hostname to lowercase so scripts don't break when DHCP overrides it
+    sudo scutil --set HostName orchid
+
+    # disable ECN negotiation - with ECN on, iOS clients could not open TCP
+    # connections to this Mac over Tailscale; disabling it fixed that
+    sudo tee /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist > /dev/null <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>com.szymonkaliski.disable-ecn</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>/usr/sbin/sysctl</string>
+            <string>-w</string>
+            <string>net.inet.tcp.ecn_negotiate_in=0</string>
+            <string>net.inet.tcp.ecn_initiate_out=0</string>
+        </array>
+        <key>RunAtLoad</key>
+        <true/>
+    </dict>
+</plist>
+EOF
+    sudo chown root:wheel /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist
+    sudo launchctl bootout system /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist 2>/dev/null
+    sudo launchctl bootstrap system /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist
+  fi
 
   # determinate nix encrypts the /nix volume if the boot disk has FileVault on,
   # which causes a password prompt at every boot, /nix store is public anyway

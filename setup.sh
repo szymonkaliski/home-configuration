@@ -124,16 +124,73 @@ if [[ $HOST == "minix" ]] && command -v dropbox &> /dev/null; then
   fi
 fi
 
-if [[ $HOST == "orchid" ]]; then
-  # user-level `defaults` live in targets.darwin.defaults (hosts/orchid/home.nix);
-  # only sudo-requiring, system-domain macOS setup belongs here
-  read -rp "$(tput setaf 3)Pin the hostname and install the ECN-disable daemon?$(tput sgr0) (y/N) " RESP
-  if [ "$RESP" == "y" ] || [ "$RESP" == "Y" ]; then
-    # pin hostname to lowercase so scripts don't break when DHCP overrides it
-    sudo scutil --set HostName orchid
+# home-manager wraps every launchd agent in `/bin/sh -c '/bin/wait4path ...'`,
+# and TCC blocks /bin/sh from reading ~/Documents until it has Full Disk Access;
+# probes with a throwaway agent whether /bin/sh can read this repo from launchd
+function shCanReadRepoFromLaunchd() {
+  PROBE_LABEL="com.szymonkaliski.tcc-probe"
+  PROBE_DIR="$(mktemp -d)"
+  PROBE_PLIST="$PROBE_DIR/$PROBE_LABEL.plist"
 
-    # disable ECN negotiation - with ECN on, iOS clients could not open TCP
-    # connections to this Mac over Tailscale; disabling it fixed that
+  cat > "$PROBE_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>$PROBE_LABEL</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>/bin/sh</string>
+            <string>-c</string>
+            <string>cat '$PWD/setup.sh' > /dev/null</string>
+        </array>
+        <key>RunAtLoad</key>
+        <true/>
+    </dict>
+</plist>
+EOF
+
+  launchctl bootout "gui/$(id -u)/$PROBE_LABEL" 2> /dev/null
+  launchctl bootstrap "gui/$(id -u)" "$PROBE_PLIST"
+
+  PROBE_STATUS=""
+  for _ in $(seq 10); do
+    read -r PROBE_PID PROBE_STATUS <<< "$(launchctl list | awk -v l="$PROBE_LABEL" '$3 == l { print $1, $2 }')"
+    [ "$PROBE_PID" == "-" ] && break
+    sleep 1
+  done
+
+  launchctl bootout "gui/$(id -u)/$PROBE_LABEL" 2> /dev/null
+  rm -rf "$PROBE_DIR"
+
+  [ "$PROBE_STATUS" == "0" ]
+}
+
+if [[ $HOST == "orchid" ]]; then
+  # pin hostname to lowercase so scripts don't break when DHCP overrides it
+  sudo scutil --set HostName orchid
+
+  # the Full Disk Access grant is GUI-only
+  if shCanReadRepoFromLaunchd; then
+    echo "/bin/sh can read the repo from launchd (Full Disk Access is granted)"
+  else
+    read -rp "$(tput setaf 3)launchd agents can't read this repo; grant /bin/sh Full Disk Access?$(tput sgr0) (y/N) " RESP
+    if [ "$RESP" == "y" ] || [ "$RESP" == "Y" ]; then
+      echo "In the pane that opens: click +, press Cmd+Shift+G, enter /bin/sh, click Open"
+      open "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+
+      until shCanReadRepoFromLaunchd; do
+        read -rp "$(tput setaf 3)Probe still fails, press enter to retry once granted$(tput sgr0) (or 's' to skip) " RESP
+        [ "$RESP" == "s" ] && break
+      done
+    fi
+  fi
+
+  # disable ECN negotiation - with ECN on, iOS clients could not open TCP
+  # connections to this Mac over Tailscale; disabling it fixed that
+  read -rp "$(tput setaf 3)Install the ECN-disable daemon for SSH from iOS?$(tput sgr0) (y/N) " RESP
+  if [ "$RESP" == "y" ] || [ "$RESP" == "Y" ]; then
     sudo tee /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist > /dev/null <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

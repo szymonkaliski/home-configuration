@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# should contain
+# PUSHOVER_TOKEN=...
+# PUSHOVER_USER=...
+# shellcheck disable=SC1090
+source "${PUSHOVERRC:-$HOME/.pushoverrc}"
+
+curl -fsS --retry 3 --max-time 30 -F "token=$PUSHOVER_TOKEN" -F "user=$PUSHOVER_USER" -F "message=$*" https://api.pushover.net/1/messages.json > /dev/null
+

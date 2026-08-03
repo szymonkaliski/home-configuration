@@ -1,4 +1,4 @@
-# keep in sync with scripts/motd
+# keep in sync with bin/motd
 if [ "${HOST%%.*}" = "orchid" ]; then
   PROMPTCOLOR=blue
 elif [ "${HOST%%.*}" = "minix" ]; then

@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ "$(hostname -s)" != "minix" ]; then
+  echo "error: microvm only runs on minix" >&2
+  exit 1
+fi
+
 VM_BASE="$HOME/MicroVMs"
 HOST_DIR="$VM_BASE/host"
 SSH_OPTS=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR)
 MAX_VMS=4
 
-REPO_SETUP_SH="$PROJECTS_PATH/home-configuration/dotfiles/nix/hosts/minix/microvms/setup.sh"
+REPO_SETUP_SH="$PROJECTS_PATH/home-configuration/nix/hosts/minix/microvms/setup.sh"
 REPO_AGENTS_MD="$PROJECTS_PATH/home-configuration/dotfiles/agents/AGENTS.md"
 
 sync_host_config() {
@@ -48,7 +53,7 @@ sync_host_config() {
 
   {
     echo "#!/usr/bin/env bash"
-    echo "# DO NOT EDIT - copied from dotfiles/nix/hosts/minix/microvms/setup.sh"
+    echo "# DO NOT EDIT - copied from nix/hosts/minix/microvms/setup.sh"
     tail -n +2 "$REPO_SETUP_SH"
   } > "$HOST_DIR/setup.sh"
 
@@ -197,8 +202,8 @@ cmd_kill_all() {
 
 clean_vm() {
   local VM="$1"
-  sudo /run/current-system/sw/bin/rm -f "/var/lib/microvms/vm-${VM}/nix-store-overlay.img"
-  sudo /run/current-system/sw/bin/rm -rf "$VM_BASE/vm-${VM}/data"
+  sudo /run/current-system/sw/bin/microvm-clean overlay "${VM}"
+  sudo /run/current-system/sw/bin/microvm-clean data "${VM}"
   rm -rf "$VM_BASE/vm-${VM}/workspace"
 }
 

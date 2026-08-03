@@ -85,7 +85,10 @@ in
 
   users.users.szymon = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = [
+      "wheel"
+      "video"
+    ];
     shell = pkgs.zsh;
     openssh.authorizedKeys.keys = [
       keys.orchid

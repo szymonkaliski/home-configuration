@@ -1,0 +1,117 @@
+# MINIX
+
+## First-time setup
+
+1. Install NixOS
+2. Reboot into the fresh install
+3. Clone this repo:
+   ```bash
+   mkdir -p ~/Projects
+   nix --extra-experimental-features "nix-command flakes" run nixpkgs#git -- clone https://github.com/szymonkaliski/home-configuration.git ~/Projects/home-configuration
+   ```
+4. Run `./bootstrap.sh minix` - it copies `hardware-configuration.nix` from `/etc/nixos/`, git-tracks it, and runs `nixos-rebuild switch`. The first rebuild will fail until secrets are in place (next step).
+5. Set up SOPS secrets (see [Secrets](#secrets) below)
+6. Re-run the rebuild: `sudo nixos-rebuild switch --flake .#minix`
+7. Start a new shell (so the linked zsh environment is loaded), then run `./setup.sh minix` for the zsh/vim plugins, vendored skills and npm globals
+
+## Updating
+
+```bash
+update-all
+```
+
+Home-manager only:
+
+```bash
+home-manager switch --flake .#szymon@minix
+```
+
+Full NixOS rebuild:
+
+```bash
+sudo nixos-rebuild switch --flake .#minix
+```
+
+Regenerate hardware config (only if hardware changes):
+
+```bash
+nixos-generate-config --show-hardware-config > minix/hardware-configuration.nix
+```
+
+## Secrets
+
+All credentials are encrypted with [sops-nix](https://github.com/Mic92/sops-nix) using age keys.
+
+Encrypted blobs live in `nix/secrets/*.yaml` and are committed to the repo.
+The age private key is per-machine and stays at `~/.config/sops/age/keys.txt`.
+
+### First-time setup
+
+1. Use [age](https://github.com/FiloSottile/age) via nix-shell, generate the machine key:
+   ```bash
+   mkdir -p ~/.config/sops/age
+   nix shell nixpkgs#age -c age-keygen -o ~/.config/sops/age/keys.txt
+   nix shell nixpkgs#age -c age-keygen -y ~/.config/sops/age/keys.txt
+   # this prints the public key: age1...
+   ```
+2. Add the new pubkey to `.sops.yaml` under `keys:` and reference it from the appropriate `creation_rules` `key_groups`.
+3. Re-encrypt the existing secrets so the new machine can decrypt them:
+   ```bash
+   cd ~/Projects/home-configuration
+   nix shell nixpkgs#sops -c sops updatekeys nix/secrets/minix.yaml
+   nix shell nixpkgs#sops -c sops updatekeys nix/secrets/shared.yaml
+   nix shell nixpkgs#sops -c sops updatekeys nix/secrets/ssh-config
+   ```
+
+### Recovery age key
+
+A recovery age key is in the recipient list of every file under `nix/secrets/`.
+Its private half is in the password manager.
+
+To restore from recovery key:
+
+1. Set up the new machine per "First-time setup" through step 4.
+2. Get the machine-key story going so sops has _something_ to encrypt to:
+   ```bash
+   mkdir -p ~/.config/sops/age
+   nix shell nixpkgs#age -c age-keygen -o ~/.config/sops/age/keys.txt
+   ```
+3. Copy the recovery private key from your password manager into a temp file:
+   ```bash
+   $EDITOR /tmp/recovery-key.txt # paste AGE-SECRET-KEY-1...
+   ```
+4. Decrypt the existing secrets with the recovery key:
+   ```bash
+   cd ~/Projects/home-configuration
+   SOPS_AGE_KEY_FILE=/tmp/recovery-key.txt nix shell nixpkgs#sops -c sops -d nix/secrets/minix.yaml > /tmp/minix-plain.yaml
+   ```
+5. Update `.sops.yaml` to replace the old pubkey with the new one (printed by `age-keygen -y ~/.config/sops/age/keys.txt`).
+6. Re-encrypt and discard plaintext + recovery key from disk:
+   ```bash
+   SOPS_AGE_KEY_FILE=/tmp/recovery-key.txt nix shell nixpkgs#sops -c sops -e /tmp/minix-plain.yaml > nix/secrets/minix.yaml
+   rm /tmp/minix-plain.yaml /tmp/recovery-key.txt
+   ```
+7. Continue with First-time setup step 6 (rebuild). The new machine key now owns the secrets going forward; the recovery key is still in the recipient list as a backup.
+
+## MicroVMs
+
+Ephemeral NixOS VMs (pool of 4) for running coding agents and other potentially destructive things in isolation.
+
+### First-time setup
+
+`keys.minix` in `keys.nix` is the key that opens the VMs, and the `Host vm-?` block lives in `nix/secrets/ssh-config`.
+A fresh minix needs its keypair regenerated:
+
+```bash
+ssh-keygen -t ed25519
+```
+
+Set `keys.minix` to the contents of `~/.ssh/id_ed25519.pub`, then:
+
+```bash
+sudo nixos-rebuild switch --flake .#minix
+```
+
+### Usage
+
+Run `microvm help` for available commands.

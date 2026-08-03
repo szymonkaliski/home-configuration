@@ -19,9 +19,6 @@
 **/vim/undo/
 **/vim/view/
 
-# auto-generated plist files
-launchctls/*.plist
-
 # temp files
 tmp/
 

@@ -1,0 +1,42 @@
+keys:
+  - &berry age1qkccywwr55dstat6ugv62nppwa6904hn5ucve3wzdslqn4g8h4xstt7v45
+  - &minix age17h0mzdph62vced4wdzv9sd5ut945lu6mjp00rhvy3a77drwzzgyq7523a0
+  - &orchid age1fpzarpw64a67qs6pgkh3ltjgry2zkrcvkl65w2jchdyu03ndpd3qjt9nmu
+    # recovery key - private half is in password manager
+  - &recovery age18l05zmkgk3s4vwrjjc9lcdzwgd8hk95t4q2aawnksfxyhdzrpgkqttsphs
+creation_rules:
+  - path_regex: nix/secrets/minix\.yaml$
+    key_groups:
+      - age:
+          - *minix
+          - *recovery
+  - path_regex: nix/secrets/orchid\.yaml$
+    key_groups:
+      - age:
+          - *orchid
+          - *recovery
+  - path_regex: nix/secrets/shared\.yaml$
+    key_groups: &all-hosts
+      - age:
+          - *berry
+          - *minix
+          - *orchid
+          - *recovery
+  # whole-file secret rather than a key inside shared.yaml,
+  # so `sops` opens it as a plain wpa_supplicant network block;
+  # only berry consumes it, minix builds berry's sd image
+  - path_regex: nix/secrets/wireless-conf$
+    key_groups: &berry-minix
+      - age:
+          - *berry
+          - *minix
+          - *recovery
+  # whole-file secret rather than a key inside shared.yaml,
+  # so `sops` opens it as a plain openssh private key;
+  # only berry consumes it, minix is the build host it authenticates to
+  - path_regex: nix/secrets/nix-builder-key$
+    key_groups: *berry-minix
+  # whole-file secret rather than a key inside shared.yaml,
+  # so `sops` opens it as a plain ssh config
+  - path_regex: nix/secrets/ssh-config$
+    key_groups: *all-hosts

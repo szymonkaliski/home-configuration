@@ -65,7 +65,6 @@
           system,
           host,
           repoRoot,
-          extraOverlays ? [ ],
         }:
         home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages.${system};
@@ -76,7 +75,7 @@
             sops-nix.homeModules.sops
             {
               nixpkgs.config.allowUnfree = true;
-              nixpkgs.overlays = extraOverlays ++ [ antigravityOverlay ];
+              nixpkgs.overlays = [ antigravityOverlay ];
             }
           ];
         };
@@ -98,13 +97,6 @@
           system = "aarch64-darwin";
           host = "orchid";
           repoRoot = "/Users/szymon/.config/home-manager";
-          extraOverlays = [
-            (final: prev: {
-              # skipping tests, as fish ones are flaky on darwin:
-              # https://github.com/NixOS/nixpkgs/issues/475999
-              direnv = prev.direnv.overrideAttrs { doCheck = false; };
-            })
-          ];
         };
 
         "szymon@minix" = mkHome {

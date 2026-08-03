@@ -63,6 +63,19 @@ if command -v npm &> /dev/null; then
   askBeforeRunning ./bin/npm-sync
 fi
 
+# auth gh so the gitconfig credential helper can push over https
+if command -v gh &> /dev/null; then
+  if gh auth status &> /dev/null; then
+    echo "GitHub already authenticated"
+  else
+    read -rp "$(tput setaf 3)Log in to GitHub?$(tput sgr0) (y/N) " RESP
+
+    if [ "$RESP" == "y" ] || [ "$RESP" == "Y" ]; then
+      gh auth login
+    fi
+  fi
+fi
+
 # auth tailscale through the interactive CLI on linux if needed
 if [[ $HOST == "minix" || $HOST == "berry" ]] && command -v tailscale &> /dev/null; then
   if tailscale status --json 2> /dev/null | grep -q '"BackendState": *"Running"'; then

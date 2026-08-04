@@ -1,0 +1,54 @@
+baseparse: don't dereference frame->buffer after a zero-size finish_frame
+
+gst_base_parse_handle_buffer() reads frame->buffer once klass->handle_frame()
+has returned, guarded only by (*skip == 0 && *flushed == 0).
+
+A subclass may legally call gst_base_parse_finish_frame() with size == 0 as
+long as it has set frame->out_buffer - that is exactly what the size > 0 ||
+frame->out_buffer precondition allows. Such a call leaves priv->flushed at 0,
+while gst_base_parse_push_frame() has already taken ownership of frame->buffer
+and reset it to NULL, so the discont carry-over dereferences NULL.
+
+h264parse reaches this whenever its input caps carry alignment=au and an
+access unit ends without a further start code: gst_h264_parser_identify_nalu()
+memsets the nalu and returns GST_H264_PARSER_NO_NAL, the ALIGN_AU branch jumps
+to "broken:", and framesize = nalu.offset + nalu.size = 0. frame->out_buffer is
+set by gst_h264_parse_parse_frame() only while h264parse produces transformed
+AVC output; that is what carries the size == 0 call past the precondition
+instead of failing it, so the same input crashes rather than logging a critical.
+
+Origin is ea395c2498 (2016), "baseparse: Make sure DISCONT flags are properly
+propagated", bgo#766795, which added the carry-over without a NULL check. The
+same file already guards the equivalent read in gst_base_parse_chain(). LG's
+webOS fork carries this exact one-line guard in lgstreamer/gstreamer@ad983a88,
+never upstreamed; as of 2026-08-04 no GStreamer issue or MR describes the crash.
+
+Symptom: neolink dies with SIGSEGV at address 0x10, the flags field of a NULL
+GstMiniObject, inside gst_base_parse_handle_buffer. Release builds carry no
+debug symbols, so identifying it means coredumpctl plus disassembly of the
+faulting function; the element name at *(char**)(parse + 0x20) confirms
+h264parse. First seen 2026-08-03, streaming two Reolink E-series cameras.
+
+There is no synthetic gst-launch reproducer. The trigger is a truncated access
+unit at a non-zero parse offset on caps with alignment=au, which neolink's
+appsrc sets (factory.rs, commit 4ca6ae8 "fix multi-slice and long-GOP cameras
+(e.g. E320)"). It is rare: one crash in 30 days of journal before this patch.
+
+Drop this patch once upstream adds the guard:
+
+  curl -s https://gitlab.freedesktop.org/gstreamer/gstreamer/-/raw/main/subprojects/gstreamer/libs/gst/base/gstbaseparse.c | grep -n 'IS_DISCONT (frame->buffer)'
+
+A hit without a leading "frame->buffer &&" means it is still unfixed. A nixpkgs
+bump that does carry the fix makes this patch fail to apply and fails the build.
+
+--- a/libs/gst/base/gstbaseparse.c
++++ b/libs/gst/base/gstbaseparse.c
+@@ -2358,7 +2358,7 @@ gst_base_parse_handle_buffer (GstBaseParse * parse, GstBuffer * buffer,
+
+   if (*skip == 0 && *flushed == 0) {
+     /* Carry over discont if we need more data */
+-    if (GST_BUFFER_IS_DISCONT (frame->buffer))
++    if (frame->buffer && GST_BUFFER_IS_DISCONT (frame->buffer))
+       parse->priv->discont = TRUE;
+   }
+

@@ -12,13 +12,7 @@ let
   neolink = pkgs.callPackage ../../../pkgs/neolink.nix { };
   # GStreamer plugin search path for neolink's RTSP pipelines (without it every stream 400s).
   # makeSearchPathOutput "out": gstreamer's core plugins live in its "out", not the default "bin".
-  gstPluginPath = pkgs.lib.makeSearchPathOutput "out" "lib/gstreamer-1.0" [
-    pkgs.gst_all_1.gstreamer
-    pkgs.gst_all_1.gst-plugins-base
-    pkgs.gst_all_1.gst-plugins-good
-    pkgs.gst_all_1.gst-plugins-bad
-    pkgs.gst_all_1.gst-rtsp-server
-  ];
+  gstPluginPath = pkgs.lib.makeSearchPathOutput "out" "lib/gstreamer-1.0" neolink.gstPackages;
 
   # battery     - physically a battery camera
   # autoConnect - shown + streamed by default on the dashboard

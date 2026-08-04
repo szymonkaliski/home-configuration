@@ -6,6 +6,28 @@
   openssl,
   gst_all_1,
 }:
+let
+  # gstbaseparse dereferences frame->buffer after a subclass finishes a
+  # zero-size frame; h264parse does that for an alignment=au access unit that
+  # ends without a start code, which segfaults neolink. Unfixed upstream as of
+  # 1.26.11, and still present on main. The patch header carries the full
+  # analysis, the crash signature, and the check for when it can be dropped.
+  gst = gst_all_1.overrideScope (
+    final: prev: {
+      gstreamer = prev.gstreamer.overrideAttrs (old: {
+        patches = (old.patches or [ ]) ++ [ ./gstreamer-baseparse-null-frame-buffer.patch ];
+      });
+    }
+  );
+
+  gstPackages = [
+    gst.gstreamer
+    gst.gst-plugins-base
+    gst.gst-plugins-good
+    gst.gst-plugins-bad
+    gst.gst-rtsp-server
+  ];
+in
 rustPlatform.buildRustPackage {
   pname = "neolink";
   version = "0-unstable-2026-07-06";
@@ -24,16 +46,11 @@ rustPlatform.buildRustPackage {
     rustPlatform.bindgenHook
   ];
 
-  buildInputs = [
-    openssl
-    gst_all_1.gstreamer
-    gst_all_1.gst-plugins-base
-    gst_all_1.gst-plugins-good
-    gst_all_1.gst-plugins-bad
-    gst_all_1.gst-rtsp-server
-  ];
+  buildInputs = [ openssl ] ++ gstPackages;
 
   env.NIX_CFLAGS_COMPILE = "-Wno-error=int-conversion";
+
+  passthru = { inherit gstPackages; };
 
   meta = {
     description = "MQTT/RTSP bridge for Reolink cameras";

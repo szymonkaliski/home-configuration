@@ -1,9 +1,8 @@
 ## Code
 
 - DO NOT commit, push, or deploy anything unless explicitly asked
-- DO NOT add comments to code you didn't write
-- comments must assert current state, never narrate the change
-
+- code comments MUST assert current state
+  - DO NOT add narrative comments describing previous state, changes, contrasting with past approach that's no longer in the codebase
 - prefer discriminated unions over optional fields; make illegal states unrepresentable
 
 ## Investigation
@@ -16,7 +15,7 @@
 - NEVER dismiss errors, warnings, or failing tests as "pre-existing" or "not caused by my changes" - you are the sole developer - all issues are your responsibility
   - when you encounter errors during builds, linting, typechecks, or tests that you didn't introduce, flag them and offer to fix them rather than skipping over them
 
-- when designing an approach before writing code, use web search to check documentation and issues on GitHub
+- when designing an approach before writing code, use web search to check documentation and issues on GitHub, assume you don't have the latest knowledge
 
 - if a request is ambiguous or spans multiple reasonable approaches, ask clarifying questions before implementing
 
@@ -31,18 +30,23 @@
 - use your judgement to pick each subagent's model - downgrade to a lower-power model when the task doesn't need the session model
 - don't parallelize a single edit or dependent steps
 
-## Shell / environment
+## Shell & Environment
 
-- for running ad-hoc shell commands from nixpkgs, use `nix run nixpkgs#<pkg> -- <args>` (for example: `nix run nixpkgs#poppler_utils -- pdfinfo [...]`); prefer it over trying to write ad-hoc code
+- for running ad-hoc shell commands from nixpkgs, use `nix run nixpkgs#<pkg> -- <args>` (for example: `nix run nixpkgs#poppler_utils -- pdfinfo [...]`); prefer it over writing ad-hoc code
 
-- use `./tmp/` in the project root for any temporary/scratch files (repro scripts, test fixtures, debug output, etc.) - it's globally gitignored
+- use `./tmp/` in the project root for any temporary/scratch files (reproduction scripts, test fixtures, debug output, etc.) - it's globally gitignored
   - create it if it doesn't exist
-  - when struggling to understand a library, git clone it into `./tmp/` and review the code there
-
-- use `trash` instead of `rm` (only if already available)
+  - when struggling to understand a library behavior, git clone it into `./tmp/` and review the code there
 
 - if you have to write ad-hoc code, use `node` instead of `python`
 
-## Prose
+- use `trash` instead of `rm` (if available)
 
-- IMPORTANT: never use em-dashes
+## Prose & Communication
+
+- never use em-dashes
+- keep outputs focused, brief, and direct
+  - keep disclaimers and caveats short, spending most of the response on the main answer
+- lead directly with the outcome: your first sentence should answer "what happened" or "what did you find," followed by supporting details
+- match written documents and files to substance, cover what is needed without padding with filler sections, redundant summaries, or boilerplate
+

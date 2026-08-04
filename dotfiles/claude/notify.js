@@ -69,11 +69,9 @@ function clearPending(sid) {
 // idle-state marker: records the body delivered for this idle period (by Stop or
 // a previous idle_prompt). The ~60s idle_prompt Notification is suppressed only
 // when it would repeat that same body, so it still backstops turns that fire no
-// Stop: a finished `context: fork` slash-command resolves to its command output,
-// which differs from the last Stop's text and passes the body check. Keying on
-// the body (not just freshness) matters because background Task agents finish
-// after the turn's Stop, and a time-only marker either dedups the fork case away
-// or lets the same text re-deliver.
+// Stop. Keying on the body (not just freshness) matters because background Task
+// agents finish after the turn's Stop, and a time-only marker would let the same
+// text re-deliver.
 function markIdle(sid, body) {
   if (!sid) return;
   try {
@@ -100,12 +98,19 @@ const LOG_PATH = `${os.homedir()}/.claude/notify.log`;
 const LOG_RETAIN_MS = 90 * 24 * 60 * 60 * 1000;
 const LOG_PRUNE_SLACK_MS = 7 * 24 * 60 * 60 * 1000;
 
+// several sessions interleave in this log, and the pushover `sent` line lands a
+// few hundred ms after its `fire` line, so without the id on every line an event
+// can't be traced back to the session (or transcript) that produced it
 function logLine(data) {
   const now = Date.now();
   try {
     fs.appendFileSync(
       LOG_PATH,
-      JSON.stringify({ ts: new Date(now).toISOString(), ...data }) + "\n",
+      JSON.stringify({
+        ts: new Date(now).toISOString(),
+        session: sessionId,
+        ...data,
+      }) + "\n",
     );
     pruneLog(now);
   } catch {}
@@ -192,10 +197,7 @@ if (process.env.TMUX && process.env.TMUX_PANE) {
 // up to ~15s later) and Stop fires on the first; and the Stop hook can read before
 // the current turn's assistant line lands on disk, leaving a real user prompt as the
 // latest entry - return "awaiting_response" there instead of falling through to the
-// previous turn's now-stale assistant text (the off-by-one). A finished forked /
-// slash command is the exception: it fires no Stop and prints its result as a
-// local-command-stdout user entry rather than assistant text, so return that output
-// as "command_result" for the idle_prompt backstop to surface.
+// previous turn's now-stale assistant text (the off-by-one).
 function readLastAssistantState(filePath) {
   const fd = fs.openSync(filePath, "r");
   try {
@@ -225,18 +227,6 @@ function readLastAssistantState(filePath) {
       // older assistant entry and delivering the previous turn's message.
       if (entry.type === "user") {
         const content = entry.message?.content;
-        // A finished forked / slash command (e.g. /git-review) prints its result
-        // as a string-content local-command-stdout user entry, not an assistant
-        // entry, so the off-by-one guard below would otherwise treat it as a
-        // pending prompt. Surface that output as "command_result" instead - the
-        // idle_prompt backstop reads it to name what just finished.
-        if (typeof content === "string") {
-          const m = content.match(
-            /<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/,
-          );
-          const out = m && m[1].trim();
-          if (out) return { kind: "command_result", text: truncate(out, 200) };
-        }
         const isToolResult =
           Array.isArray(content) &&
           content.some((c) => c.type === "tool_result");
@@ -286,9 +276,19 @@ function resolveTranscriptPath(input) {
   return null;
 }
 
-// task-notification user turns (e.g. Monitor events) spam Stop. Opus sometimes
-// echoes the notification as assistant text, producing nonsense notifications.
-function lastUserOriginIsTaskNotification(filePath) {
+// What started the turn that is now ending decides whether its end is worth an
+// alert. A human prompt, or a forked skill the user invoked reporting back, ends
+// with Claude handing control back and nothing moving until the user acts, so it
+// alerts. A machine event does not: Monitor events re-fire on a schedule (and
+// Opus sometimes echoes them back as assistant text, producing nonsense bodies),
+// and background commands complete mid-workflow while Claude carries on. Those
+// defer to the 60s idle_prompt backstop, which delivers only if Claude really
+// did stay idle afterwards.
+//   { kind: "user" }    a human prompt, or mid-turn tool results
+//   { kind: "monitor" } recurring Monitor event: the only shape with no <status>
+//   { kind: "agent" }   a forked skill or Task agent finished or failed
+//   { kind: "machine" } background command, workflow, any other <status>
+function classifyLastUserTurn(filePath) {
   const fd = fs.openSync(filePath, "r");
   try {
     const stat = fs.fstatSync(fd);
@@ -317,12 +317,100 @@ function lastUserOriginIsTaskNotification(filePath) {
         content.some((c) => c.type === "tool_result")
       )
         continue;
-      return entry.origin?.kind === "task-notification";
+      if (entry.origin?.kind !== "task-notification") return { kind: "user" };
+      const text = String(content);
+      if (!/<status>/.test(text)) return { kind: "monitor" };
+      const isAgent = /<summary>Agent "[\s\S]*?" (?:finished|failed)/.test(
+        text,
+      );
+      return { kind: isAgent ? "agent" : "machine" };
     }
   } finally {
     fs.closeSync(fd);
   }
-  return false;
+  return { kind: "user" };
+}
+
+// A killed or interrupted agent never sends its completion notification: the CLI
+// suppresses that notification for a stopped outcome, so nothing marks the death.
+// Its launch would otherwise stay pending and mute the session's idle alerts, and
+// the agent's own transcript is the way out - it is appended to throughout a run
+// and stops the moment the agent does, so silence is the death signal. The
+// threshold only has to clear the longest pause a working agent takes between
+// writes, measured at 216s across every recorded run.
+const AGENT_SILENCE_MS = 10 * 60 * 1000;
+
+function agentLastActivity(filePath, agentId, launchTs) {
+  const sessionDir = filePath.replace(/\.jsonl$/, "");
+  try {
+    return fs.statSync(`${sessionDir}/subagents/agent-${agentId}.jsonl`)
+      .mtimeMs;
+  } catch {
+    // the agent's transcript does not exist yet, so the launch is all we have
+    return Date.parse(launchTs);
+  }
+}
+
+// A `context: fork` skill (/git-review, /code-review) runs as a detached
+// background agent: the session goes idle the moment it launches and fires no
+// Stop until the agent reports back, so the 60s idle_prompt timer announces
+// "waiting for your input" while the agent is still working. The launch is a
+// system/local_command entry carrying <forked-skill-launch>{"agentId":...}, and
+// the agent reports back as a task-notification user turn whose <task-id> is
+// that same agentId, so a launch with no matching task-id yet means Claude is
+// waiting on the agent rather than on the user. Scans the whole transcript
+// because the launch scrolls out of the tail window once the user keeps working
+// alongside a long review.
+function pendingForkedSkills(filePath) {
+  const pending = new Map();
+
+  for (const line of fs.readFileSync(filePath, "utf8").split("\n")) {
+    if (!line) continue;
+    let entry;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      continue;
+    }
+
+    if (entry.type === "system" && entry.subtype === "local_command") {
+      const m = String(entry.content || "").match(
+        /<forked-skill-launch>([\s\S]*?)<\/forked-skill-launch>/,
+      );
+      if (!m) continue;
+      try {
+        const launch = JSON.parse(m[1]);
+        if (launch.agentId) {
+          pending.set(launch.agentId, {
+            skillName: launch.skillName,
+            ts: entry.timestamp,
+          });
+        }
+      } catch {}
+      continue;
+    }
+
+    if (entry.origin?.kind === "task-notification") {
+      const m = String(entry.message?.content || "").match(
+        /<task-id>([\s\S]*?)<\/task-id>/,
+      );
+      if (m) pending.delete(m[1].trim());
+    }
+  }
+
+  // drop launches whose agent has gone quiet long enough to be dead, so a killed
+  // one recovers on its own instead of muting the session
+  const now = Date.now();
+  return [...pending]
+    .map(([agentId, l]) => ({
+      ...l,
+      lastActivity: agentLastActivity(filePath, agentId, l.ts),
+    }))
+    .filter(
+      (l) =>
+        Number.isFinite(l.lastActivity) &&
+        now - l.lastActivity <= AGENT_SILENCE_MS,
+    );
 }
 
 function formatToolUse(toolUse) {
@@ -361,8 +449,26 @@ if (event === "Stop") {
     logLine({ phase: "skipped", reason: "no-transcript", event });
     process.exit(0);
   }
-  if (lastUserOriginIsTaskNotification(transcriptPath)) {
-    logLine({ phase: "skipped", reason: "task-notification", event });
+  const lastTurn = classifyLastUserTurn(transcriptPath);
+  if (lastTurn.kind === "monitor" || lastTurn.kind === "machine") {
+    logLine({
+      phase: "skipped",
+      reason: `machine-turn:${lastTurn.kind}`,
+      event,
+    });
+    process.exit(0);
+  }
+
+  // One agent reporting back while another still runs is mid-workflow, not a
+  // handover: Claude is about to go back to waiting on the second one.
+  const stillRunning = pendingForkedSkills(transcriptPath);
+  if (stillRunning.length) {
+    logLine({
+      phase: "suppressed",
+      reason: "forked-skill-running",
+      event,
+      skills: stillRunning.map((r) => r.skillName),
+    });
     process.exit(0);
   }
 
@@ -430,6 +536,10 @@ if (event === "Stop") {
     input: input.tool_input || {},
   });
 } else {
+  // agent_needs_input also lands here and delivers as-is: its message already
+  // reads "<agent> needs your input: …". It is the only alert a forked skill
+  // blocked on a prompt can produce, because a blocked agent stops writing its
+  // transcript and so reads as pending to the suppression above.
   body = input.message || "Notification";
 
   // The generic permission_prompt Notification fires ~6s later as a backstop. If
@@ -448,24 +558,37 @@ if (event === "Stop") {
     process.exit(0);
   }
 
-  // The generic idle_prompt body ("Claude is waiting for your input") names no
-  // context. Replace it with the last thing Claude actually said - assistant text
-  // for a normal turn, or a finished forked command's output (command_result) -
-  // so the alert identifies the session + topic, matching a Stop notification.
-  // Falls back to the generic message when the turn ended on a tool call (no
-  // assistant text), the command produced no output, or the transcript can't be
-  // resolved. Then dedup on that resolved body: if this idle period already
-  // delivered the same text (via Stop or an earlier idle_prompt), drop it.
+  // idle_prompt is a plain 60s timer on "nothing has happened" (settings key
+  // messageIdleNotifThresholdMs, default 60000), so it says nothing about whether
+  // Claude is actually blocked on the user. Drop it while a forked skill is still
+  // running, then replace the contextless generic body ("Claude is waiting for
+  // your input") with the last thing Claude actually said, so the alert names the
+  // session + topic the way a Stop notification does. Keeps the generic message
+  // when the turn ended on a tool call (no assistant text) or the transcript
+  // can't be resolved. Then dedup on that resolved body: if this idle period
+  // already delivered the same text (via Stop or an earlier idle_prompt), drop it.
   if (input.notification_type === "idle_prompt") {
     const tp = resolveTranscriptPath(input);
-    if (tp && lastUserOriginIsTaskNotification(tp)) {
-      logLine({ phase: "skipped", reason: "task-notification", event });
+    // "machine" is deliberately allowed through here: this backstop is what
+    // catches a background command that left Claude genuinely idle, the case the
+    // Stop above declines to alert on because Claude usually keeps working.
+    if (tp && classifyLastUserTurn(tp).kind === "monitor") {
+      logLine({ phase: "skipped", reason: "machine-turn:monitor", event });
       process.exit(0);
     }
     if (tp) {
+      const running = pendingForkedSkills(tp);
+      if (running.length) {
+        logLine({
+          phase: "suppressed",
+          reason: "forked-skill-running",
+          event,
+          skills: running.map((r) => r.skillName),
+        });
+        process.exit(0);
+      }
       const state = readLastAssistantState(tp);
-      if (state.kind === "text" || state.kind === "command_result")
-        body = state.text;
+      if (state.kind === "text") body = state.text;
     }
     if (wasIdleNotified(sessionId, body)) {
       logLine({ phase: "suppressed", reason: "idle-already-notified", event });

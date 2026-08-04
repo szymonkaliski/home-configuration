@@ -5,17 +5,17 @@ fi
 typeset -gU fpath     # clean fpaths
 autoload -Uz compinit # load completions
 
-# Reuse the cached dump with -C (skips the slow security audit) while it's fresh;
+# reuse the cached dump with -C (skips the slow security audit) while it's fresh;
 # do a full rebuild + bytecode-compile at most once a day so newly installed
-# completions still get picked up. compinit reads the compiled .zwc when present.
+# completions still get picked up
 _zdump="${ZDOTDIR:-$HOME}/.zcompdump"
 _zfresh=( ${_zdump}(N.mh-24) ) # exists and modified within the last 24h
 if (( $#_zfresh )); then
-  compinit -C -d "$_zdump" # trust the cache, skip the slow security audit
+  compinit -C -d "$_zdump"     # trust the cache, skip the slow security audit
 else
-  compinit -d "$_zdump"    # full rebuild at most once a day (picks up new completions)
+  compinit -d "$_zdump"        # full rebuild at most once a day (picks up new completions)
 fi
-# Bytecode-compile the dump (compinit loads the .zwc ~3x faster) whenever stale.
+# bytecode-compile the dump whenever stale
 if [[ -s "$_zdump" && ( ! -s "${_zdump}.zwc" || "$_zdump" -nt "${_zdump}.zwc" ) ]]; then
   zcompile "$_zdump"
 fi
@@ -53,8 +53,8 @@ zstyle ":completion:*" completer _expand _complete _approximate
 # remove the trailing slashes
 zstyle ":completion:*" squeeze-slashes true
 
-# complete ssh/scp
-zstyle -e ':completion:*:(ssh|scp):*' hosts 'reply=(
+# complete ssh/scp/mosh from ~/.ssh/config
+zstyle -e ':completion:*:(ssh|scp|mosh):*' hosts 'reply=(
   ${=${${${${(@M)${(f)"$(<~/.ssh/config)"}:#Host *}#Host }:#*\**}:#*\?*}}
 )'
 
@@ -147,10 +147,3 @@ if (( $+commands[microvm] )); then
   }
   compdef _microvm microvm
 fi
-
-# # make `open` aware of /Applications
-# compctl -f \
-#   -x 'p[2]' \
-#   -s "$(/bin/ls -d1 /Applications/*.app | sed 's|^.*/\([^/]*\)\.app.*|\\1|;s/ /\\\\ /g')" \
-#   -- open
-

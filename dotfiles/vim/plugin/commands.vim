@@ -26,7 +26,7 @@ command! Todo :call utils#find_todo()
 function! PlugUp()
   PlugUpdate
   PlugUpgrade
-  if coc#rpc#ready()
+  if exists('*coc#rpc#ready') && coc#rpc#ready()
     CocUpdate
   else
     augroup PlugUpCocUpdate

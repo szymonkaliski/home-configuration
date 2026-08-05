@@ -11,7 +11,7 @@ morph serves one `.jsx` file (or a directory of them), hot-reloads on every save
 
 The strong default is that **the thing under discussion is rendered live at full size, in the form it will really take, and everything else on the page is a control that changes it.** Not a list of options described in cards for the reader to read top to bottom and imagine.
 
-If you are choosing between fifteen versions of a paragraph, the page shows *one* paragraph (the current one, typeset the way it will actually ship) and the fifteen candidates are a control that swaps it. If you are tuning a layout, the layout is on screen and the knobs are beside it. The reader should be able to answer "how does this feel?" by looking, never by reconstructing it in their head from a description.
+If you are choosing between fifteen versions of a paragraph, the page shows _one_ paragraph (the current one, typeset the way it will actually ship) and the fifteen candidates are a control that swaps it. If you are tuning a layout, the layout is on screen and the knobs are beside it. The reader should be able to answer "how does this feel?" by looking, never by reconstructing it in their head from a description.
 
 This follows from the medium. A morph page can re-render on click; prose cannot. **If the page would work just as well pasted into a chat message, it is a document and you have wasted the medium.** Use that as the test before you serve.
 
@@ -29,7 +29,8 @@ Reach for a document shape only when there is genuinely nothing to manipulate: a
 
 - One `.jsx` file, default export is the page component. Keep it responsive; these get opened on phones.
 - `useMorph` and `useShell` are ambient, no import. So are the React APIs (`useState`, `useMemo`, `useEffect`, `use`, `Suspense`, `React`).
-- Bare npm imports resolve through esm.sh in the browser at view time, unpinned. Pin in the specifier (`'pkg@1.2.3'`) when stability matters.
+- npm imports are static and top-of-file: `import * as acorn from "acorn@8"` is fetched from esm.sh at view time, cached across hot-swaps, with React deduped to the host copy. The specifier text lands in the URL verbatim, so pin it (`"pkg@1.2.3"`, or a major like `"acorn@8"`). Dynamic `import()` of a bare name does not resolve, and a package that fails to load surfaces as `error` in the terminal.
+- The preview is a sandboxed frame with an opaque origin and an `about:srcdoc` base, so **every relative URL resolves to nothing**: images, `fetch`, and the side assets many wasm builds pull in next to themselves. Use absolute URLs, and prefer packages that inline their wasm. The host origin is injected as `window.__MORPH_ORIGIN__` when you need to reach a host asset.
 - Tailwind is loaded into the preview from a pinned CDN, so utilities and `dark:` work with no setup. Follow the reader's device theme, never hardcode dark. The page background is the exception: `html, body` live outside the React tree, so set it in a `<style>` block with a `prefers-color-scheme` override, or the white shell leaks at the edges.
 - Keep code samples in a template literal, `<pre>{`...`}</pre>`. JSX collapses whitespace in literal text, so code written as plain JSX text loses its newlines.
 - Write to `./tmp/YYYY-MM-DD-<slug>.morph.jsx` in the project root.
@@ -45,7 +46,7 @@ morph ./docs                             # every top-level .jsx, each at its own
 
 Never call `open`. Read the `ready` line for the real URL and tell the reader. Port 3000 by default or the next free one; an explicit `--port` fails fast if busy. The server binds every interface, so also offer `http://<hostname>:<port>` (`hostname -s`) for a phone on the LAN or Tailscale.
 
-Then arm the watch, in the same turn, before you go back to editing. **Use `Monitor`, not a backgrounded `Bash` command.** Monitor turns every stdout line into a notification delivered to you as it happens; a backgrounded `tail -F | grep` writes to an output file that nothing delivers, so the reader's comments pile up unread until you happen to look. The reader should never have to nudge you in chat to say they commented.
+Then arm the watch, in the same turn, before you go back to editing. **Use `Monitor`, not a backgrounded `Bash` command.** Monitor turns every stdout line into a notification delivered to you as it happens; a backgrounded `tail -F | grep` writes to an output file that nothing delivers, so the reader's comments pile up unread until you happen to look.
 
 ```
 Monitor({
@@ -58,20 +59,20 @@ Monitor({
 
 `persistent: true` is required: this watch must live as long as the session, and the default 5-minute timeout would silently disarm it mid-conversation. `--line-buffered` is required too, or matches sit in grep's buffer instead of reaching you.
 
-The filter drops the tags that are not the reader: `ready`, `open`, `new`, and `gone` are server and route lifecycle, and `update` fires on **your own** saves, so including it would notify you about yourself on every edit. Everything else is the reader acting or the page breaking. One event per line as `HH:MM:SS <tag> <message>`:
+The filter drops the tags that are not the reader: `ready`, `port`, `open`, `close`, `new`, and `gone` are server and route lifecycle, and `update` fires on **your own** saves, so including it would notify you about yourself on every edit. Everything else is the reader acting or the page breaking. One event per line as `HH:MM:SS <tag> <message>`:
 
-| tag                       | what happened                                                    | what you do                                                       |
-| ------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `mutate`                  | the reader changed a `useMorph` value                            | read the `.jsx` for the full value, then edit the file to respond |
-| `ask`                     | a `useShell` hook is waiting on approval                         | tell the reader it is waiting; they may be on another device      |
-| `grant` / `deny` / `stop` | the reader answered that approval, or cancelled a running command | on `deny` and `stop`, stop expecting a result                     |
-| `shell`                   | a command started, then finished (`N line(s)`, or red `exit N`)  | on a failure, read the result in the `.jsx` and respond           |
-| `skip`                    | a change was refused, usually a non-literal                      | fix the initializer; the reader watched it roll back              |
-| `warn`                    | a file read or write failed, so a reader change may not have landed | re-read the `.jsx` to see what is actually there                |
-| `error`                   | an edit broke the preview                                        | fix until `ok` follows                                            |
-| `ok`                      | the preview recovered after an `error`                           | nothing, the fix landed                                           |
+| tag                       | what happened                                                       | what you do                                                       |
+| ------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `mutate`                  | the reader changed a `useMorph` value                               | read the `.jsx` for the full value, then edit the file to respond |
+| `ask`                     | a `useShell` hook is waiting on approval                            | tell the reader it is waiting; they may be on another device      |
+| `grant` / `deny` / `stop` | the reader answered that approval, or cancelled a running command   | on `deny` and `stop`, stop expecting a result                     |
+| `shell`                   | a command started, then finished (`N line(s)`, or red `exit N`)     | on a failure, read the result in the `.jsx` and respond           |
+| `skip`                    | a change was refused, usually a non-literal                         | fix the initializer; the reader watched it roll back              |
+| `warn`                    | a file read or write failed, so a reader change may not have landed | re-read the `.jsx` to see what is actually there                  |
+| `error`                   | an edit broke the preview                                           | fix until `ok` follows                                            |
+| `ok`                      | the preview recovered after an `error`                              | nothing, the fix landed                                           |
 
-A notification carries only the tag line, not the value. On any `mutate`, read the `.jsx` to see what the reader actually wrote, then respond in the same turn: treat it as an interruption worth handling now, not something to batch. `error` is urgent.
+A notification carries only the tag line, never the value, so a `mutate` always means opening the file. Respond in the same turn rather than batching; `error` is urgent.
 
 Silence means nothing happened, with one exception: if the morph server itself dies, `tail -F` sits on a frozen file and stays quiet forever. That case is covered by the server's own background task, which notifies you when it exits. Treat that notification as the page being down.
 
@@ -85,28 +86,20 @@ Keep one server for the whole session. Every save hot-reloads with Fast Refresh 
 
 Which means there is no staging area. The reader is looking at the page while you work, so each intermediate save is a frame in something they are watching. **Order your edits so the file is valid after every single one.**
 
-The failure modes are not equally visible. A transpile or load failure keeps the last good render, so the reader sees a stale but intact page. A throw *during render* blanks it to white. Referencing something that does not exist yet is the blanking kind, and it is the one you will cause.
+The failure modes are not equally visible. A transpile or load failure keeps the last good render, so the reader sees a stale but intact page. A throw _during render_ blanks it to white. Referencing something that does not exist yet is the blanking kind, and it is the one you will cause.
 
-So, always: **define first, then wire up.** "Define" covers every binding the new markup reads, not just the obvious ones:
+So, always: **define first, then wire up.** The definition lands in one edit and the JSX that references it in the next; a rename adds the new name before dropping the old; a delete removes the references before the definition. "Define" covers every binding the new markup reads, and **a hook or local variable counts**: a section that reads `freeTime` needs its `useMorph`/`useState` line to land _first_. That is the one that slips through, because you are busy thinking about the component you just carefully defined.
 
-- Adding a component, constant, or helper: add the definition in one edit, reference it in the next. Never introduce `<Card>` into the render before `Card` exists in the file.
-- **Adding a hook or local variable counts.** A section that reads `freeTime` needs its `useMorph`/`useState` line to land *first*. This is the easy one to miss, because you are thinking about the component you just carefully defined and the local slips through in the same edit as the JSX that uses it.
-- Renaming: add the new name, move the call sites, then delete the old one. Three valid states.
-- Deleting: remove the references first, the definition last.
-- Restructuring a list into a shared component: write the component alongside the existing inline copy, switch the call sites, then remove the inline copy.
-
-Before saving JSX you just wrote, reread it for every identifier it references and confirm each one already exists in the file on disk. That check is faster than the reader watching the page blank.
-
-When a change cannot be made in one valid step, pick the smallest sequence of valid intermediates rather than the shortest sequence of edits. An extra tool call costs you nothing; a white screen costs the reader their place, their scroll position, and their confidence that the page works.
+Before saving JSX you just wrote, reread it for every identifier it references and confirm each one already exists in the file on disk. Prefer the smallest sequence of valid intermediates over the shortest sequence of edits: an extra tool call costs you nothing, a white screen costs the reader their scroll position and their confidence that the page works.
 
 Ordering correctly is not the same as verifying. **Do not poll to confirm your own edit rendered. Make the edit and move on.** This is the biggest time-sink to avoid. Do not run esbuild, tsc, or Prettier (morph reformats the file itself), do not open a browser or screenshot the page, and do not re-read the output hunting for a clean render. Never wait to confirm an error's absence: the monitor will tell you if there is one.
 
 Two things silently fail to survive a hot-swap, and both have the same fix: stash on `window`.
 
-- **Element types created at module scope.** Fast Refresh preserves identity for *functions* only. A module-scope `React.createContext()` (likewise `memo`/`forwardRef` wrappers and HOC results) is a fresh object on every re-eval, so React sees a different Provider element type and **remounts everything beneath it**, resetting every `useState` on the page on every save, with no error and no event. Create it once: `const Ctx = (window.__CTX__ ??= React.createContext(null))`.
+- **Element types created at module scope.** Fast Refresh preserves identity for _functions_ only. A module-scope `React.createContext()` (likewise `memo`/`forwardRef` wrappers and HOC results) is a fresh object on every re-eval, so React sees a different Provider element type and **remounts everything beneath it**, resetting every `useState` on the page on every save, with no error and no event. Create it once: `const Ctx = (window.__CTX__ ??= React.createContext(null))`.
 - **In-progress text drafts.** A `useState` draft dies whenever its component remounts, which your edits can cause at any moment. Mirror keystrokes into a `window` stash and seed the field from it on mount, so a save landing mid-sentence costs the reader nothing.
 
-(The precise remount rules: a component's `useState`/`useReducer` initializer text is part of its refresh signature, so editing an initializer remounts that component. `useMorph`/custom-hook arguments are not part of the signature, so pushing a new value by editing a `useMorph` initializer does not remount anything.)
+(A component's `useState`/`useReducer` initializer text is part of its refresh signature, so editing one remounts that component. `useMorph` arguments are not, so pushing a new value never remounts anything.)
 
 ## Everything is commentable
 
@@ -122,7 +115,7 @@ Practical shape: one `Annotatable`-style wrapper that takes an `id`, renders its
 - Keep the affordance visible-but-quiet (a faint marker at ~30% opacity that solidifies on hover) and always tappable. A pure `hover:` reveal does not exist on a phone, and these get read on phones.
 - Show the message count in the marker when a thread exists, so the reader sees at a glance where conversation is already happening.
 - Choose ids that describe the content (`intro-freetime`), not the position (`section-3`). Reordering the page must not silently reattach a comment to different content, and the id is what you will grep for when the `mutate` arrives.
-- Offer both grains where both make sense: per-item boxes *and* a whole-section box, since "this option is wrong" and "the whole framing is wrong" are different notes.
+- Offer both grains where both make sense: per-item boxes _and_ a whole-section box, since "this option is wrong" and "the whole framing is wrong" are different notes.
 
 ## State channel: useMorph
 
@@ -132,20 +125,23 @@ Practical shape: one `Annotatable`-style wrapper that takes an `id`, renders its
 
   You are editing the file while the reader is using the page, and Fast Refresh preserves `useState` only while a component's hook list stays stable. Adding a hook, renaming the component, or restructuring it remounts and silently resets every `useState` inside. So the reader collapses a section, you save, and it springs back open, repeatedly, with no error and no event, because a reset `useState` is invisible to you. They just quietly redo the work until they complain.
 
-  Anything the reader *deliberately sets* is a preference: collapsed/expanded, chosen tab, sort order, filters, selected variant. Persist all of it.
+  Anything the reader _deliberately sets_ is a preference: collapsed/expanded, chosen tab, sort order, filters, selected variant. Persist all of it.
 
   `useState` is correct in three cases, all narrow: per-keystroke drafts batched behind a blur or Send button (keeping churn out of the file is the point), genuinely transient pointer state (hover, focus, drag), and anything inside a `.map()`, where one `useMorph` literal shared across every mount makes it wrong anyway.
-- Initializers must be **JSON literals**: `useMorph(makeDefault())` is refused with a `skip` line and the page rolls the edit back visibly. Placement is not checked, though, because the key is one per *declaration*: a hook inside a `.map()` is accepted and shares a single literal across every mount, so all of them get the last write.
-- One top-level hook per collection, keyed by id (`Page.comments`), not a hook per item. The identity `Component.varName` is the round-trip key, so renaming the component or the variable orphans a reader's in-flight edit.
+
+- Initializers must be **JSON literals**: `useMorph(makeDefault())` is refused with a `skip` line and the page rolls the edit back visibly. The same rule governs what your setters write: a value carrying `undefined`, `NaN`, or `Infinity` anywhere is refused, so delete a key rather than assigning it `undefined`. Placement is not checked, though, because the key is one per _declaration_: a hook inside a `.map()` is accepted and shares a single literal across every mount, so all of them get the last write.
+- One top-level hook per collection, keyed by id (`Page.comments`), not a hook per item. The round-trip key is `Component.varName`, read off the enclosing function's name and the **first element of the array pattern**, so the value has to be destructured: `const [comments, setComments] = useMorph(...)` inside `function Page()`. Anything else derives a `?`, and two hooks deriving the same id are both refused. Renaming the component or the variable orphans a reader's in-flight edit.
 - Prefer the recipe setter, `setX(draft => { ... })`. It produces granular immer patches that rebase onto a concurrent edit; `setX({ ...x })` is one root-replace that can lose a change.
 - Batch large edits behind an explicit action (a Send button), never per keystroke.
 - Concurrency is one way: a reader mutation rebases onto the file, but your save is a plain write. After any `mutate`, re-read the file before editing.
 
 ## Running commands: useShell
 
-`useShell(command, result)` is the same trick pointed outward: the host runs the command and writes the result into the second argument.
+`useShell(command, result)` is the same trick pointed outward: the host runs the command and writes the result into the second argument. It returns `[state, refresh, cancel]`.
 
-- The command must be a **static string literal**, and it is split into argv and spawned with no shell, so `&&` and `$(...)` are inert.
+- The command must be a **static string literal**, split into argv and spawned with no shell, so `&&` and `$(...)` are inert. Quotes and backslashes are honored, so an argument containing a space is fine.
+- **It runs in the document's own directory**, not the project root, so a page in `./tmp/` resolves relative paths against `./tmp/`.
 - The reader approves each command in a host-page dialog; the terminal logs `ask` at the same moment, because the page may be open on another device. Grants are stored outside the document, so a yes never travels with the file.
-- The result is a discriminated union (`idle`, `asking`, `running`, `denied`, `cancelled`, `ok`, `failed`, `stale`, `unavailable`); handle every case. Only `ok` and `failed` persist.
-- It runs once, then stops. A hook that already has a result never re-runs on its own; refreshing is an explicit act.
+- A hook with no result argument asks the moment the page opens, so a page with several of them greets the reader with a queue of dialogs. One that already has a result never re-runs on its own; refreshing is an explicit act.
+- The result is a discriminated union (`idle`, `asking`, `running`, `denied`, `cancelled`, `ok`, `failed`, `stale`, `unavailable`); handle every case. `ok` and `stale` carry `lines` (an array), `ranAt`, and `stderr`; `failed` adds `exitCode`; `unavailable` carries `reason`. Only `ok` and `failed` persist.
+- Output is capped at 256 KB, and a command still running after 30s is killed and stored as `failed`.

@@ -30,7 +30,8 @@ Reach for a document shape only when there is genuinely nothing to manipulate: a
 - One `.jsx` file, default export is the page component. Keep it responsive; these get opened on phones.
 - `useMorph` and `useShell` are ambient, no import. So are the React APIs (`useState`, `useMemo`, `useEffect`, `use`, `Suspense`, `React`).
 - npm imports are static and top-of-file: `import * as acorn from "acorn@8"` is fetched from esm.sh at view time, cached across hot-swaps, with React deduped to the host copy. The specifier text lands in the URL verbatim, so pin it (`"pkg@1.2.3"`, or a major like `"acorn@8"`). Dynamic `import()` of a bare name does not resolve, and a package that fails to load surfaces as `error` in the terminal.
-- The preview is a sandboxed frame with an opaque origin and an `about:srcdoc` base, so **every relative URL resolves to nothing**: images, `fetch`, and the side assets many wasm builds pull in next to themselves. Use absolute URLs, and prefer packages that inline their wasm. The host origin is injected as `window.__MORPH_ORIGIN__` when you need to reach a host asset.
+- **Files beside the document are served, and a relative path reaches them**: `<img src="photo.jpg" />`, at any depth (`images/logo.png`). Put images next to the document rather than inlining them as base64, which bloats the file past the point an agent can edit it. Dotfiles are refused, so nothing under `.git/` or a `.env` is reachable.
+- The frame's origin is still opaque, so anything needing CORS fails even by relative path: `fetch`, and the side assets many wasm builds pull in next to themselves. Inline that data in the document, and prefer packages that inline their wasm. An in-page `#anchor` resolves against the host, so it navigates the frame rather than scrolling; use `onClick` with `scrollIntoView`.
 - Tailwind is loaded into the preview from a pinned CDN, so utilities and `dark:` work with no setup. Follow the reader's device theme, never hardcode dark. The page background is the exception: `html, body` live outside the React tree, so set it in a `<style>` block with a `prefers-color-scheme` override, or the white shell leaks at the edges.
 - Keep code samples in a template literal, `<pre>{`...`}</pre>`. JSX collapses whitespace in literal text, so code written as plain JSX text loses its newlines.
 - Write to `./tmp/YYYY-MM-DD-<slug>.morph.jsx` in the project root.
@@ -39,12 +40,14 @@ Reach for a document shape only when there is genuinely nothing to manipulate: a
 
 Serving is two steps and **the second is not optional**. Start the server in the background, then arm a watch on its output and keep it running for the rest of the session. A morph page exists so the reader can click, comment, and answer inside it; every one of those actions lands in the file and is yours to act on. Serving without watching means the reader talks and nobody listens.
 
+morph serves a **directory**, never a single file: every top-level `.jsx` in it gets its own route, with an index at `/`. Handing it a file is an error, because a document's assets are the files beside it, so the mount is a directory either way and should be the thing you typed.
+
 ```bash
-morph ./tmp/2026-07-29-notes.morph.jsx   # one document, at /
-morph ./docs                             # every top-level .jsx, each at its own route, index at /
+morph ./tmp     # /2026-07-29-notes.morph.jsx, … and / lists them
+morph ./docs    # same, for another folder
 ```
 
-Never call `open`. Read the `ready` line for the real URL and tell the reader. Port 3000 by default or the next free one; an explicit `--port` fails fast if busy. The server binds every interface, so also offer `http://<hostname>:<port>` (`hostname -s`) for a phone on the LAN or Tailscale.
+Never call `open`. Read the `ready` line for the real URL, then the `→` line for the document's own route, and tell the reader that route rather than `/`. Port 3000 by default or the next free one; an explicit `--port` fails fast if busy. The server binds every interface, so also offer `http://<hostname>:<port>` (`hostname -s`) for a phone on the LAN or Tailscale.
 
 Then arm the watch, in the same turn, before you go back to editing. **Use `Monitor`, not a backgrounded `Bash` command.** Monitor turns every stdout line into a notification delivered to you as it happens; a backgrounded `tail -F | grep` writes to an output file that nothing delivers, so the reader's comments pile up unread until you happen to look.
 

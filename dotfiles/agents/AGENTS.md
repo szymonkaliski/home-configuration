@@ -12,6 +12,10 @@
   - if you haven't opened a file, you cannot make claims about what it contains
   - "I don't know" is a valid answer, say it, then investigate
 
+- reproduce a bug and observe the failure yourself before attempting a fix - don't fix from a description alone
+  - confirm the fix by observing the same reproduction now pass
+  - if it can't be reproduced, say so explicitly instead of fixing speculatively
+
 - NEVER dismiss errors, warnings, or failing tests as "pre-existing" or "not caused by my changes" - you are the sole developer - all issues are your responsibility
   - when you encounter errors during builds, linting, typechecks, or tests that you didn't introduce, flag them and offer to fix them rather than skipping over them
 

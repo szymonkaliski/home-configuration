@@ -23,4 +23,5 @@ if ! git remote get-url minix &>/dev/null; then
   fi
 fi
 
-git push minix "$(git branch --show-current)"
+# -u because push.autoSetupRemote only applies to default pushes, not explicit refspecs
+git push -u minix "$(git branch --show-current)"

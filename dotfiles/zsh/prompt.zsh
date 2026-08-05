@@ -1,20 +1,5 @@
-# keep in sync with bin/motd
-if [ "${HOST%%.*}" = "orchid" ]; then
-  PROMPTCOLOR=blue
-elif [ "${HOST%%.*}" = "minix" ]; then
-  PROMPTCOLOR=yellow
-elif [ "${HOST%%.*}" = "berry" ]; then
-  PROMPTCOLOR=green
-else
-  PROMPTCOLOR=magenta
-fi
-
-if (( EUID == 0 )); then
-  PROMPTCOLOR=red
-fi
-
 prompt_pwd() {
-  print -n "%{$fg[$PROMPTCOLOR]%}"
+  print -n "%F{${HOST_COLOR:-5}}"
   print -n "%50<...<%3~"
 }
 

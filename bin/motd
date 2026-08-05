@@ -1,21 +1,14 @@
 #!/usr/bin/env bash
 
 dim=$(tput setaf 8)
-green=$(tput setaf 2)
-yellow=$(tput setaf 3)
-blue=$(tput setaf 4)
 red=$(tput setaf 1)
 reset=$(tput sgr0)
 
+# HOST_COLOR is exported by dotfiles/zsh/colors.zsh
+host_color=$(tput setaf "${HOST_COLOR:-5}")
+
 hostname=$(hostname -s | tr '[:upper:]' '[:lower:]')
 os=$(uname)
-
-case $hostname in
-  minix)  host_color=$yellow ;;
-  orchid) host_color=$blue ;;
-  berry)  host_color=$green ;;
-  *)      host_color=$reset ;;
-esac
 
 if [[ $os == "Linux" ]]; then
   # uptime

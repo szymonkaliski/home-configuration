@@ -5,21 +5,13 @@ input=$(cat)
 cwd=$(echo "$input" | jq -r '.workspace.current_dir')
 
 hostname=$(hostname -s)
-if [ "$hostname" = "orchid" ]; then
-  promptcolor="34"
-elif [ "$hostname" = "minix" ]; then
-  promptcolor="33"
-else
-  promptcolor="35"
-fi
+
+# HOST_COLOR is exported by dotfiles/zsh/colors.zsh
+promptcolor=$(( 30 + ${HOST_COLOR:-5} ))
 
 vm_prefix=""
 if [[ "$hostname" == vm-* ]]; then
   vm_prefix="$hostname "
-fi
-
-if [ "$(whoami)" = "root" ]; then
-  promptcolor="31"
 fi
 
 cwd_with_tilde=${cwd/#$HOME/\~}

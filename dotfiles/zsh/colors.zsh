@@ -3,6 +3,19 @@ autoload -Uz colors
 # init colors
 colors
 
+# per-host accent color as an ANSI color index, exported so child processes get
+# it too: zsh/prompt.zsh (%F{n}), bin/motd (tput setaf n), claude/statusline-command.sh (30+n)
+case ${HOST%%.*} in
+  orchid) export HOST_COLOR=4 ;; # blue
+  minix)  export HOST_COLOR=3 ;; # yellow
+  berry)  export HOST_COLOR=6 ;; # cyan
+  *)      export HOST_COLOR=5 ;; # magenta, covers the vm-* microvms
+esac
+
+if (( EUID == 0 )); then
+  export HOST_COLOR=1 # red
+fi
+
 # grep
 export GREP_COLOR=34
 

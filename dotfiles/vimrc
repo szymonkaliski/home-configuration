@@ -23,7 +23,9 @@ Plug 'tpope/vim-sleuth'
 
 " deferred
 DeferPlug 'chaoren/vim-wordmotion'
-DeferPlug 'neoclide/coc.nvim',             { 'branch': 'release' }
+" coc only sends VimEnter to its node service from a VimEnter autocmd it skips
+" registering when loaded late, so a deferred load needs an explicit CocStart
+DeferPlug 'neoclide/coc.nvim',             { 'branch': 'release' }, 'CocStart'
 DeferPlug 'pbrisbin/vim-mkdir'
 DeferPlug 'tpope/vim-repeat'
 DeferPlug 'tpope/vim-speeddating'

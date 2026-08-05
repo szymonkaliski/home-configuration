@@ -17,6 +17,13 @@ in
   # the base profile turns zfs on, which we don't use
   boot.supportedFilesystems.zfs = false;
 
+  # exposes the 40-pin header's SPI0 (GPIO10 MOSI, GPIO11 SCLK, GPIO8 CE0) as
+  # /dev/spidev0.{0,1}. without it the rp1 spi@50000 node stays disabled
+  hardware.raspberry-pi.config.all.base-dt-params.spi = {
+    enable = true;
+    value = "on";
+  };
+
   networking.hostName = "berry";
   networking.useDHCP = false;
   networking.useNetworkd = true;
@@ -86,8 +93,11 @@ in
   users.users.szymon = {
     isNormalUser = true;
     extraGroups = [
-      "wheel"
+      "audio"
+      "gpio"
+      "spi"
       "video"
+      "wheel"
     ];
     shell = pkgs.zsh;
     openssh.authorizedKeys.keys = [

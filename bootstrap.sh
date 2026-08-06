@@ -5,8 +5,6 @@
 
 cd "$(dirname "${BASH_SOURCE[0]}")" || exit
 
-DOTFILE_DIR="$(pwd)/dotfiles"
-
 HOST="${1:-}"
 
 case "$HOST" in
@@ -49,6 +47,17 @@ function ageKeygenWrapped() {
   fi
 }
 
+function sshKeygenWrapped() {
+  if command -v ssh-keygen &> /dev/null; then
+    ssh-keygen "$@"
+  elif command -v nix &> /dev/null; then
+    nix --extra-experimental-features "nix-command flakes" shell nixpkgs#openssh --command ssh-keygen "$@"
+  else
+    echo "Error: ssh-keygen is not installed and nix is not available as fallback"
+    exit 1
+  fi
+}
+
 # every host decrypts secrets/shared.yaml, so a new one needs its own age
 # identity in .sops.yaml and the file re-encrypted from a host that can already
 # read it - re-encrypting requires decrypting first
@@ -68,6 +77,27 @@ if [ ! -f "$AGE_KEY_FILE" ]; then
     echo
     echo "age public key - add to .sops.yaml, then 'sops updatekeys' every secrets file:"
     ageKeygenWrapped -y "$AGE_KEY_FILE"
+    echo
+    read -rp "$(tput setaf 3)Press enter once that is pushed$(tput sgr0) " RESP
+
+    gitWrapped pull
+  fi
+fi
+
+# the other hosts authorize this one by public key, so they need it in
+# nix/keys.nix and a rebuild before they will accept a connection from here
+if [ ! -f "$HOME/.ssh/id_ed25519" ]; then
+  read -rp "$(tput setaf 3)No ssh key on this host. Generate one?$(tput sgr0) (y/N) " RESP
+
+  if [ "$RESP" == "y" ] || [ "$RESP" == "Y" ]; then
+    sshKeygenWrapped -t ed25519 -C "szymon@$HOST" -f "$HOME/.ssh/id_ed25519" -N ""
+
+    echo
+    echo "ssh public key - add to nix/keys.nix as '$HOST', then rebuild the other hosts:"
+    cat "$HOME/.ssh/id_ed25519.pub"
+    echo
+    echo "ssh host key - add to nix/keys.nix as '${HOST}Host' if another host pins it:"
+    cat /etc/ssh/ssh_host_ed25519_key.pub
     echo
     read -rp "$(tput setaf 3)Press enter once that is pushed$(tput sgr0) " RESP
 

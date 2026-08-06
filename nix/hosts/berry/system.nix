@@ -86,7 +86,6 @@ in
   services.tailscale.enable = true;
 
   services.openssh.enable = true;
-  services.openssh.settings.PasswordAuthentication = false;
 
   programs.mosh.enable = true;
 
@@ -100,14 +99,16 @@ in
       "wheel"
     ];
     shell = pkgs.zsh;
+
+    # setup.sh replaces this with a real password,
+    # we need one for bootstrap.sh until then
+    initialPassword = "berry";
+
     openssh.authorizedKeys.keys = [
       keys.orchid
       keys.minix
     ];
   };
-
-  # logging in with ssh key is the only access, so this is "safe"
-  security.sudo.wheelNeedsPassword = false;
 
   nix.distributedBuilds = true;
 

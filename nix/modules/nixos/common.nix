@@ -22,6 +22,11 @@
   # claude-code ships native binaries, they hardcode the glibc loader path
   programs.nix-ld.enable = true;
 
+  # some clients log in with a password rather than a key
+  services.openssh.settings.PasswordAuthentication = true;
+
+  security.sudo.wheelNeedsPassword = true;
+
   time.timeZone = "Europe/Warsaw";
 
   nixpkgs.config.allowUnfree = true;

@@ -43,6 +43,17 @@ function gitWrapped() {
   fi
 }
 
+function mkpasswdWrapped() {
+  if command -v mkpasswd &> /dev/null; then
+    mkpasswd "$@"
+  elif command -v nix &> /dev/null; then
+    nix --extra-experimental-features "nix-command flakes" run nixpkgs#mkpasswd -- "$@"
+  else
+    echo "Error: mkpasswd is not installed and nix is not available as fallback"
+    exit 1
+  fi
+}
+
 function askBeforeRunning() {
   SCRIPT=$1
 
@@ -87,6 +98,20 @@ if [[ $HOST == "minix" || $HOST == "berry" ]] && command -v tailscale &> /dev/nu
       sudo tailscale up
     fi
   fi
+fi
+
+# minix gets its password from the nixos installer;
+# berry's sd image ships with initialPassword instead, which we have to replace
+if [[ $HOST == "berry" ]]; then
+  # crypt(3) returns the same hash when re-run against it with the right
+  # password, so this compares the stored hash to one of "berry"
+  CURRENT="$(sudo getent shadow "$USER" | cut -d: -f2)"
+
+  while [ "$(mkpasswdWrapped -S "$CURRENT" berry 2> /dev/null)" == "$CURRENT" ]; do
+    echo "$(tput setaf 3)$USER is still on the initial password, set a real one.$(tput sgr0)"
+    sudo passwd "$USER"
+    CURRENT="$(sudo getent shadow "$USER" | cut -d: -f2)"
+  done
 fi
 
 # auth Dropbox on minix if needed

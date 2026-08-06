@@ -173,6 +173,8 @@ in
 
   services.openssh.enable = true;
 
+  programs.ssh.knownHosts.berry.publicKey = keys.berryHost;
+
   programs.mosh.enable = true;
 
   # tailscale with exit node
@@ -225,7 +227,10 @@ in
     ];
     shell = pkgs.zsh;
     linger = true;
-    openssh.authorizedKeys.keys = [ keys.orchid ];
+    openssh.authorizedKeys.keys = [
+      keys.orchid
+      keys.berry
+    ];
   };
 
   # berry offloads its builds here; the module confines the nix-ssh user to

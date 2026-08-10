@@ -10,6 +10,10 @@ Run `hostname -s` to detect which one you're on.
 - `dotfiles/` - dotfiles used on various machines
 - `bin/` - shell scripts symlinked to `~/.bin`
 
+## Nix overrides
+
+When adding an override that is only needed until upstream catches up (package pulled from unstable, vendored patch, version pin), wrap it in `lib.warnIf` with a condition that tests whether it is still needed, so evaluation itself warns when it can be dropped.
+
 ## Rebuild commands
 
 NixOS - rebuilds system:

@@ -27,7 +27,13 @@
       "${config.users.users.szymon.home}/.nix-profile"
       "${config.users.users.szymon.home}/.npm"
       "${config.users.users.szymon.home}/Dropbox"
+      # re-staged from the host on every `microvm start`
       "${config.users.users.szymon.home}/MicroVMs/*/data/home/*/.cache"
+      "${config.users.users.szymon.home}/MicroVMs/*/data/home/*/.claude"
+      "${config.users.users.szymon.home}/MicroVMs/*/data/home/*/.claude.json"
+      "${config.users.users.szymon.home}/MicroVMs/*/data/home/*/.config/gcloud"
+      "${config.users.users.szymon.home}/MicroVMs/*/data/home/*/.config/opencode"
+      "${config.users.users.szymon.home}/MicroVMs/*/data/home/*/.gemini"
       "${config.users.users.szymon.home}/MicroVMs/*/data/home/*/.npm"
     ];
 

@@ -10,13 +10,20 @@ let
   # gstbaseparse dereferences frame->buffer after a subclass finishes a
   # zero-size frame; h264parse does that for an alignment=au access unit that
   # ends without a start code, which segfaults neolink. Unfixed upstream as of
-  # 1.26.11, and still present on main. The patch header carries the full
-  # analysis, the crash signature, and the check for when it can be dropped.
+  # the version in lastVerifiedBroken below, and still present on main. The
+  # patch header carries the full analysis, the crash signature, and the check
+  # for when it can be dropped.
+  lastVerifiedBroken = "1.26.11";
   gst = gst_all_1.overrideScope (
     final: prev: {
-      gstreamer = prev.gstreamer.overrideAttrs (old: {
-        patches = (old.patches or [ ]) ++ [ ./gstreamer-baseparse-null-frame-buffer.patch ];
-      });
+      gstreamer =
+        lib.warnIf (lib.versionOlder lastVerifiedBroken prev.gstreamer.version)
+          "gstreamer ${prev.gstreamer.version} > ${lastVerifiedBroken}: re-run the drop check in gstreamer-baseparse-null-frame-buffer.patch, then bump lastVerifiedBroken"
+          (
+            prev.gstreamer.overrideAttrs (old: {
+              patches = (old.patches or [ ]) ++ [ ./gstreamer-baseparse-null-frame-buffer.patch ];
+            })
+          );
     }
   );
 

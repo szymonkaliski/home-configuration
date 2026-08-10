@@ -52,10 +52,12 @@
       # separate pkgs instance, so it needs its own allowUnfree
       antigravityOverlay = final: prev: {
         antigravity-cli =
-          (import nixpkgs-unstable {
-            inherit (prev.stdenv.hostPlatform) system;
-            config.allowUnfree = true;
-          }).antigravity-cli;
+          prev.lib.warnIf (prev ? antigravity-cli)
+            "antigravity-cli is in the pinned nixpkgs now; drop antigravityOverlay from flake.nix"
+            (import nixpkgs-unstable {
+              inherit (prev.stdenv.hostPlatform) system;
+              config.allowUnfree = true;
+            }).antigravity-cli;
       };
 
       # home-manager re-imports nixpkgs from the module-level nixpkgs.* options,

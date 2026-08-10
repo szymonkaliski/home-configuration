@@ -15,6 +15,11 @@ if [[ -z "$COLORTERM" && "$TERM" == *256color* ]]; then
   export COLORTERM=truecolor
 fi
 
+# home-manager session vars
+if [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
+  source "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+fi
+
 if [ -d "$HOME/Documents/Projects" ]; then
   export PROJECTS_PATH="$HOME/Documents/Projects"
 elif [ -d "$HOME/Projects" ]; then

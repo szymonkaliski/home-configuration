@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
 # runs at VM boot via systemd (setup-user.service)
-# copies host config into the VM's /home/szymon
+# bin/microvm pre-stages the agent configs into /home/szymon before boot;
+# this script derives env exports from them, merges AGENTS.md, patches
+# configs for the VM, and touches /mnt/data/.setup-done when finished
 
 set -eu
 
@@ -10,19 +12,19 @@ mkdir -p /home/szymon
 # set up bash exports
 echo "" > /home/szymon/.bash_profile
 
-if [ -f /mnt/host/claude/long-lived-oauth-token ]; then
-  echo "export CLAUDE_CODE_OAUTH_TOKEN=$(cat /mnt/host/claude/long-lived-oauth-token)" >> /home/szymon/.bash_profile
+if [ -f /home/szymon/.claude/long-lived-oauth-token ]; then
+  echo "export CLAUDE_CODE_OAUTH_TOKEN=$(cat /home/szymon/.claude/long-lived-oauth-token)" >> /home/szymon/.bash_profile
 fi
 
 # the setup-token has inference-only scope, so claude code can't fetch the
 # plan tier and would gate fable behind usage credits (claude-code#79360);
 # CLAUDE_CODE_SUBSCRIPTION_TYPE tells it the plan directly
-subscription_type="$(cat /mnt/host/claude/subscription-type 2>/dev/null || true)"
+subscription_type="$(cat /home/szymon/.claude/subscription-type 2>/dev/null || true)"
 if [ -n "$subscription_type" ]; then
   echo "export CLAUDE_CODE_SUBSCRIPTION_TYPE=\"$subscription_type\"" >> /home/szymon/.bash_profile
 fi
 
-anthropic_model="$(cat /mnt/host/claude/anthropic-model 2>/dev/null || true)"
+anthropic_model="$(cat /home/szymon/.claude/anthropic-model 2>/dev/null || true)"
 if [ -n "$anthropic_model" ]; then
   echo "export ANTHROPIC_MODEL=\"$anthropic_model\"" >> /home/szymon/.bash_profile
 fi
@@ -32,30 +34,9 @@ if [ -f /mnt/host/pushoverrc ]; then
   cp /mnt/host/pushoverrc /home/szymon/.pushoverrc
 fi
 
-# claude-code config
-cp -rT /mnt/host/claude /home/szymon/.claude
-cp /mnt/host/claude.json /home/szymon/.claude.json
-
-# opencode config
-if [ -d /mnt/host/opencode ]; then
-  mkdir -p /home/szymon/.config
-  cp -rT /mnt/host/opencode /home/szymon/.config/opencode
-
-  if [ -f /home/szymon/.config/opencode/gemini_api_key ]; then
-    # opencode's google provider (via @ai-sdk/google) reads GOOGLE_GENERATIVE_AI_API_KEY
-    echo "export GOOGLE_GENERATIVE_AI_API_KEY=\"$(cat /home/szymon/.config/opencode/gemini_api_key)\"" >> /home/szymon/.bash_profile
-  fi
-fi
-
-# gcloud config
-if [ -d /mnt/host/gcloud ]; then
-  mkdir -p /home/szymon/.config
-  cp -rT /mnt/host/gcloud /home/szymon/.config/gcloud
-fi
-
-# gemini config
-if [ -d /mnt/host/gemini ]; then
-  cp -rT /mnt/host/gemini /home/szymon/.gemini
+if [ -f /home/szymon/.config/opencode/gemini_api_key ]; then
+  # opencode's google provider (via @ai-sdk/google) reads GOOGLE_GENERATIVE_AI_API_KEY
+  echo "export GOOGLE_GENERATIVE_AI_API_KEY=\"$(cat /home/szymon/.config/opencode/gemini_api_key)\"" >> /home/szymon/.bash_profile
 fi
 
 # single cross-harness instructions file: VM context + the shared AGENTS.md,
@@ -146,3 +127,4 @@ chmod +x /home/szymon/.bin/agy
 
 chown -R szymon:users /home/szymon
 
+touch /mnt/data/.setup-done

@@ -40,6 +40,11 @@ in
     ]
   );
 
+  # the virtiofsd processes exit as soon as their client disconnects, but the
+  # supervisord wrapping them takes ~4s to reap its notify child after
+  # SIGTERM; escalate to SIGKILL quickly so stop->start cycles stay fast
+  systemd.services."microvm-virtiofsd@".serviceConfig.TimeoutStopSec = "2s";
+
   systemd.services."microvm@" = {
     serviceConfig.TimeoutStartSec = "5min";
     serviceConfig.ExecStartPre = [

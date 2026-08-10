@@ -79,6 +79,14 @@ in
   security.sudo.wheelNeedsPassword = false;
 
   services.openssh.enable = true;
+  # the VM regenerates host keys on every boot and rsa-4096 generation takes
+  # seconds, delaying sshd; ed25519 is enough for an ephemeral VM
+  services.openssh.hostKeys = [
+    {
+      path = "/etc/ssh/ssh_host_ed25519_key";
+      type = "ed25519";
+    }
+  ];
 
   systemd.services.setup-user = {
     wantedBy = [ "multi-user.target" ];

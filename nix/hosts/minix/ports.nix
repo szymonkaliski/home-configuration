@@ -13,4 +13,5 @@
   victoriametrics = 10011;
   nodeExporter = 10012;
   smartctl = 10013;
+  homebridgeUi = 10014;
 }

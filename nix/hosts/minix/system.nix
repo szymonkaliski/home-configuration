@@ -34,6 +34,10 @@ let
             url = "http://minix:${toString ports.neolinkDashboard}";
           }
           {
+            name = "homebridge";
+            url = "http://minix:${toString ports.homebridgeUi}";
+          }
+          {
             name = "searxng";
             url = "http://minix:${toString ports.searx}";
           }

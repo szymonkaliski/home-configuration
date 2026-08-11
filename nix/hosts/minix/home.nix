@@ -172,10 +172,13 @@ in
     password = mqtt.password;
   };
 
-  xdg.configFile."friday-homebridge/mqtt.json".text = builtins.toJSON {
-    url = "mqtt://${mqtt.host}:${toString mqtt.port}";
-    username = mqtt.username;
-    password = mqtt.password;
+  xdg.configFile."friday-homebridge/config.json".text = builtins.toJSON {
+    mqtt = {
+      url = "mqtt://${mqtt.host}:${toString mqtt.port}";
+      username = mqtt.username;
+      password = mqtt.password;
+    };
+    uiPort = ports.homebridgeUi;
   };
 
   xdg.configFile."xiaomiclock2mqtt/config.json".text = builtins.toJSON {
@@ -273,8 +276,47 @@ in
     dir = "friday-homebridge";
     description = "Homebridge";
     needsMqtt = true;
-    build = "npm run pre-run";
-    command = "npx homebridge -I";
+    build = [
+      "npm run generate:types"
+      "npm run generate:configs"
+    ];
+    command = "npm run start";
+    # regenerate the config UI room layout against the freshly started
+    # bridge, whose aid/iid assignments the layout references
+    postStart = "npm run generate:ui-room-layout";
+  };
+
+  # web UI for controlling homebridge accessories; reads the config platform
+  # block from ~/.homebridge/config.json
+  systemd.user.services.friday-homebridge-ui = mkProjectService {
+    dir = "friday-homebridge";
+    description = "Homebridge Config UI";
+    command = "npm run start:ui";
+  };
+
+  # the config UI logs tab tails ~/.homebridge/homebridge.log; homebridge logs
+  # to the journal, so mirror it into that file
+  systemd.user.services.friday-homebridge-log = {
+    Unit.Description = "Homebridge log file for the config UI";
+    Service = {
+      ExecStart = "${pkgs.bash}/bin/bash -c 'exec ${pkgs.systemd}/bin/journalctl --user -fu friday-homebridge -o cat >> %h/.homebridge/homebridge.log'";
+      Restart = "on-failure";
+      RestartSec = 30;
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
+
+  systemd.user.services.friday-homebridge-log-trim = {
+    Unit.Description = "Truncate the homebridge config UI log file";
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.coreutils}/bin/truncate -s 0 %h/.homebridge/homebridge.log";
+    };
+  };
+
+  systemd.user.timers.friday-homebridge-log-trim = mkTimer {
+    description = "Truncate the homebridge config UI log file daily";
+    onCalendar = "daily";
   };
 
   systemd.user.services.boot-notify = {

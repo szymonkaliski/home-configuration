@@ -205,14 +205,14 @@ in
     }
   ];
 
-  # start/stop/kill/reset-failed the microvm guest units without sudo
+  # start/stop/kill/reset-failed the microvm guest and its virtiofsd sidecar without sudo
   security.polkit.enable = true;
   security.polkit.extraConfig = ''
     polkit.addRule(function(action, subject) {
       if (action.id == "org.freedesktop.systemd1.manage-units" && subject.user == "szymon") {
         var unit = action.lookup("unit");
 
-        if (unit && /^microvm@vm-[0-9]+\.service$/.test(unit)) {
+        if (unit && /^microvm(-virtiofsd)?@vm-[0-9]+\.service$/.test(unit)) {
           return polkit.Result.YES;
         }
       }

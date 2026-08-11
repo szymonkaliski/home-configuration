@@ -38,7 +38,8 @@ in
       dir,
       description,
       command,
-      build ? null,
+      build ? null, # command or list of commands
+      postStart ? null,
       needsMqtt ? false,
       needsInternet ? false,
       extraUnits ? [ ], # extra After/Wants beyond network-online.target
@@ -56,7 +57,9 @@ in
       pre =
         lib.optional needsInternet waitForInternet
         ++ lib.optional needsMqtt waitForMosquitto
-        ++ lib.optional (build != null) "${pkgs.nix}/bin/nix develop ${projectDir} --command ${build}";
+        ++ map (b: "${pkgs.nix}/bin/nix develop ${projectDir} --command ${b}") (
+          lib.optionals (build != null) (lib.toList build)
+        );
       preAttr = lib.optionalAttrs (pre != [ ]) { ExecStartPre = pre; };
     in
     {
@@ -74,6 +77,9 @@ in
         WorkingDirectory = projectDir;
       }
       // preAttr
+      // lib.optionalAttrs (postStart != null) {
+        ExecStartPost = "${pkgs.nix}/bin/nix develop ${projectDir} --command ${postStart}";
+      }
       // lib.optionalAttrs oneshot { Type = "oneshot"; }
       // lib.optionalAttrs (!oneshot) {
         Restart = "on-failure";

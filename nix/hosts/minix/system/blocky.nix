@@ -83,13 +83,15 @@ in
             timeout = "60s";
           };
         };
+        # hagezi's github account is locked and all its repos return 404
+        # this gitlab repo is the maintainer's own mirror
         denylists = {
           ads = [
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/dyndns.txt"
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/fake.txt"
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/gambling.txt"
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt"
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.txt"
+            "https://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/wildcard/dyndns.txt"
+            "https://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/wildcard/fake.txt"
+            "https://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/wildcard/gambling.txt"
+            "https://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/wildcard/pro.txt"
+            "https://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/wildcard/tif.txt"
           ];
         };
         clientGroupsBlock.default = [ "ads" ];

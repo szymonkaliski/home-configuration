@@ -1,6 +1,6 @@
 # https://github.com/mitchellh/ghostty/blob/main/src/config/Config.zig
 
-term = xterm-256color
+term = xterm-ghostty
 
 font-family             = JetBrains Mono
 font-family-bold        = JetBrains Mono Bold

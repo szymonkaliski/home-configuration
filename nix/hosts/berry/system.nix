@@ -99,6 +99,7 @@ in
       "wheel"
     ];
     shell = pkgs.zsh;
+    linger = true;
 
     # setup.sh replaces this with a real password,
     # we need one for bootstrap.sh until then

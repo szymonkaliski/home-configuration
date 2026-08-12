@@ -1,6 +1,9 @@
 { config, ... }:
 {
-  imports = [ ../../modules/home/common.nix ];
+  imports = [
+    ../../modules/home/common.nix
+    ../../modules/home/boot-notify.nix
+  ];
 
   home.homeDirectory = "/home/szymon";
 

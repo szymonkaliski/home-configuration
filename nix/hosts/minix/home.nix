@@ -20,6 +20,7 @@ in
   imports = [
     ../../modules/home/common.nix
     ../../modules/home/timav.nix
+    ../../modules/home/boot-notify.nix
     ./home/neolink.nix
   ];
 
@@ -317,52 +318,6 @@ in
   systemd.user.timers.friday-homebridge-log-trim = mkTimer {
     description = "Truncate the homebridge config UI log file daily";
     onCalendar = "daily";
-  };
-
-  systemd.user.services.boot-notify = {
-    Unit = {
-      Description = "Boot notification";
-      # sops-nix: notify-pushover reads ~/.pushoverrc, a sops template that
-      # dangles until sops-nix.service has run
-      After = [
-        "default.target"
-        "network-online.target"
-        "sops-nix.service"
-      ];
-      Wants = [
-        "network-online.target"
-        "sops-nix.service"
-      ];
-      ConditionPathExists = "!/run/user/%U/boot-notify-done";
-    };
-
-    Service = {
-      Type = "oneshot";
-      TimeoutStartSec = "10min";
-      ExecStartPre = "${waitForInternet}";
-      ExecStart =
-        let
-          bootNotify = pkgs.writeShellScript "boot-notify" ''
-            booted=$(${pkgs.coreutils}/bin/readlink -f /run/booted-system)
-            ver=$(${pkgs.coreutils}/bin/cat /run/booted-system/nixos-version 2>/dev/null || echo "?")
-            gen=""
-            for l in /nix/var/nix/profiles/system-*-link; do
-              if [ "$(${pkgs.coreutils}/bin/readlink -f "$l")" = "$booted" ]; then
-                gen=$(${pkgs.coreutils}/bin/basename "$l" | ${pkgs.gnugrep}/bin/grep -oE '[0-9]+')
-                break
-              fi
-            done
-            "$HOME/.bin/notify-pushover" "Booted minix: ''${ver} | kernel $(${pkgs.coreutils}/bin/uname -r) | gen ''${gen:-?} | $(${pkgs.coreutils}/bin/date +%Y-%m-%dT%H:%M)"
-          '';
-        in
-        "${bootNotify}";
-      ExecStartPost = "${pkgs.coreutils}/bin/touch /run/user/%U/boot-notify-done";
-      Environment = "PATH=${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.curl}/bin";
-    };
-
-    Install = {
-      WantedBy = [ "default.target" ];
-    };
   };
 
   systemd.user.services.friday-ruler = mkProjectService {

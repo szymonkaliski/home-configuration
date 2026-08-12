@@ -168,6 +168,58 @@ check "tailscale-online" bash -c '
   fi
 '
 
+check "vm-tailscale-authkey-registers" bash -c '
+  # registers a throwaway ephemeral node with the VM auth key, so an
+  # expired/revoked key is caught before the next microvm boot needs it;
+  # logout removes the ephemeral node immediately
+  dir=$(mktemp -d)
+  tailscaled --tun=userspace-networking --state=mem: \
+    --socket="$dir/ts.sock" --port=0 &>"$dir/tsd.log" &
+  tsd_pid=$!
+  trap "kill $tsd_pid 2>/dev/null; rm -rf $dir" EXIT
+  for _ in $(seq 1 50); do
+    tailscale --socket="$dir/ts.sock" status &>/dev/null && break
+    sleep 0.2
+  done
+  out=$(tailscale --socket="$dir/ts.sock" up \
+    --auth-key="$(cat /home/szymon/MicroVMs/host/ts-authkey)" \
+    --hostname=healthcheck-probe --timeout=30s 2>&1)
+  rc=$?
+  timeout 30 tailscale --socket="$dir/ts.sock" logout 2>/dev/null
+  if (( rc != 0 )); then
+    echo "tailscale up failed: $(echo "$out" | tail -1)"
+    exit 1
+  fi
+'
+
+# the token checks fail only on 401/403: a transient network or server
+# error is not the credential going bad and should not page
+
+check "github-token-authenticates" bash -c '
+  token=$(sed -n "s/.*github.com=//p" /home/szymon/.config/sops-nix/secrets/nix_access_tokens | tr -d " ")
+  code=$(curl -so /dev/null -w "%{http_code}" --max-time 15 \
+    -H "Authorization: token $token" https://api.github.com/rate_limit)
+  if [[ "$code" == "401" || "$code" == "403" ]]; then
+    echo "token rejected with HTTP $code"
+    exit 1
+  fi
+'
+
+check "claude-token-authenticates" bash -c '
+  # count_tokens is free but still requires valid auth
+  code=$(curl -so /dev/null -w "%{http_code}" --max-time 15 \
+    https://api.anthropic.com/v1/messages/count_tokens \
+    -H "Authorization: Bearer $(cat /home/szymon/.claude/long-lived-oauth-token)" \
+    -H "anthropic-beta: oauth-2025-04-20" \
+    -H "anthropic-version: 2023-06-01" \
+    -H "content-type: application/json" \
+    -d "{\"model\":\"claude-haiku-4-5\",\"messages\":[{\"role\":\"user\",\"content\":\"ok\"}]}")
+  if [[ "$code" == "401" || "$code" == "403" ]]; then
+    echo "token rejected with HTTP $code"
+    exit 1
+  fi
+'
+
 check "archivist-completed-fetch-recently" bash -c '
   ts=$(systemctl --user show archivist-fetch.service --property=InactiveEnterTimestamp --value 2>/dev/null)
   if [[ -z "$ts" ]]; then

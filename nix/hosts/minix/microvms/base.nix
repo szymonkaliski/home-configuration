@@ -15,20 +15,6 @@
 let
   net = import ../net.nix;
   keys = import ../../../keys.nix;
-  tailscaleAutoServe = pkgs.writeShellApplication {
-    name = "tailscale-auto-serve";
-    runtimeInputs = with pkgs; [
-      tailscale
-      bpftrace
-      iproute2
-      gawk
-      gnugrep
-      coreutils
-      findutils
-      jq
-    ];
-    text = builtins.readFile ./tailscale-auto-serve.sh;
-  };
 in
 {
   # see system.nix for context - same ELF/ld-linux issue inside microvms
@@ -127,8 +113,8 @@ in
       done
       AUTH_KEY=$(cat /mnt/host/ts-authkey 2>/dev/null || true)
       if [ -n "$AUTH_KEY" ]; then
-        # auto-serve and cert-ensure require this unit, so one transient
-        # failure here would leave the VM without tailscale for its lifetime
+        # one transient failure here would leave the VM without tailscale for
+        # its lifetime
         for i in $(seq 1 10); do
           ${pkgs.tailscale}/bin/tailscale up \
             --timeout=30s \
@@ -144,56 +130,6 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-    };
-  };
-
-  systemd.services.tailscale-auto-serve = {
-    description = "Auto-expose user-owned listening ports via tailscale serve";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "tailscale-auto-connect.service" ];
-    requires = [ "tailscale-auto-connect.service" ];
-    serviceConfig = {
-      Type = "simple";
-      # always: the bpftrace watcher exiting cleanly must not end the service
-      Restart = "always";
-      RestartSec = "5s";
-      ExecStart = lib.getExe tailscaleAutoServe;
-    };
-  };
-
-  # warm and renew the tailscale serve TLS cert proactively, tailscaled
-  # otherwise provisions it only on the first inbound TLS handshake, so the
-  # first hit after boot (or after a cert-issuance outage) fails; the timer
-  # also retries a failed provision
-  systemd.services.tailscale-cert-ensure = {
-    description = "Proactively provision/renew the tailscale serve TLS cert";
-    after = [ "tailscale-auto-connect.service" ];
-    requires = [ "tailscale-auto-connect.service" ];
-    path = [
-      pkgs.tailscale
-      pkgs.jq
-    ];
-    serviceConfig.Type = "oneshot";
-    script = ''
-      name=$(tailscale status --json | jq -r '.Self.DNSName // empty')
-      name=''${name%.}
-
-      if [ -z "$name" ]; then
-        echo "tailscale not ready" >&2
-        exit 1
-      fi
-
-      # this is idempotent (real ACME work only when cert is missing or <30d valid)
-      tailscale cert --min-validity 720h --cert-file=- --key-file=- "$name" >/dev/null
-    '';
-  };
-
-  systemd.timers.tailscale-cert-ensure = {
-    description = "Periodically ensure the tailscale serve TLS cert is valid";
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnBootSec = "90s";
-      OnUnitActiveSec = "10min";
     };
   };
 

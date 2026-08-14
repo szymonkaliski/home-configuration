@@ -11,6 +11,7 @@ let
   mqtt = import ./mqtt.nix;
   ports = import ./ports.nix;
   inherit (import ./lib.nix { inherit pkgs lib; })
+    waitForMosquitto
     waitForInternet
     mkProjectService
     mkTimer
@@ -331,6 +332,28 @@ in
       (builtins.hashString "sha256" config.xdg.configFile."friday-ruler/config.json".text)
       (builtins.hashString "sha256" config.sops.templates."friday-ruler-user-config".content)
     ];
+  };
+
+  # the blind controller has no serial console so MQTT is the only place its
+  # diagnostics show up; mirror the whole device topic tree for debugging
+  systemd.user.services.friday-blind-controller-log = {
+    Unit = {
+      Description = "Blind controller MQTT log";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+    };
+    Service = {
+      ExecStartPre = waitForMosquitto;
+      ExecStart = pkgs.writeShellScript "blind-controller-log" ''
+        exec ${pkgs.mosquitto}/bin/mosquitto_sub \
+          -h ${mqtt.host} -p ${toString mqtt.port} \
+          -u ${mqtt.username} -P ${mqtt.password} \
+          -R -F '%t %p' -t 'friday/blind_controller/#'
+      '';
+      Restart = "always";
+      RestartSec = 5;
+    };
+    Install.WantedBy = [ "default.target" ];
   };
 
   systemd.user.services.xiaomiclock2mqtt = mkProjectService {

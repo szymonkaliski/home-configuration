@@ -158,6 +158,9 @@ stop_vm() {
   # PartOf already queues this stop; block on it here so the teardown cost
   # is paid now and not by the next start
   systemctl stop "microvm-virtiofsd@vm-${VM}" 2>/dev/null || true
+  # TimeoutStopSec=2s SIGKILLs supervisord before it reaps its notify child, so
+  # the unit always lands in failed state; clear it
+  systemctl reset-failed "microvm-virtiofsd@vm-${VM}" 2>/dev/null || true
 }
 
 cmd_stop() {
@@ -206,6 +209,7 @@ kill_vm() {
   systemctl kill "microvm@vm-${VM}"
   systemctl stop "microvm@vm-${VM}" 2>/dev/null || true
   systemctl stop "microvm-virtiofsd@vm-${VM}" 2>/dev/null || true
+  systemctl reset-failed "microvm-virtiofsd@vm-${VM}" 2>/dev/null || true
 }
 
 cmd_kill() {

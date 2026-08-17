@@ -4,6 +4,7 @@ TERM screen-256color
 TERM screen-256color-bce
 TERM screen-256color-italic
 TERM xterm
+TERM xterm-ghostty
 TERM xterm-kitty
 TERM xterm-256color
 TERM xterm-256color-italic

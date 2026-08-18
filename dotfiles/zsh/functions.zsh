@@ -1,4 +1,9 @@
 command_not_found_handler() {
+  # a PATH without comma re-enters this handler for "comma" itself
+  if ! whence -p comma >/dev/null; then
+    print -u2 "zsh: command not found: $1"
+    return 127
+  fi
   comma --ask "$@"
 }
 

@@ -38,6 +38,9 @@
         "fruit:aapl" = "yes";
         "fruit:model" = "MacPro7,1";
         "vfs objects" = "fruit streams_xattr";
+        # Finder sets empty security descriptors on writes, which smbd logs as
+        # "unpack_canon_ace: no security info sent" when it maps NT ACLs
+        "nt acl support" = "no";
       };
       homes = {
         browseable = "no";

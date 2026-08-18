@@ -25,14 +25,19 @@
 
 ## Subagents
 
-- fan out independent read-only work (codebase search, multi-file research, doc/web lookups) to parallel subagents, launched in one message
-  - only when tasks are independent with no shared writes - subagents can't share context or nest
-- an unrelated edit that comes up mid-session - hand it to a background subagent editing the live tree, keep working the main thread
-  - only when its files don't overlap the main thread's or another agent's - watch shared files (lockfiles, configs, anything a formatter rewrites); if overlap is unavoidable, keep it inline instead
-  - give it a complete spec up front - no supervision once it's running - and review the result before trusting it
-- prefer background subagents for research/analysis whose results aren't blocking the current step
-- use your judgement to pick each subagent's model - downgrade to a lower-power model when the task doesn't need the session model
-- don't parallelize a single edit or dependent steps
+- the main thread orchestrates: scope the work, delegate, judge the results, synthesize; delegated work runs on one of two tiers
+  - heavy tier (strongest worker model): implementation, investigation, review, anything that needs judgment
+  - light tier (fast model): mechanical, fully specified work - search, renames, formatting, applying a spelled-out edit, running a command and reporting the output
+  - pick the tier per delegation; when the harness takes a model per call, always pass one (heavy tier by default), never let a subagent inherit the session model by omission
+- delegate: independent read-only fan-out (codebase search, multi-file research, doc/web lookups) launched in one message; an unrelated edit that came up mid-session; research whose result isn't blocking the current step (run it in the background)
+- keep inline: anything that fits in a handful of tool calls; steps that depend on each other; work that needs the current conversation's context; edits to files the main thread or another agent touches (lockfiles, configs, anything a formatter rewrites); destructive or outward-facing actions (push, delete, deploy)
+- one subagent per task, no re-delegation; prefer fewer, larger subagents over many narrow ones
+- the delegation prompt is the subagent's entire briefing, it sees none of the conversation; include:
+  - one objective and what "done" looks like
+  - the context it lacks: file paths, error text, decisions already made, constraints the user gave
+  - scope boundaries: what to touch, what not to, what belongs to another agent
+  - the return format: a short report (findings, changed files, evidence such as command output), not a transcript; large outputs go to a file, return the path
+- wait for the completion notification instead of polling; review every result before trusting it - subagents report success plausibly, so ask for evidence and re-verify anything that lands in the main thread's work
 
 ## Shell & Environment
 

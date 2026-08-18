@@ -45,5 +45,9 @@
       "filetypes": ["swift"],
       "rootPatterns": ["Package.swift", "*.xcodeproj", "*.xcworkspace"]
     }
+  },
+  "json.schemaDownload.trustedDomains": {
+    "https://opencode.ai": true,
+    "https://models.dev": true
   }
 }

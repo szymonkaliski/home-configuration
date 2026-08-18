@@ -53,7 +53,11 @@
 
 ## Prose & Communication
 
-- never use em-dashes
+- never use em-dashes or semicolons
+- write in ASD-STE100 Simplified Technical English style: active voice, simple tenses, one idea per sentence, sentences under 20 words, plain common words, one word per meaning (do not rotate synonyms)
+  - say what a thing is before what it is not; drop the contrast when it adds nothing
+- do not restate the question, preview the answer, or add a closing summary
+- avoid AI-cliche wording: delve, robust, seamless, crucial, testament to, load-bearing, "that lands", "worth noting", "clean/cleanly", "it is not X, it is Y"
 - keep outputs focused, brief, and direct
   - keep disclaimers and caveats short, spending most of the response on the main answer
 - lead directly with the outcome: your first sentence should answer "what happened" or "what did you find," followed by supporting details

@@ -1,5 +1,7 @@
 {
   config,
+  options,
+  lib,
   pkgs,
   repoRoot,
   ...
@@ -61,6 +63,31 @@ in
 
   programs.nix-index-database.comma.enable = true;
   programs.nix-index.enableZshIntegration = false;
+
+  # the system-level gc runs as root and only expires root's profiles;
+  # home-manager generations live in ~/.local/state/nix/profiles
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 30d";
+  };
+
+  # home-manager's darwin agent passes `nix.gc.options` as one argv element,
+  # which nix-collect-garbage rejects as an unrecognised flag
+  launchd.agents.nix-gc.config.ProgramArguments =
+    let
+      upstreamArgs = lib.concatLists (
+        lib.filter lib.isList (
+          map (def: (def.nix-gc or { }).config.ProgramArguments or [ ]) options.launchd.agents.definitions
+        )
+      );
+      upstreamSplitsOptions = !(lib.any (lib.hasInfix " ") upstreamArgs);
+    in
+    lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (
+      lib.warnIf upstreamSplitsOptions
+        "home-manager's nix-gc launchd agent splits nix.gc.options now; drop the ProgramArguments override in modules/home/common.nix"
+        (lib.mkForce (lib.concatMap (lib.splitString " ") upstreamArgs))
+    );
 
   programs.direnv = {
     enable = true;

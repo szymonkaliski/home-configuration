@@ -90,13 +90,6 @@ in
         ThrottleInterval = 3600;
       };
 
-      "com.szymonkaliski.nix-gc" = mkAgent "nix-gc" {
-        StartCalendarInterval = {
-          Weekday = 0;
-          Hour = 10;
-        };
-      };
-
       "com.szymonkaliski.ollama-autostart" = mkAgent "ollama-autostart" {
         RunAtLoad = true;
         KeepAlive = true;

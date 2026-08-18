@@ -2,6 +2,7 @@
 let
   mqtt = import ../mqtt.nix;
   ports = import ../ports.nix;
+  dns = import ../dns.nix;
   # neolink only publishes status/pir on transitions; sample the broker's
   # retained state periodically to get dense 0/1 series that
   # integrate()/state-timeline can use (reads retained messages only, so
@@ -19,6 +20,14 @@ let
           printf "camera_state,device=%s value=%d\n", t[2], ($2 == "connected") ? 1 : 0
       }'
     exit 0
+  '';
+  # ookla's own cli; the license notice goes to stderr on every run since the
+  # telegraf user has no writable home to remember the acceptance in.
+  # bandwidth is bytes/s, the panels want Mbit/s; packetLoss is absent when
+  # not measured and reported as -1 (the panel filters `>= 0`)
+  internetSpeedSample = pkgs.writeShellScript "internet-speed-sample" ''
+    ${pkgs.ookla-speedtest}/bin/speedtest --accept-license --accept-gdpr --format=json 2>/dev/null |
+      ${pkgs.jq}/bin/jq -r '"internet_speed download=\(.download.bandwidth * 8 / 1e6),upload=\(.upload.bandwidth * 8 / 1e6),latency=\(.ping.latency),jitter=\(.ping.jitter),packet_loss=\(.packetLoss // -1)"'
   '';
 in
 {
@@ -100,20 +109,24 @@ in
           commands = [ "${cameraStateSample}" ];
           data_format = "influx";
         }
-      ];
-      # heavy probe; own interval, not the 30s agent default
-      inputs.internet_speed = [
+        # heavy probe (~0.4 GB down + ~0.4 GB up per run); own interval, not
+        # the 30s agent default
         {
+          commands = [ "${internetSpeedSample}" ];
+          data_format = "influx";
           interval = "60m";
-          cache = true;
-          memory_saving_mode = true;
-          # server re-picked on every telegraf restart; a different pick
-          # would fork every metric into a new series
-          tagexclude = [
-            "server_id"
-            "source"
-            "test_mode"
-          ];
+          timeout = "120s";
+        }
+      ];
+      # the lan gateway plus the resolvers blocky depends on
+      inputs.ping = [
+        {
+          urls = [ "192.168.1.1" ] ++ dns.quad9.ips ++ dns.cloudflare.ips;
+          method = "native";
+          count = 5;
+          ping_interval = "0.2s";
+          deadline = "5s";
+          ipv4 = true;
         }
       ];
       inputs.mqtt_consumer =

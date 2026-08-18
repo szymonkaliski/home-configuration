@@ -1,10 +1,7 @@
 { config, lib, ... }:
 let
   ports = import ../ports.nix;
-  dns = {
-    quad9 = "https://dns.quad9.net/dns-query";
-    cloudflare = "https://security.cloudflare-dns.com/dns-query";
-  };
+  dns = import ../dns.nix;
   queryLogTarget = "postgres://blocky@127.0.0.1:${toString ports.blockyPostgresql}/blocky?sslmode=disable";
 in
 {
@@ -53,25 +50,13 @@ in
       filtering.queryTypes = [ "AAAA" ];
 
       upstreams.groups.default = [
-        dns.quad9
-        dns.cloudflare
+        dns.quad9.upstream
+        dns.cloudflare.upstream
       ];
 
       bootstrapDns = [
-        {
-          upstream = dns.quad9;
-          ips = [
-            "9.9.9.9"
-            "149.112.112.112"
-          ];
-        }
-        {
-          upstream = dns.cloudflare;
-          ips = [
-            "1.1.1.2"
-            "1.0.0.2"
-          ];
-        }
+        dns.quad9
+        dns.cloudflare
       ];
 
       blocking = {

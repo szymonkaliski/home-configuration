@@ -463,21 +463,21 @@ in
               legend = "up";
             }
           ])
-          (tsPanel "ms" "Internet latency" 12 32 12 8 [
+          (tsPanel "ms" "Ping (ms)" 12 32 12 8 [
             {
-              expr = "max(internet_speed_latency)";
-              legend = "latency";
-            }
-            {
-              expr = "max(internet_speed_jitter)";
-              legend = "jitter";
+              expr = "ping_average_response_ms";
+              legend = "{{url}}";
             }
           ])
           (tsPanel "percent" "Packet loss (%)" 0 40 12 8 [
             {
-              # the exporter reports -1 when loss wasn't measured
+              expr = "ping_percent_packet_loss";
+              legend = "{{url}}";
+            }
+            {
+              # the speedtest reports -1 when loss wasn't measured
               expr = "max(internet_speed_packet_loss >= 0)";
-              legend = "packet loss";
+              legend = "speedtest";
             }
           ])
           (bigStat "percent"

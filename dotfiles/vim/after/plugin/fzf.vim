@@ -63,34 +63,34 @@ function! fzf#file_line_open(l)
   norm zz
 endfunction
 
-command! FZFFilesFolders call fzf#run(extend(s:fzf_default_opt, {
+command! FZFFilesFolders call fzf#run(extend(copy(s:fzf_default_opt), {
       \ 'source':  'fd --hidden --follow --exclude .git ' . s:fd_globs . s:fd_sort,
       \ 'sink':    'e',
       \ 'dir':     getcwd(),
       \ 'options': '--multi --exit-0 --prompt="files > "' . s:fzf_preview_opt
       \ }))
 
-command! FZFWiki call fzf#run(extend(s:fzf_default_opt, {
+command! FZFWiki call fzf#run(extend(copy(s:fzf_default_opt), {
       \ 'source':  'rg --no-heading --line-number --with-filename "." ' . s:rg_globs,
       \ 'sink':    function('fzf#wiki_open'),
       \ 'dir':     muninn#wiki_path(),
       \ 'options': '--exit-0 --prompt="wiki > "' . s:fzf_preview_opt
       \ }))
 
-command! FZFLines call fzf#run(extend(s:fzf_default_opt, {
+command! FZFLines call fzf#run(extend(copy(s:fzf_default_opt), {
       \ 'source':  'rg --no-heading --line-number --with-filename "." ' . s:rg_globs,
       \ 'sink':    function('fzf#file_line_open'),
       \ 'dir':     getcwd(),
       \ 'options': '--exit-0 --prompt="lines > "'
       \ }))
 
-command! FZFBuffers call fzf#run(extend(s:fzf_default_opt, {
+command! FZFBuffers call fzf#run(extend(copy(s:fzf_default_opt), {
       \ 'source':  fzf#buffers_list(),
       \ 'sink':    'e',
       \ 'options': '--exit-0 --prompt="buffers > "' . s:fzf_preview_opt
       \ }))
 
-command! FZFMru call fzf#run(extend(s:fzf_default_opt, {
+command! FZFMru call fzf#run(extend(copy(s:fzf_default_opt), {
       \ 'source':  fzf#recent_files(),
       \ 'sink':    'e',
       \ 'options': '--multi --exit-0 --prompt="mru > "' . s:fzf_preview_opt

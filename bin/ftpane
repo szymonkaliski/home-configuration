@@ -2,7 +2,7 @@
 
 PANES=$(tmux list-panes -a -F '#S;[#I:#P];#T')
 
-TARGET=$(echo "$PANES" | column -t -s ";" | sort | fzf --no-sort --exit-0 --query="$1" --prompt="tmux > " --reverse) || exit 0
+TARGET=$(echo "$PANES" | column -t -s ";" | sort | fzf --tiebreak=index --exit-0 --query="$1" --prompt="tmux > " --reverse) || exit 0
 
 TARGET_SESSION=$(echo "$TARGET" | cut -d " " -f1)
 TARGET_WINDOW=$(echo "$TARGET" | cut -d "[" -f2 | awk 'BEGIN{FS=":|-"} {print $1}')

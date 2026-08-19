@@ -14,7 +14,7 @@ fi
 
 # z lists ascending by rank, so tac puts the most frecent first
 DIR=$(_z -l 2>&1 | sed -n 's/^[ 0-9.,]*//p' | grep -v '^common:' | tac \
-  | fzf --no-sort --exit-0 --query="$1" --prompt="jump > " --reverse) || exit 0
+  | fzf --tiebreak=index --exit-0 --query="$1" --prompt="jump > " --reverse) || exit 0
 
 [ -n "$DIR" ] && [ -d "$DIR" ] || exit 0
 cd "$DIR" || exit 0

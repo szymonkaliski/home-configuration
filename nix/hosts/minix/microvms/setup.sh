@@ -114,7 +114,7 @@ chmod +x /home/szymon/.bin/claude
 cat << 'EOF' > /home/szymon/.bin/opencode
 #!/bin/sh
 export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
-exec npx -y opencode-ai@latest "$@"
+exec npx -y opencode-ai@latest --auto "$@"
 EOF
 chmod +x /home/szymon/.bin/opencode
 

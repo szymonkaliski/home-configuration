@@ -1,6 +1,6 @@
 ---
 name: morph
-description: Build, serve, and monitor a morph page, a single .jsx file previewed locally with hot reload whose state lives in the file itself (useMorph) and which can run approved shell commands (useShell). Serving always includes arming a persistent Monitor on the output, since the reader's clicks and comments come back through the file and must reach you as notifications without them asking. Use whenever you author, serve, or respond to a morph document.
+description: Build, serve, and monitor a morph page, a single .jsx file previewed locally with hot reload whose state lives in the file itself (useMorph). Serving always includes arming a persistent Monitor on the output, since the reader's clicks and comments come back through the file and must reach you as notifications without them asking. Use whenever you author, serve, or respond to a morph document.
 ---
 
 # Morph
@@ -28,7 +28,7 @@ Reach for a document shape only when there is genuinely nothing to manipulate: a
 ## The file
 
 - One `.jsx` file, default export is the page component. Keep it responsive; these get opened on phones.
-- `useMorph` and `useShell` are ambient, no import. So are the React APIs (`useState`, `useMemo`, `useEffect`, `use`, `Suspense`, `React`).
+- `useMorph` is ambient, no import. So are the React APIs (`useState`, `useMemo`, `useEffect`, `use`, `Suspense`, `React`).
 - npm imports are static and top-of-file: `import * as acorn from "acorn@8"` is fetched from esm.sh at view time, cached across hot-swaps, with React deduped to the host copy. The specifier text lands in the URL verbatim, so pin it (`"pkg@1.2.3"`, or a major like `"acorn@8"`). Dynamic `import()` of a bare name does not resolve, and a package that fails to load surfaces as `error` in the terminal.
 - **Files beside the document are served, and a relative path reaches them**: `<img src="photo.jpg" />`, at any depth (`images/logo.png`). Put images next to the document rather than inlining them as base64, which bloats the file past the point an agent can edit it. Dotfiles are refused, so nothing under `.git/` or a `.env` is reachable.
 - The frame's origin is still opaque, so anything needing CORS fails even by relative path: `fetch`, and the side assets many wasm builds pull in next to themselves. Inline that data in the document, and prefer packages that inline their wasm. An in-page `#anchor` resolves against the host, so it navigates the frame rather than scrolling; use `onClick` with `scrollIntoView`.
@@ -53,7 +53,7 @@ Then arm the watch, in the same turn, before you go back to editing. **Use `Moni
 
 ```
 Monitor({
-  command: 'tail -n0 -F <morph-background-output> | grep --line-buffered -E "^[0-9:]{8} (mutate|error|skip|ask|ok|shell|grant|deny|stop|warn)"',
+  command: 'tail -n0 -F <morph-background-output> | grep --line-buffered -E "^[0-9:]{8} (mutate|error|skip|ok|warn)"',
   description: 'morph reader edits + errors on <slug>',
   persistent: true,
   timeout_ms: 3600000,
@@ -67,9 +67,6 @@ The filter drops the tags that are not the reader: `ready`, `port`, `open`, `clo
 | tag                       | what happened                                                       | what you do                                                       |
 | ------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `mutate`                  | the reader changed a `useMorph` value                               | read the `.jsx` for the full value, then edit the file to respond |
-| `ask`                     | a `useShell` hook is waiting on approval                            | tell the reader it is waiting; they may be on another device      |
-| `grant` / `deny` / `stop` | the reader answered that approval, or cancelled a running command   | on `deny` and `stop`, stop expecting a result                     |
-| `shell`                   | a command started, then finished (`N line(s)`, or red `exit N`)     | on a failure, read the result in the `.jsx` and respond           |
 | `skip`                    | a change was refused, usually a non-literal                         | fix the initializer; the reader watched it roll back              |
 | `warn`                    | a file read or write failed, so a reader change may not have landed | re-read the `.jsx` to see what is actually there                  |
 | `error`                   | an edit broke the preview                                           | fix until `ok` follows                                            |
@@ -137,14 +134,3 @@ Practical shape: one `Annotatable`-style wrapper that takes an `id`, renders its
 - Prefer the recipe setter, `setX(draft => { ... })`. It produces granular immer patches that rebase onto a concurrent edit; `setX({ ...x })` is one root-replace that can lose a change.
 - Batch large edits behind an explicit action (a Send button), never per keystroke.
 - Concurrency is one way: a reader mutation rebases onto the file, but your save is a plain write. After any `mutate`, re-read the file before editing.
-
-## Running commands: useShell
-
-`useShell(command, result)` is the same trick pointed outward: the host runs the command and writes the result into the second argument. It returns `[state, refresh, cancel]`.
-
-- The command must be a **static string literal**, split into argv and spawned with no shell, so `&&` and `$(...)` are inert. Quotes and backslashes are honored, so an argument containing a space is fine.
-- **It runs in the document's own directory**, not the project root, so a page in `./tmp/` resolves relative paths against `./tmp/`.
-- The reader approves each command in a host-page dialog; the terminal logs `ask` at the same moment, because the page may be open on another device. Grants are stored outside the document, so a yes never travels with the file.
-- A hook with no result argument asks the moment the page opens, so a page with several of them greets the reader with a queue of dialogs. One that already has a result never re-runs on its own; refreshing is an explicit act.
-- The result is a discriminated union (`idle`, `asking`, `running`, `denied`, `cancelled`, `ok`, `failed`, `stale`, `unavailable`); handle every case. `ok` and `stale` carry `lines` (an array), `ranAt`, and `stderr`; `failed` adds `exitCode`; `unavailable` carries `reason`. Only `ok` and `failed` persist.
-- Output is capped at 256 KB, and a command still running after 30s is killed and stored as `failed`.

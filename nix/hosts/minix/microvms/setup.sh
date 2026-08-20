@@ -65,9 +65,7 @@ ln -sf /home/szymon/.config/agents/AGENTS.md /home/szymon/.claude/CLAUDE.md
 ln -sf /home/szymon/.config/agents/AGENTS.md /home/szymon/.config/opencode/AGENTS.md
 ln -sf /home/szymon/.config/agents/AGENTS.md /home/szymon/.gemini/config/AGENTS.md
 
-# patch agent configs for the VM environment:
-# - claude: inject chromium path for playwright mcp, trust /workspace so it doesn't prompt
-# - opencode: auto-approve permissions (the VM is an ephemeral sandbox)
+# patch agent configs for the VM environment
 node << 'EOF'
 const fs = require("fs");
 
@@ -98,6 +96,14 @@ if (fs.existsSync(opencodePath)) {
   const config = JSON.parse(raw);
   config.permission = "allow";
   fs.writeFileSync(opencodePath, JSON.stringify(config, null, 2));
+}
+
+// patch agy: inject chromium path for playwright mcp
+const agyMcpPath = "/home/szymon/.gemini/config/mcp_config.json";
+if (fs.existsSync(agyMcpPath)) {
+  let raw = fs.readFileSync(agyMcpPath, "utf8");
+  raw = raw.replaceAll("/home/szymon/.nix-profile/bin/chromium", vmChromium);
+  fs.writeFileSync(agyMcpPath, raw);
 }
 EOF
 

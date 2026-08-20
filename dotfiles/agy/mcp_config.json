@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--isolated",
+        "--executable-path",
+        "/home/szymon/.nix-profile/bin/chromium"
+      ],
+      "env": {
+        "PLAYWRIGHT_BROWSERS_PATH": ""
+      }
+    }
+  }
+}

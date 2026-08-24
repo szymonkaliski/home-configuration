@@ -22,6 +22,7 @@ in
     ../../modules/home/common.nix
     ../../modules/home/timav.nix
     ../../modules/home/boot-notify.nix
+    ./home/getmail.nix
     ./home/neolink.nix
   ];
 

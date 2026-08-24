@@ -44,12 +44,12 @@ stage_vm_home() {
 
   # ~/.claude/projects is host session state keyed by host paths; the VM
   # resolves /workspace to a different project slug and never reads it
-  rsync -aL --exclude=/projects --exclude=/notify.log "$HOME/.claude/" "$home/.claude/" 2>/dev/null || true
+  rsync -aL --exclude=/projects --exclude=/notify.log --exclude=/notify-pending "$HOME/.claude/" "$home/.claude/" 2>/dev/null || true
   command cp -L "$HOME/.claude.json" "$home/.claude.json" 2>/dev/null || true
   command cp -rL "$HOME/.config/gcloud" "$home/.config/gcloud" 2>/dev/null || true
   # don't ship opencode's regenerable npm state or notification log
   rsync -aL --exclude=/node_modules --exclude=/package.json --exclude=/package-lock.json --exclude=/notify.log "$HOME/.config/opencode/" "$home/.config/opencode/" 2>/dev/null || true
-  rsync -aL --exclude=/antigravity-cli/brain --exclude=/antigravity-cli/log --exclude=/antigravity-cli/cache "$HOME/.gemini/" "$home/.gemini/" 2>/dev/null || true
+  rsync -aL --exclude=/antigravity-cli/brain --exclude=/antigravity-cli/log --exclude=/antigravity-cli/cache --exclude=/notify.log --exclude=/notify-pending "$HOME/.gemini/" "$home/.gemini/" 2>/dev/null || true
 
   # VMs auth via the long-lived token, not credentials file
   # remove it as a VM refreshing it would invalidate the host's session;

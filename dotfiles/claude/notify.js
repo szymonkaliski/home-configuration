@@ -3,23 +3,18 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { execFileSync, execSync } = require("child_process");
+
+// loaded by absolute path: this file is a symlink into the dotfiles repo on a
+// host and a plain copy inside a microVM, so a relative specifier would resolve
+// to two different places
+const { truncate, createLogger, isFocusedPane, deliver } = require(
+  `${os.homedir()}/.claude/notify-lib.cjs`,
+);
 
 const input = JSON.parse(fs.readFileSync(0, "utf8"));
 const event = input.hook_event_name;
 const transcriptPath = input.transcript_path;
 const sessionId = input.session_id;
-
-function truncate(str, max) {
-  if (str.length <= max) return str;
-  let cut = str.slice(0, max);
-  // if the cutoff lands mid-word, drop the trailing partial word
-  if (/\S/.test(str[max])) {
-    const atBoundary = cut.replace(/\S+$/, "").trimEnd();
-    if (atBoundary) cut = atBoundary;
-  }
-  return cut.trimEnd() + "…";
-}
 
 // PermissionRequest fires the instant a real permission dialog appears (carrying
 // the tool input) and we notify from it directly. A redundant generic
@@ -94,56 +89,9 @@ function wasIdleNotified(sid, body) {
   }
 }
 
-const LOG_PATH = `${os.homedir()}/.claude/notify.log`;
-const LOG_RETAIN_MS = 90 * 24 * 60 * 60 * 1000;
-const LOG_PRUNE_SLACK_MS = 7 * 24 * 60 * 60 * 1000;
-
-// several sessions interleave in this log, and the pushover `sent` line lands a
-// few hundred ms after its `fire` line, so without the id on every line an event
-// can't be traced back to the session (or transcript) that produced it
-function logLine(data) {
-  const now = Date.now();
-  try {
-    fs.appendFileSync(
-      LOG_PATH,
-      JSON.stringify({
-        ts: new Date(now).toISOString(),
-        session: sessionId,
-        ...data,
-      }) + "\n",
-    );
-    pruneLog(now);
-  } catch {}
-}
-
-// Keep ~3 months of entries. The first field of every line is "ts", so peek at
-// the head of the file to find the oldest entry cheaply; only rewrite the whole
-// file once entries spill a slack window past the retention edge, so the full
-// rewrite happens roughly weekly rather than on every notification.
-function pruneLog(now) {
-  const fd = fs.openSync(LOG_PATH, "r");
-  let oldestTs;
-  try {
-    const head = Buffer.alloc(128);
-    const n = fs.readSync(fd, head, 0, 128, 0);
-    const m = head.toString("utf8", 0, n).match(/"ts":"([^"]+)"/);
-    oldestTs = m ? Date.parse(m[1]) : NaN;
-  } finally {
-    fs.closeSync(fd);
-  }
-  if (!Number.isFinite(oldestTs)) return;
-  if (oldestTs >= now - LOG_RETAIN_MS - LOG_PRUNE_SLACK_MS) return;
-
-  const cutoff = now - LOG_RETAIN_MS;
-  const kept = fs
-    .readFileSync(LOG_PATH, "utf8")
-    .split("\n")
-    .filter((line) => {
-      const m = line.match(/"ts":"([^"]+)"/);
-      return m ? Date.parse(m[1]) >= cutoff : false;
-    });
-  fs.writeFileSync(LOG_PATH, kept.length ? kept.join("\n") + "\n" : "");
-}
+const logLine = createLogger(`${os.homedir()}/.claude/notify.log`, {
+  session: sessionId,
+});
 
 logLine({
   phase: "fire",
@@ -162,30 +110,9 @@ if (!["Stop", "PermissionRequest", "Notification"].includes(event)) {
 }
 
 // skip the notification when the user is actively looking at this pane
-if (process.env.TMUX && process.env.TMUX_PANE) {
-  try {
-    const myPane = process.env.TMUX_PANE;
-    const clients = execSync(
-      "tmux list-clients -F '#{client_flags}\t#{pane_id}'",
-      {
-        encoding: "utf8",
-      },
-    )
-      .trim()
-      .split("\n");
-
-    for (const row of clients) {
-      const [flags, activePane] = row.split("\t");
-      if (
-        flags &&
-        flags.split(",").includes("focused") &&
-        activePane === myPane
-      ) {
-        logLine({ phase: "suppressed", reason: "focused-pane", event });
-        process.exit(0);
-      }
-    }
-  } catch {}
+if (isFocusedPane()) {
+  logLine({ phase: "suppressed", reason: "focused-pane", event });
+  process.exit(0);
 }
 
 // Scan backward for the most recent assistant entry, skipping non-conversational
@@ -618,86 +545,6 @@ if (
 
 const title = `Claude Code (${os.hostname()} - ${path.basename(process.cwd())})`;
 
-logLine({ phase: "deliver", event, body });
-
-// tnotify (desktop notifications)
-try {
-  const args = ["-t", title, body];
-  if (process.env.TMUX) {
-    const tty = execSync("tmux display-message -p '#{pane_tty}'", {
-      encoding: "utf8",
-    }).trim();
-    const fd = fs.openSync(tty, "w");
-    try {
-      execFileSync("tnotify", args, { stdio: ["ignore", fd, "ignore"] });
-    } finally {
-      fs.closeSync(fd);
-    }
-  } else {
-    execFileSync("tnotify", [...args, "--native"], { stdio: "ignore" });
-  }
-  logLine({ phase: "sent", channel: "tnotify", body });
-  process.exit(0);
-} catch (err) {
-  logLine({
-    phase: "channel-failed",
-    channel: "tnotify",
-    error: String((err && err.message) || err),
-  });
-}
-
-// pushover (mobile notifications)
-const pushoverrcPath = `${os.homedir()}/.pushoverrc`;
-if (fs.existsSync(pushoverrcPath)) {
-  const rc = fs.readFileSync(pushoverrcPath, "utf8");
-  const vars = {};
-  for (const line of rc.split("\n")) {
-    const m = line.match(/^(\w+)=(.+)$/);
-    if (m) vars[m[1]] = m[2].replace(/^["']|["']$/g, "");
-  }
-
-  if (vars.PUSHOVER_TOKEN && vars.PUSHOVER_USER) {
-    const params = new URLSearchParams({
-      token: vars.PUSHOVER_TOKEN,
-      user: vars.PUSHOVER_USER,
-      title,
-      message: body,
-    });
-
-    fetch("https://api.pushover.net/1/messages.json", {
-      method: "POST",
-      body: params,
-    }).then(
-      (res) => {
-        if (res.ok) {
-          logLine({
-            phase: "sent",
-            channel: "pushover",
-            status: res.status,
-            body,
-          });
-        } else {
-          logLine({
-            phase: "channel-failed",
-            channel: "pushover",
-            status: res.status,
-            error: "HTTP error " + res.status,
-          });
-        }
-        process.exit(0);
-      },
-      (err) => {
-        logLine({
-          phase: "channel-failed",
-          channel: "pushover",
-          error: String((err && err.message) || err),
-        });
-        process.exit(0);
-      },
-    );
-  } else {
-    logLine({ phase: "skipped", reason: "pushover-no-tokens" });
-  }
-} else {
-  logLine({ phase: "skipped", reason: "no-pushoverrc" });
-}
+deliver({ title, body, log: (data) => logLine({ event, ...data }) }).finally(
+  () => process.exit(0),
+);

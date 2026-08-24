@@ -156,6 +156,7 @@ in
     ".claude/CLAUDE.md".source = link "${dotfileDir}/agents/AGENTS.md";
     ".claude/settings.json".source = link "${dotfileDir}/claude/settings.json";
     ".claude/notify.js".source = link "${dotfileDir}/claude/notify.js";
+    ".claude/notify-lib.cjs".source = link "${dotfileDir}/agents/notify-lib.cjs";
     ".claude/statusline-command.sh".source = link "${dotfileDir}/claude/statusline-command.sh";
     ".gemini/config/AGENTS.md".source = link "${dotfileDir}/agents/AGENTS.md";
     ".gemini/config/mcp_config.json".source = link "${dotfileDir}/agy/mcp_config.json";
@@ -172,5 +173,6 @@ in
     "opencode/tui.json".source = link "${dotfileDir}/opencode/tui.json";
     "opencode/AGENTS.md".source = link "${dotfileDir}/agents/AGENTS.md";
     "opencode/plugins".source = link "${dotfileDir}/opencode/plugins";
+    "opencode/notify-lib.cjs".source = link "${dotfileDir}/agents/notify-lib.cjs";
   };
 }

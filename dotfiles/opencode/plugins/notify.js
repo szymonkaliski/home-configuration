@@ -1,174 +1,15 @@
-import fs from "fs";
 import os from "os";
 import path from "path";
-import { execFileSync, execSync } from "child_process";
+import { createRequire } from "module";
 
-const LOG_PATH = `${os.homedir()}/.config/opencode/notify.log`;
-const LOG_RETAIN_MS = 90 * 24 * 60 * 60 * 1000;
-const LOG_PRUNE_SLACK_MS = 7 * 24 * 60 * 60 * 1000;
+// loaded by absolute path: this plugin is a symlink into the dotfiles repo on a
+// host and a plain copy inside a microVM, so a relative specifier would resolve
+// to two different places
+const { truncate, createLogger, isFocusedPane, deliver } = createRequire(
+  import.meta.url,
+)(`${os.homedir()}/.config/opencode/notify-lib.cjs`);
 
-function truncate(str, max) {
-  if (!str) return "";
-  if (str.length <= max) return str;
-  let cut = str.slice(0, max);
-  if (/\S/.test(str[max])) {
-    const atBoundary = cut.replace(/\S+$/, "").trimEnd();
-    if (atBoundary) cut = atBoundary;
-  }
-  return cut.trimEnd() + "…";
-}
-
-function logLine(data) {
-  const now = Date.now();
-  try {
-    fs.appendFileSync(
-      LOG_PATH,
-      JSON.stringify({ ts: new Date(now).toISOString(), ...data }) + "\n",
-    );
-    pruneLog(now);
-  } catch {}
-}
-
-function pruneLog(now) {
-  let fd;
-  let oldestTs;
-  try {
-    fd = fs.openSync(LOG_PATH, "r");
-    const head = Buffer.alloc(128);
-    const n = fs.readSync(fd, head, 0, 128, 0);
-    const m = head.toString("utf8", 0, n).match(/"ts":"([^"]+)"/);
-    oldestTs = m ? Date.parse(m[1]) : NaN;
-  } catch {
-    return;
-  } finally {
-    if (fd !== undefined) {
-      try {
-        fs.closeSync(fd);
-      } catch {}
-    }
-  }
-  if (!Number.isFinite(oldestTs)) return;
-  if (oldestTs >= now - LOG_RETAIN_MS - LOG_PRUNE_SLACK_MS) return;
-
-  const cutoff = now - LOG_RETAIN_MS;
-  try {
-    const kept = fs
-      .readFileSync(LOG_PATH, "utf8")
-      .split("\n")
-      .filter((line) => {
-        const m = line.match(/"ts":"([^"]+)"/);
-        return m ? Date.parse(m[1]) >= cutoff : false;
-      });
-    fs.writeFileSync(LOG_PATH, kept.length ? kept.join("\n") + "\n" : "");
-  } catch {}
-}
-
-function shouldSuppressNotification() {
-  if (process.env.TMUX && process.env.TMUX_PANE) {
-    try {
-      const myPane = process.env.TMUX_PANE;
-      const clients = execSync(
-        "tmux list-clients -F '#{client_flags}\t#{pane_id}'",
-        { encoding: "utf8" },
-      )
-        .trim()
-        .split("\n");
-
-      for (const row of clients) {
-        const [flags, activePane] = row.split("\t");
-        if (
-          flags &&
-          flags.split(",").includes("focused") &&
-          activePane === myPane
-        ) {
-          return true;
-        }
-      }
-    } catch {}
-  }
-  return false;
-}
-
-async function sendNotification(title, body, event) {
-  logLine({ phase: "deliver", event, body });
-
-  // tnotify (desktop notifications)
-  try {
-    const args = ["-t", title, body];
-    if (process.env.TMUX) {
-      const tty = execSync("tmux display-message -p '#{pane_tty}'", {
-        encoding: "utf8",
-      }).trim();
-      const fd = fs.openSync(tty, "w");
-      try {
-        execFileSync("tnotify", args, { stdio: ["ignore", fd, "ignore"] });
-      } finally {
-        fs.closeSync(fd);
-      }
-    } else {
-      execFileSync("tnotify", [...args, "--native"], { stdio: "ignore" });
-    }
-    logLine({ phase: "sent", channel: "tnotify", body });
-  } catch (err) {
-    logLine({
-      phase: "channel-failed",
-      channel: "tnotify",
-      error: String((err && err.message) || err),
-    });
-  }
-
-  // pushover (mobile notifications)
-  const pushoverrcPath = `${os.homedir()}/.pushoverrc`;
-  if (fs.existsSync(pushoverrcPath)) {
-    const rc = fs.readFileSync(pushoverrcPath, "utf8");
-    const vars = {};
-    for (const line of rc.split("\n")) {
-      const m = line.match(/^(\w+)=(.+)$/);
-      if (m) vars[m[1]] = m[2].replace(/^["']|["']$/g, "");
-    }
-
-    if (vars.PUSHOVER_TOKEN && vars.PUSHOVER_USER) {
-      const params = new URLSearchParams({
-        token: vars.PUSHOVER_TOKEN,
-        user: vars.PUSHOVER_USER,
-        title,
-        message: body,
-      });
-
-      try {
-        const res = await fetch("https://api.pushover.net/1/messages.json", {
-          method: "POST",
-          body: params,
-        });
-        if (res.ok) {
-          logLine({
-            phase: "sent",
-            channel: "pushover",
-            status: res.status,
-            body,
-          });
-        } else {
-          logLine({
-            phase: "channel-failed",
-            channel: "pushover",
-            status: res.status,
-            error: "HTTP error " + res.status,
-          });
-        }
-      } catch (err) {
-        logLine({
-          phase: "channel-failed",
-          channel: "pushover",
-          error: String((err && err.message) || err),
-        });
-      }
-    } else {
-      logLine({ phase: "skipped", reason: "pushover-no-tokens" });
-    }
-  } else {
-    logLine({ phase: "skipped", reason: "no-pushoverrc" });
-  }
-}
+const logLine = createLogger(`${os.homedir()}/.config/opencode/notify.log`);
 
 export const NotifyPlugin = async ({ client }) => {
   // opencode delivers all events through a single `event` hook keyed by
@@ -177,7 +18,7 @@ export const NotifyPlugin = async ({ client }) => {
     const event = "session.idle";
     logLine({ phase: "fire", event });
 
-    if (shouldSuppressNotification()) {
+    if (isFocusedPane()) {
       logLine({ phase: "suppressed", reason: "focused-pane", event });
       return;
     }
@@ -209,18 +50,18 @@ export const NotifyPlugin = async ({ client }) => {
       });
     }
 
-    await sendNotification(
-      `OpenCode (${os.hostname()} - ${path.basename(process.cwd())})`,
+    await deliver({
+      title: `OpenCode (${os.hostname()} - ${path.basename(process.cwd())})`,
       body,
-      event,
-    );
+      log: (data) => logLine({ event, ...data }),
+    });
   }
 
   async function notifyPermission(perm) {
     const event = "permission.asked";
     logLine({ phase: "fire", event, perm });
 
-    if (shouldSuppressNotification()) {
+    if (isFocusedPane()) {
       logLine({ phase: "suppressed", reason: "focused-pane", event });
       return;
     }
@@ -238,11 +79,11 @@ export const NotifyPlugin = async ({ client }) => {
       ? `${tool}: ${truncate(String(detail), 140)}`
       : `${tool} permission request`;
 
-    await sendNotification(
-      `OpenCode (${os.hostname()} - ${path.basename(process.cwd())})`,
+    await deliver({
+      title: `OpenCode (${os.hostname()} - ${path.basename(process.cwd())})`,
       body,
-      event,
-    );
+      log: (data) => logLine({ event, ...data }),
+    });
   }
 
   return {

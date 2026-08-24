@@ -1,0 +1,35 @@
+{
+  "notify": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "~/.gemini/config/notify.js stop",
+        "timeout": 20
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.gemini/config/notify.js pretool",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.gemini/config/notify.js posttool",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

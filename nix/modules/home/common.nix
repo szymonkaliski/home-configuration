@@ -160,6 +160,9 @@ in
     ".claude/statusline-command.sh".source = link "${dotfileDir}/claude/statusline-command.sh";
     ".gemini/config/AGENTS.md".source = link "${dotfileDir}/agents/AGENTS.md";
     ".gemini/config/mcp_config.json".source = link "${dotfileDir}/agy/mcp_config.json";
+    ".gemini/config/hooks.json".source = link "${dotfileDir}/agy/hooks.json";
+    ".gemini/config/notify.js".source = link "${dotfileDir}/agy/notify.js";
+    ".gemini/config/notify-lib.cjs".source = link "${dotfileDir}/agents/notify-lib.cjs";
   }
   # skills linked one-by-one so the destination dirs stay real directories;
   # machine-local additions can then sit alongside without living in this repo

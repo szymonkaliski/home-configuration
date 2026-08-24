@@ -98,12 +98,20 @@ if (fs.existsSync(opencodePath)) {
   fs.writeFileSync(opencodePath, JSON.stringify(config, null, 2));
 }
 
-// patch agy: inject chromium path for playwright mcp
+// patch agy: point the playwright mcp at the VM chromium (the shared
+// dotfile carries no --executable-path, so inject it by server name)
 const agyMcpPath = "/home/szymon/.gemini/config/mcp_config.json";
 if (fs.existsSync(agyMcpPath)) {
-  let raw = fs.readFileSync(agyMcpPath, "utf8");
-  raw = raw.replaceAll("/home/szymon/.nix-profile/bin/chromium", vmChromium);
-  fs.writeFileSync(agyMcpPath, raw);
+  const config = JSON.parse(fs.readFileSync(agyMcpPath, "utf8"));
+  const playwright = (config.mcpServers || {}).playwright;
+  if (playwright) {
+    const args = playwright.args || [];
+    const i = args.indexOf("--executable-path");
+    if (i !== -1) args[i + 1] = vmChromium;
+    else args.push("--executable-path", vmChromium);
+    playwright.args = args;
+    fs.writeFileSync(agyMcpPath, JSON.stringify(config, null, 2));
+  }
 }
 EOF
 

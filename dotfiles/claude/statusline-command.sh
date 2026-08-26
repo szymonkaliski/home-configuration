@@ -103,7 +103,7 @@ if [ -n "$usage" ] && [ -n "$COLUMNS" ]; then
   strip="s/${esc}\[[0-9;]*m//g"
   left_len=$(printf '%s' "$left" | sed "$strip" | wc -m | tr -d ' ')
   usage_len=$(printf '%s' "$usage" | sed "$strip" | wc -m | tr -d ' ')
-  margin=3
+  margin=4
   pad=$(( COLUMNS - left_len - usage_len - margin ))
   if [ "$pad" -ge 1 ]; then
     printf '%s%*s%s' "$left" "$pad" "" "$usage"

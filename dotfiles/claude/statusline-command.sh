@@ -34,32 +34,51 @@ fi
 
 export GIT_OPTIONAL_LOCKS=0
 
-usage=""
 model=$(echo "$input" | jq -r '.model.display_name // empty')
-five_used=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
-five_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
-if [ -n "$five_used" ]; then
-  p=$(printf '%.0f' "$five_used")
+
+now=$(date +%s)
+
+usage_segment() {
+  local used=$1 reset=$2
+  [ -z "$used" ] && return
+
+  local p color secs d h m rem
+  p=$(printf '%.0f' "$used")
   if [ "$p" -ge 80 ]; then color="31"
   elif [ "$p" -ge 50 ]; then color="33"
   else color="32"; fi
-  if [ -n "$five_reset" ]; then
-    secs=$(( five_reset - $(date +%s) ))
-    [ "$secs" -lt 0 ] && secs=0
-    h=$(( secs / 3600 )); m=$(( secs % 3600 / 60 ))
-    if [ "$h" -gt 0 ] && [ "$m" -gt 0 ]; then rem="${h}h${m}m"
-    elif [ "$h" -gt 0 ]; then rem="${h}h"
-    elif [ "$m" -gt 0 ]; then rem="${m}m"
-    else rem="<1m"; fi
-    usage=$(printf " \033[${color}m%d%%\033[0m %s left" "$p" "$rem")
-  else
-    usage=$(printf " \033[${color}m%d%%\033[0m" "$p")
-  fi
-fi
 
-if [ -n "$model" ]; then
-  usage=$(printf " %s%s" "$model" "$usage")
-fi
+  if [ -z "$reset" ]; then
+    printf '\033[%sm%d%%\033[0m' "$color" "$p"
+    return
+  fi
+
+  secs=$(( reset - now ))
+  [ "$secs" -lt 0 ] && secs=0
+  d=$(( secs / 86400 )); h=$(( secs % 86400 / 3600 )); m=$(( secs % 3600 / 60 ))
+  if [ "$d" -gt 0 ] && [ "$h" -gt 0 ]; then rem="${d}d${h}h"
+  elif [ "$d" -gt 0 ]; then rem="${d}d"
+  elif [ "$h" -gt 0 ] && [ "$m" -gt 0 ]; then rem="${h}h${m}m"
+  elif [ "$h" -gt 0 ]; then rem="${h}h"
+  elif [ "$m" -gt 0 ]; then rem="${m}m"
+  else rem="<1m"; fi
+
+  printf '\033[%sm%d%%\033[0m %s' "$color" "$p" "$rem"
+}
+
+usage=""
+append_usage() {
+  [ -z "$1" ] && return
+  if [ -z "$usage" ]; then usage="$1"; else usage="$usage / $1"; fi
+}
+
+append_usage "$model"
+for window in five_hour seven_day; do
+  append_usage "$(usage_segment \
+    "$(echo "$input" | jq -r ".rate_limits.${window}.used_percentage // empty")" \
+    "$(echo "$input" | jq -r ".rate_limits.${window}.resets_at // empty")")"
+done
+[ -n "$usage" ] && usage=" $usage"
 
 if git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
   branch=$(git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null || git -C "$cwd" rev-parse --short HEAD 2>/dev/null)

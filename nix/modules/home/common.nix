@@ -43,6 +43,7 @@ in
     pkgs.live-server
     pkgs.mosquitto
     pkgs.neovim
+    pkgs.nh
     pkgs.nil
     pkgs.nixfmt
     pkgs.nnn

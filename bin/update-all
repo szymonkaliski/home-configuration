@@ -15,32 +15,6 @@ function gitUpdate {
 }
 
 HOSTNAME=$(hostname -s)
-NVD_LOG="$HOME/.local/state/update-all.log"
-
-mkdir -p "$(dirname "$NVD_LOG")"
-
-nvd_diff() {
-  local label="$1" before="$2" after="$3"
-  local output
-
-  if [ -z "$before" ] || [ -z "$after" ]; then
-    output="(skipped: missing before/after path)"
-  elif [ "$before" = "$after" ]; then
-    output="No changes."
-  else
-    output=$(nix run nixpkgs#nvd -- diff "$before" "$after" 2>&1)
-  fi
-
-  echo
-  echo -e "$(tput setaf 2)Diffing $label...$(tput sgr0)"
-  echo "$output"
-
-  {
-    echo "[$(date -Iseconds 2>/dev/null || date)] $label"
-    echo "$output"
-    echo
-  } >> "$NVD_LOG"
-}
 
 # pull the home-configuration repo first (resolve symlink to find repo root)
 REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
@@ -60,52 +34,19 @@ if [[ $HOSTNAME == "orchid" ]]; then
 
   pushd ~/.config/home-manager > /dev/null || exit 1
 
-  HM_BEFORE=$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null)
-
   sudo determinate-nixd upgrade
-  nix flake update
-  home-manager switch --flake .#szymon@orchid
-
-  HM_AFTER=$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null)
-  nvd_diff "home-manager" "$HM_BEFORE" "$HM_AFTER"
+  nh home switch . -u -c szymon@orchid
   echo
 
   popd > /dev/null || exit 1
-elif [[ $HOSTNAME == "minix" ]]; then
+elif [[ $HOSTNAME == "minix" || $HOSTNAME == "berry" ]]; then
   echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"
 
   pushd ~/.config/home-manager > /dev/null || exit 1
 
-  SYSTEM_BEFORE=$(readlink -f /run/current-system 2>/dev/null)
-  HM_BEFORE=$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null)
-
-  nix flake update
-  sudo nixos-rebuild switch --flake .#minix
-  home-manager switch --flake .#szymon@minix
-
-  SYSTEM_AFTER=$(readlink -f /nix/var/nix/profiles/system 2>/dev/null)
-  HM_AFTER=$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null)
-  nvd_diff "system" "$SYSTEM_BEFORE" "$SYSTEM_AFTER"
-  nvd_diff "home-manager" "$HM_BEFORE" "$HM_AFTER"
-  echo
-
-  popd > /dev/null || exit 1
-elif [[ $HOSTNAME == "berry" ]]; then
-  echo -e "$(tput setaf 2)Checking Nix...$(tput sgr0)"
-
-  pushd ~/.config/home-manager > /dev/null || exit 1
-
-  SYSTEM_BEFORE=$(readlink -f /run/current-system 2>/dev/null)
-  HM_BEFORE=$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null)
-
-  nix flake update
-  sudo nixos-rebuild switch --flake .#berry
-  home-manager switch --flake .#szymon@berry
-
-  SYSTEM_AFTER=$(readlink -f /nix/var/nix/profiles/system 2>/dev/null)
-  HM_AFTER=$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null)
-  nvd_diff "system" "$SYSTEM_BEFORE" "$SYSTEM_AFTER"
-  nvd_diff "home-manager" "$HM_BEFORE" "$HM_AFTER"
+  # -u on the first call only, so home-manager builds from the same revision
+  nh os switch . -u -H "$HOSTNAME"
+  nh home switch . -c "szymon@$HOSTNAME"
   echo
 
   popd > /dev/null || exit 1

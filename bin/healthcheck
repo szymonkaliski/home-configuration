@@ -220,6 +220,21 @@ check "claude-token-authenticates" bash -c '
   fi
 '
 
+check "vitalist-pulled-recently" bash -c '
+  # raw/ gets a file per API response, so this tracks the pull itself and not
+  # whether a weight or blood-pressure reading was taken that day
+  raw="/home/szymon/.dropbox-hm/Dropbox/Health/Logs/raw"
+  stale=""
+  for src in whoop withings; do
+    [[ -z $(find "$raw/$src" -name "*.json" -newermt "-30 hours" -print -quit 2>/dev/null) ]] \
+      && stale+="$src "
+  done
+  if [[ -n "$stale" ]]; then
+    echo "nothing pulled in 30h: ${stale% }"
+    exit 1
+  fi
+'
+
 check "archivist-completed-fetch-recently" bash -c '
   ts=$(systemctl --user show archivist-fetch.service --property=InactiveEnterTimestamp --value 2>/dev/null)
   if [[ -z "$ts" ]]; then

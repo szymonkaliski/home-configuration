@@ -14,8 +14,7 @@
 
   home.packages = [ pkgs.maestral ];
 
-  # setup.sh links the account and picks synced folders via maestral's wizard;
-  # until then the daemon runs with sync idle
+  # setup.sh links the account, until then the daemon runs with sync idle
   systemd.user.services.maestral = {
     Unit.Description = "Maestral daemon";
 

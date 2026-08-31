@@ -149,8 +149,8 @@ if [[ $HOST == "minix" ]] && command -v dropbox &> /dev/null; then
   fi
 fi
 
-# auth Dropbox on berry if needed; the first `maestral start` runs a wizard for
-# linking, folder location, and which folders to sync
+# auth Dropbox on berry if needed;
+# the first `maestral start` runs a wizard for linking, folder location, etc.
 if [[ $HOST == "berry" ]] && command -v maestral &> /dev/null; then
   read -rp "$(tput setaf 3)Link Dropbox (maestral)?$(tput sgr0) (y/N) " RESP
 

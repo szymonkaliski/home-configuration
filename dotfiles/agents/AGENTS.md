@@ -41,7 +41,7 @@
 
 ## Shell & Environment
 
-- for running ad-hoc shell commands from nixpkgs, use `nix run nixpkgs#<pkg> -- <args>` (for example: `nix run nixpkgs#poppler_utils -- pdfinfo [...]`); prefer it over writing ad-hoc code
+- for running ad-hoc shell commands from nixpkgs, use `nix run nixpkgs#<pkg> -- <args>` (for example: `nix run nixpkgs#poppler-utils -- pdfinfo [...]`); prefer it over writing ad-hoc code
 
 - use `./tmp/` in the project root for any temporary/scratch files (reproduction scripts, test fixtures, debug output, etc.) - it's globally gitignored
   - create it if it doesn't exist

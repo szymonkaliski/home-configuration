@@ -25,10 +25,11 @@
 
 ## Subagents
 
-- the main thread orchestrates: scope the work, delegate, judge the results, synthesize; delegated work runs on one of two tiers
-  - heavy tier (strongest worker model): implementation, investigation, review, anything that needs judgment
+- the main thread orchestrates: scope the work, delegate, judge the results, synthesize; delegated work runs on one of two tiers, both below the session model
+  - heavy tier (strongest model below the session model): implementation, investigation, review, anything that needs judgment
   - light tier (fast model): mechanical, fully specified work - search, renames, formatting
   - pick the tier per delegation; when the harness takes a model per call, always pass one (heavy tier by default), never let a subagent inherit the session model by omission
+  - this covers every spawn path: subagent tools, workflow/orchestration scripts, agent teams - also where the harness's own reference tells you to omit the model
 - delegate: independent read-only fan-out (codebase search, multi-file research, doc/web lookups) launched in one message; an unrelated edit that came up mid-session; research whose result isn't blocking the current step (run it in the background)
 - keep inline: anything that fits in a handful of tool calls; steps that depend on each other; work that needs the current conversation's context; edits to files the main thread or another agent touches (lockfiles, configs, anything a formatter rewrites); destructive or outward-facing actions (push, delete, deploy)
 - one subagent per task, no re-delegation; prefer fewer, larger subagents over many narrow ones

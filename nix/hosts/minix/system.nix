@@ -178,6 +178,8 @@ in
   services.openssh.enable = true;
 
   programs.ssh.knownHosts.berry.publicKey = keys.berryHost;
+  # git remotes are szymon@minix:Git/<name>.git on every machine, minix included
+  programs.ssh.knownHosts.minix.publicKey = keys.minixHost;
 
   programs.mosh.enable = true;
 
@@ -234,6 +236,10 @@ in
     openssh.authorizedKeys.keys = [
       keys.orchid
       keys.berry
+      # git remotes are szymon@minix:Git/<name>.git on every machine, minix included
+      keys.minix
+      # microvms get git transport only: git-shell rejects any other command
+      "restrict,command=\"${pkgs.git}/bin/git-shell -c \\\"$SSH_ORIGINAL_COMMAND\\\"\" ${keys.microvm}"
     ];
   };
 
@@ -361,6 +367,10 @@ in
   sops.age.keyFile = "${config.users.users.szymon.home}/.config/sops/age/keys.txt";
 
   sops.secrets.tailscale_authkey_vm_ephemeral = { };
+  sops.secrets.microvm_git_key = {
+    format = "binary";
+    sopsFile = ../../secrets/microvm-git-key;
+  };
   sops.secrets.pushover_token_vm = { };
   sops.secrets.pushover_token_user = {
     sopsFile = ../../secrets/shared.yaml;
@@ -386,6 +396,7 @@ in
     mkdir -p "$dir"
 
     cp ${config.sops.secrets.tailscale_authkey_vm_ephemeral.path} "$dir/ts-authkey"
+    cp ${config.sops.secrets.microvm_git_key.path} "$dir/git-ssh-key"
 
     printf 'PUSHOVER_TOKEN=%s\nPUSHOVER_USER=%s\n' \
       "$(cat ${config.sops.secrets.pushover_token_vm.path})" \
@@ -393,7 +404,7 @@ in
       > "$dir/pushoverrc"
 
     chown -R szymon:users "$dir"
-    chmod 600 "$dir"/{ts-authkey,pushoverrc}
+    chmod 600 "$dir"/{ts-authkey,pushoverrc,git-ssh-key}
   '';
 
   system.stateVersion = "25.11";

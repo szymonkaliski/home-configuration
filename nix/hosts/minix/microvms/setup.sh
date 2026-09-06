@@ -34,6 +34,14 @@ if [ -f /mnt/host/pushoverrc ]; then
   cp /mnt/host/pushoverrc /home/szymon/.pushoverrc
 fi
 
+# git over ssh to minix (szymon@minix:Git/<name>.git) and ssh between microvms
+if [ -f /mnt/host/git-ssh-key ]; then
+  mkdir -p /home/szymon/.ssh
+  chmod 700 /home/szymon/.ssh
+  cp /mnt/host/git-ssh-key /home/szymon/.ssh/id_ed25519
+  chmod 600 /home/szymon/.ssh/id_ed25519
+fi
+
 if [ -f /home/szymon/.config/opencode/gemini_api_key ]; then
   # opencode's google provider (via @ai-sdk/google) reads GOOGLE_GENERATIVE_AI_API_KEY
   echo "export GOOGLE_GENERATIVE_AI_API_KEY=\"$(cat /home/szymon/.config/opencode/gemini_api_key)\"" >> /home/szymon/.bash_profile
@@ -117,6 +125,11 @@ EOF
 
 # create executable wrappers for the agent CLIs
 mkdir -p /home/szymon/.bin
+
+# git minix-clone/push/ls/rm, synced by bin/microvm
+if [ -d /mnt/host/bin ]; then
+  cp /mnt/host/bin/* /home/szymon/.bin/
+fi
 
 cat << 'EOF' > /home/szymon/.bin/claude
 #!/bin/sh

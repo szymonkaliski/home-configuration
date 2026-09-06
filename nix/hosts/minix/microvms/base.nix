@@ -60,7 +60,11 @@ in
     uid = 1000;
     shell = pkgs.bash;
     extraGroups = [ "wheel" ];
-    openssh.authorizedKeys.keys = [ keys.minix ];
+    openssh.authorizedKeys.keys = [
+      keys.minix
+      # ssh between microvms, e.g. git fetch szymon@vm-2:/workspace
+      keys.microvm
+    ];
   };
   security.sudo.wheelNeedsPassword = false;
 
@@ -73,6 +77,15 @@ in
       type = "ed25519";
     }
   ];
+
+  # git remotes are szymon@minix:Git/<name>.git, reached over the tailnet
+  programs.ssh.knownHosts.minix.publicKey = keys.minixHost;
+  # microvm host keys are regenerated on every boot
+  programs.ssh.extraConfig = ''
+    Host vm-*
+      StrictHostKeyChecking no
+      UserKnownHostsFile /dev/null
+  '';
 
   systemd.services.setup-user = {
     wantedBy = [ "multi-user.target" ];

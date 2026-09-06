@@ -13,6 +13,7 @@ MAX_VMS=4
 
 REPO_SETUP_SH="$PROJECTS_PATH/home-configuration/nix/hosts/minix/microvms/setup.sh"
 REPO_AGENTS_MD="$PROJECTS_PATH/home-configuration/dotfiles/agents/AGENTS.md"
+REPO_BIN_DIR="$PROJECTS_PATH/home-configuration/bin"
 
 sync_host_config() {
   mkdir -p "$HOST_DIR"
@@ -31,6 +32,9 @@ sync_host_config() {
   } > "$HOST_DIR/setup.sh"
 
   chmod +x "$HOST_DIR/setup.sh"
+
+  mkdir -p "$HOST_DIR/bin"
+  command cp -L "$REPO_BIN_DIR"/git-minix-* "$HOST_DIR/bin/"
 }
 
 # agent configs are written straight into the VM's home on the data share

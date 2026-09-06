@@ -40,3 +40,11 @@ creation_rules:
   # so `sops` opens it as a plain ssh config
   - path_regex: nix/secrets/ssh-config$
     key_groups: *all-hosts
+  # whole-file secret rather than a key inside minix.yaml,
+  # so `sops` opens it as a plain openssh private key;
+  # every microvm gets it, minix and the other microvms authenticate it
+  - path_regex: nix/secrets/microvm-git-key$
+    key_groups:
+      - age:
+          - *minix
+          - *recovery

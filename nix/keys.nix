@@ -4,6 +4,10 @@
   minix = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJUJt+pQbfy7QwY8EieP5EmX1suXdt9bDECsokG6x/3L szymon@minix";
   berry = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIPujiRSiTG7nVWeBsBYuINJPLsJgyIsz69f1a+KiPlK szymon@berry";
 
+  # shared by every microvm: git over ssh to minix, and ssh between microvms
+  # private half in secrets/microvm-git-key
+  microvm = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEnpGFeuWGQFBOtyxJoxAO9SrrU0G07zSEkfVdkf1L00 microvm@minix";
+
   # berry's nix-daemon, for offloading builds to minix
   # private half in secrets/nix-builder-key
   berryBuilder = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIChQZtjMk5pYpSYFBGUh6jlPU1MfHg+Svpmc7uUzVLlG nix-builder@berry";

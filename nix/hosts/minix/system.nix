@@ -218,7 +218,7 @@ in
       if (action.id == "org.freedesktop.systemd1.manage-units" && subject.user == "szymon") {
         var unit = action.lookup("unit");
 
-        if (unit && /^microvm(-virtiofsd)?@vm-[0-9]+\.service$/.test(unit)) {
+        if (unit && /^microvm(-virtiofsd|-workspace)?@vm-[0-9]+\.service$/.test(unit)) {
           return polkit.Result.YES;
         }
       }
@@ -280,12 +280,14 @@ in
       vm="''${2:-}"
       case "$vm" in
         [1-9]) ;;
-        *) echo "usage: microvm-clean <overlay|data> <1-9>" >&2; exit 1 ;;
+        *) echo "usage: microvm-clean <overlay|data|workspace> <1-9>" >&2; exit 1 ;;
       esac
       case "$op" in
         overlay) exec ${pkgs.coreutils}/bin/rm -f "/var/lib/microvms/vm-$vm/nix-store-overlay.img" ;;
         data) exec ${pkgs.coreutils}/bin/rm -rf "/home/szymon/MicroVMs/vm-$vm/data" ;;
-        *) echo "usage: microvm-clean <overlay|data> <1-9>" >&2; exit 1 ;;
+        # the overlay workdir holds root-owned entries
+        workspace) exec ${pkgs.coreutils}/bin/rm -rf "/home/szymon/MicroVMs/vm-$vm/overlay" ;;
+        *) echo "usage: microvm-clean <overlay|data|workspace> <1-9>" >&2; exit 1 ;;
       esac
     '')
   ];

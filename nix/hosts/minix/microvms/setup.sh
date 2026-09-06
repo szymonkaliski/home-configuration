@@ -54,6 +54,9 @@ vm_name="$(uname -n)"
 ts_suffix="$(cat /mnt/host/ts-magicdns-suffix 2>/dev/null || true)"
 
 vm_context="You are running inside an ephemeral, sandboxed NixOS microVM named '${vm_name}'."
+if [ "$(cat /mnt/data/workspace-mode 2>/dev/null || true)" = "private" ]; then
+  vm_context="${vm_context} /workspace is a private copy-on-write instance of the project: nothing you change there reaches the host checkout until you commit and push it."
+fi
 if [ -n "$ts_suffix" ]; then
   ts_dns="${vm_name}.${ts_suffix}"
   vm_context="${vm_context} Its private Tailscale hostname is '${ts_dns}', reachable only from devices on the same tailnet (not the public internet). There is no firewall: any TCP port you listen on (bound to 0.0.0.0, not loopback-only) is directly reachable from the tailnet at http://${ts_dns}:<PORT> (plain HTTP), so to share a running dev server you just need to listen on a port."

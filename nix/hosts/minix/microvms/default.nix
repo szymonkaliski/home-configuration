@@ -43,7 +43,53 @@ in
   # the virtiofsd processes exit as soon as their client disconnects, but the
   # supervisord wrapping them takes ~4s to reap its notify child after
   # SIGTERM; escalate to SIGKILL quickly so stop->start cycles stay fast
-  systemd.services."microvm-virtiofsd@".serviceConfig.TimeoutStopSec = "2s";
+  systemd.services."microvm-virtiofsd@" = {
+    serviceConfig.TimeoutStopSec = "2s";
+    requires = [ "microvm-workspace@%i.service" ];
+    after = [ "microvm-workspace@%i.service" ];
+  };
+
+  # private workspace: an overlay of the source directory, mounted at
+  # ~/MicroVMs/vm-N/workspace before virtiofsd resolves the share. virtiofsd
+  # opens the shared directory once at startup, and it runs with PrivateTmp,
+  # so a mount from its own ExecStartPre would stay inside its mount
+  # namespace, invisible to the host. bin/microvm writes the `source` symlink
+  # for a private instance; without it the unit does nothing and the VM
+  # shares the `workspace` symlink target in place
+  systemd.services."microvm-workspace@" = {
+    description = "Private workspace overlay for MicroVM '%i'";
+    partOf = [ "microvm@%i.service" ];
+    before = [ "microvm-virtiofsd@%i.service" ];
+    path = [
+      pkgs.util-linux
+      pkgs.coreutils
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.writeShellScript "microvm-workspace-mount" ''
+        set -eu
+        cd /home/szymon/MicroVMs/$1
+        [ -L source ] || exit 0
+        # a symlink here would make mount(2) overlay the project itself
+        if [ -L workspace ] || [ ! -d workspace ]; then
+          echo "workspace must be a directory for a private instance" >&2
+          exit 1
+        fi
+        mountpoint -q workspace && exit 0
+        # redirect_dir: directory renames inside the instance succeed instead
+        # of failing with EXDEV
+        mount -t overlay overlay \
+          -o "lowerdir=$(readlink -f source),upperdir=$PWD/overlay/upper,workdir=$PWD/overlay/work,redirect_dir=on" \
+          workspace
+      ''} %i";
+      ExecStop = "${pkgs.writeShellScript "microvm-workspace-umount" ''
+        cd /home/szymon/MicroVMs/$1 || exit 0
+        mountpoint -q workspace || exit 0
+        umount workspace || umount -l workspace
+      ''} %i";
+    };
+  };
 
   systemd.services."microvm@" = {
     serviceConfig.TimeoutStartSec = "5min";

@@ -99,11 +99,58 @@ find_free_vm() {
   exit 1
 }
 
+# a private instance: `source` points at the project, `workspace` is a
+# directory that microvm-workspace@ mounts an overlay of the source on, and
+# overlay/upper holds every change the VM made. A shared instance has no
+# `source`, its `workspace` is a symlink into the project itself
+instance_source() {
+  readlink "$VM_BASE/vm-${1}/source" 2>/dev/null || true
+}
+
+# prepare_workspace VM MODE PROJECT
+prepare_workspace() {
+  local VM="$1" MODE="$2" PROJECT="$3"
+  local dir="$VM_BASE/vm-${VM}"
+  local held
+  held=$(instance_source "$VM")
+
+  if mountpoint -q "$dir/workspace" 2>/dev/null; then
+    echo "error: vm-${VM} workspace is still mounted, stop the VM first" >&2
+    exit 1
+  fi
+
+  case "$MODE" in
+    private)
+      if [ -n "$held" ] && [ "$held" != "$PROJECT" ]; then
+        echo "error: vm-${VM} holds a private instance of ${held}, clean it first" >&2
+        exit 1
+      fi
+      # a symlink left by a shared session; the overlay unit refuses to mount
+      # on one because mount(2) would follow it into the project
+      [ -L "$dir/workspace" ] && rm -f "$dir/workspace"
+      mkdir -p "$dir/workspace" "$dir/overlay/upper" "$dir/overlay/work"
+      ln -sfn "$PROJECT" "$dir/source"
+      ;;
+    shared)
+      if [ -n "$held" ]; then
+        echo "error: vm-${VM} holds a private instance of ${held}, clean it first" >&2
+        exit 1
+      fi
+      rm -rf "$dir/workspace"
+      ln -s "$PROJECT" "$dir/workspace"
+      ;;
+  esac
+
+  # setup.sh tells the agents which kind of workspace they are in
+  echo "$MODE" > "$dir/data/workspace-mode"
+}
+
 cmd_start() {
-  local VM="" PROJECT="."
+  local VM="" PROJECT="." MODE="private"
   while [ $# -gt 0 ]; do
     case "$1" in
       --dir) PROJECT="$2"; shift 2 ;;
+      --shared) MODE="shared"; shift ;;
       *) VM="$1"; shift ;;
     esac
   done
@@ -118,12 +165,11 @@ cmd_start() {
   # drop empty microvm:kvm-owned data/ recreated by tmpfiles after a clean
   rmdir "$VM_BASE/vm-${VM}/data" 2>/dev/null || true
   mkdir -p "$VM_BASE/vm-${VM}/data/home"
-  rm -rf "$VM_BASE/vm-${VM}/workspace"
-  ln -s "$PROJECT" "$VM_BASE/vm-${VM}/workspace"
+  prepare_workspace "$VM" "$MODE" "$PROJECT"
   sync_host_config
   stage_vm_home "$VM"
   t0=$SECONDS
-  printf "vm-%s (10.100.0.%s) %s\n" "$VM" "$VM" "$PROJECT"
+  printf "vm-%s (10.100.0.%s) %s [%s]\n" "$VM" "$VM" "$PROJECT" "$MODE"
   printf "starting..."
   systemctl reset-failed "microvm@vm-${VM}" 2>/dev/null || true
   systemctl start --no-block "microvm@vm-${VM}"
@@ -172,9 +218,10 @@ stop_vm() {
   local VM="$1"
   ssh -o ConnectTimeout=3 "${SSH_OPTS[@]}" "szymon@10.100.0.${VM}" "sudo tailscale logout" 2>/dev/null || true
   systemctl stop "microvm@vm-${VM}"
-  # PartOf already queues this stop; block on it here so the teardown cost
-  # is paid now and not by the next start
+  # PartOf already queues these stops; block on them here so the teardown
+  # cost is paid now and not by the next start
   systemctl stop "microvm-virtiofsd@vm-${VM}" 2>/dev/null || true
+  systemctl stop "microvm-workspace@vm-${VM}" 2>/dev/null || true
   # TimeoutStopSec=2s SIGKILLs supervisord before it reaps its notify child, so
   # the unit always lands in failed state; clear it
   systemctl reset-failed "microvm-virtiofsd@vm-${VM}" 2>/dev/null || true
@@ -203,9 +250,40 @@ cmd_list() {
       deactivating) status="stopping" ;;
       *) status="stopped" ;;
     esac
-    ws=$(readlink "$VM_BASE/vm-${i}/workspace" 2>/dev/null || echo "(none)")
+    src=$(instance_source "$i")
+    if [ -n "$src" ]; then
+      ws="private  $src"
+    elif ws=$(readlink "$VM_BASE/vm-${i}/workspace" 2>/dev/null); then
+      ws="shared   $ws"
+    else
+      ws="(none)"
+    fi
     printf "vm-%-2d  %-8s  %s\n" "$i" "$status" "$ws"
   done
+}
+
+# files a private instance changed, from its overlay upper layer: A added,
+# M modified, D deleted (a whiteout, stored as a character device)
+cmd_diff() {
+  [ $# -lt 1 ] && echo "usage: microvm diff <N>" && exit 1
+  local VM="$1"
+  local src upper="$VM_BASE/vm-${VM}/overlay/upper"
+  src=$(instance_source "$VM")
+  if [ -z "$src" ]; then
+    echo "error: vm-${VM} has no private instance" >&2; exit 1
+  fi
+  [ -d "$upper" ] || exit 0
+  (cd "$upper" && find . -mindepth 1 \( -type f -o -type l -o -type c \) -printf '%y %P\n') \
+    | sort -k2 \
+    | while read -r type path; do
+        if [ "$type" = "c" ]; then
+          echo "D $path"
+        elif [ -e "$src/$path" ] || [ -L "$src/$path" ]; then
+          echo "M $path"
+        else
+          echo "A $path"
+        fi
+      done
 }
 
 cmd_stop_all() {
@@ -226,6 +304,7 @@ kill_vm() {
   systemctl kill "microvm@vm-${VM}"
   systemctl stop "microvm@vm-${VM}" 2>/dev/null || true
   systemctl stop "microvm-virtiofsd@vm-${VM}" 2>/dev/null || true
+  systemctl stop "microvm-workspace@vm-${VM}" 2>/dev/null || true
   systemctl reset-failed "microvm-virtiofsd@vm-${VM}" 2>/dev/null || true
 }
 
@@ -250,8 +329,14 @@ cmd_kill_all() {
 
 clean_vm() {
   local VM="$1"
+  if mountpoint -q "$VM_BASE/vm-${VM}/workspace" 2>/dev/null; then
+    echo "error: vm-${VM} workspace is still mounted" >&2
+    exit 1
+  fi
   sudo /run/current-system/sw/bin/microvm-clean overlay "${VM}"
   sudo /run/current-system/sw/bin/microvm-clean data "${VM}"
+  sudo /run/current-system/sw/bin/microvm-clean workspace "${VM}"
+  rm -f "$VM_BASE/vm-${VM}/source"
   rm -rf "$VM_BASE/vm-${VM}/workspace"
 }
 
@@ -284,13 +369,17 @@ cmd_restart() {
   if ! systemctl is-active "microvm@vm-${VM}" &>/dev/null; then
     echo "error: vm-${VM} is not running" >&2; exit 1
   fi
-  local ws
-  ws=$(readlink "$VM_BASE/vm-${VM}/workspace" 2>/dev/null || true)
+  local ws mode_flag=()
+  ws=$(instance_source "$VM")
+  if [ -z "$ws" ]; then
+    ws=$(readlink "$VM_BASE/vm-${VM}/workspace" 2>/dev/null || true)
+    mode_flag=(--shared)
+  fi
   [ -z "$ws" ] && echo "error: no workspace for vm-${VM}" >&2 && exit 1
   echo "stopping vm-${VM}..."
   stop_vm "$VM"
   echo "restarting..."
-  cmd_start "$VM" --dir "$ws"
+  cmd_start "$VM" --dir "$ws" "${mode_flag[@]}"
 }
 
 cmd_usage() {
@@ -299,12 +388,15 @@ usage: microvm <command> [args]
 
   list, ls                  show all VMs
 
-  start [N] [--dir PATH]    start VM (default cwd; auto-pick if N omitted)
+  start [N] [--dir PATH] [--shared]
+                            start VM on a private overlay of PATH (default cwd),
+                            or with --shared on PATH itself; N auto-picked if omitted
   ssh N                     ssh into running VM
+  diff N                    files a private instance changed (A/M/D)
   stop N                    stop VM
   restart N                 restart VM (preserves workspace)
   kill N                    kill VM
-  clean N                   clean all ephemeral data for VM
+  clean N                   clean all ephemeral data for VM, private instance included
 
   stop-all                  stop all VMs
   kill-all                  kill all VMs
@@ -319,6 +411,7 @@ case "$CMD" in
   start)     cmd_start "$@" ;;
   stop)      cmd_stop "$@" ;;
   ssh)       cmd_ssh "$@" ;;
+  diff)      cmd_diff "$@" ;;
   list|ls)   cmd_list ;;
   stop-all)  cmd_stop_all ;;
   kill)      cmd_kill "$@" ;;

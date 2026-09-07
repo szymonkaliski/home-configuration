@@ -59,6 +59,10 @@ in
   systemd.services."microvm-workspace@" = {
     description = "Private workspace overlay for MicroVM '%i'";
     partOf = [ "microvm@%i.service" ];
+    # microvm-virtiofsd@ Requires= this unit, so a switch that restarted it
+    # would take the running VM down with it; the store paths in ExecStart
+    # change on every nixpkgs bump
+    restartIfChanged = false;
     before = [ "microvm-virtiofsd@%i.service" ];
     path = [
       pkgs.util-linux

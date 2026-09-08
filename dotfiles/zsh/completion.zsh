@@ -119,7 +119,7 @@ if (( $+commands[microvm] )); then
         if [[ "${words[CURRENT-1]}" == "--dir" ]]; then
           _directories
         elif [[ "${words[CURRENT]}" == -* ]]; then
-          _arguments '*:option:(--dir --shared)'
+          _arguments '*:option:(--dir)'
         else
           local -a vms
           for i in $(seq 1 $max_vms); do

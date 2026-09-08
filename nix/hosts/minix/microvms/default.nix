@@ -49,15 +49,13 @@ in
     after = [ "microvm-workspace@%i.service" ];
   };
 
-  # private workspace: an overlay of the source directory, mounted at
+  # the workspace share is an overlay of the source directory, mounted at
   # ~/MicroVMs/vm-N/workspace before virtiofsd resolves the share. virtiofsd
   # opens the shared directory once at startup, and it runs with PrivateTmp,
   # so a mount from its own ExecStartPre would stay inside its mount
   # namespace, invisible to the host. bin/microvm writes the `source` symlink
-  # for a private instance; without it the unit does nothing and the VM
-  # shares the `workspace` symlink target in place
   systemd.services."microvm-workspace@" = {
-    description = "Private workspace overlay for MicroVM '%i'";
+    description = "Workspace overlay for MicroVM '%i'";
     partOf = [ "microvm@%i.service" ];
     # microvm-virtiofsd@ Requires= this unit, so a switch that restarted it
     # would take the running VM down with it; the store paths in ExecStart
@@ -74,10 +72,8 @@ in
       ExecStart = "${pkgs.writeShellScript "microvm-workspace-mount" ''
         set -eu
         cd /home/szymon/MicroVMs/$1
-        [ -L source ] || exit 0
-        # a symlink here would make mount(2) overlay the project itself
-        if [ -L workspace ] || [ ! -d workspace ]; then
-          echo "workspace must be a directory for a private instance" >&2
+        if [ ! -L source ]; then
+          echo "$1 holds no project, start it with bin/microvm" >&2
           exit 1
         fi
         mountpoint -q workspace && exit 0

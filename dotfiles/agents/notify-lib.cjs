@@ -1,5 +1,5 @@
 // Notification plumbing shared by the agent harness notifiers (claude,
-// opencode, agy): the delivery channels, the focused-pane check, and the
+// agy): the delivery channels, the focused-pane check, and the
 // rolling log they all write.
 //
 // Every harness links this file into its own config directory and loads it by

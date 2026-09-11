@@ -32,7 +32,6 @@
       "${config.users.users.szymon.home}/MicroVMs/*/data/home/*/.claude"
       "${config.users.users.szymon.home}/MicroVMs/*/data/home/*/.claude.json"
       "${config.users.users.szymon.home}/MicroVMs/*/data/home/*/.config/gcloud"
-      "${config.users.users.szymon.home}/MicroVMs/*/data/home/*/.config/opencode"
       "${config.users.users.szymon.home}/MicroVMs/*/data/home/*/.gemini"
       "${config.users.users.szymon.home}/MicroVMs/*/data/home/*/.npm"
     ];

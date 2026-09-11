@@ -40,8 +40,3 @@ fi
 if [ -f "$HOME/.claude/long-lived-oauth-token" ] && [ ! -f "$HOME/.claude/.credentials.json" ]; then
   export CLAUDE_CODE_OAUTH_TOKEN="$(cat "$HOME/.claude/long-lived-oauth-token")"
 fi
-
-if [ -f "$HOME/.config/opencode/gemini_api_key" ]; then
-  # opencode's google provider (via @ai-sdk/google) reads GOOGLE_GENERATIVE_AI_API_KEY
-  export GOOGLE_GENERATIVE_AI_API_KEY="$(cat "$HOME/.config/opencode/gemini_api_key")"
-fi

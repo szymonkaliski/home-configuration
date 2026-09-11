@@ -112,7 +112,6 @@ in
       mode = "0600";
     };
 
-    gemini_api_key_opencode.sopsFile = ../../secrets/shared.yaml;
     pushover_user.sopsFile = ../../secrets/shared.yaml;
   }
   // (
@@ -133,11 +132,6 @@ in
       }
       PUSHOVER_USER=${config.sops.placeholder.pushover_user}
     '';
-  };
-
-  sops.templates."gemini-api-key" = {
-    path = "${config.home.homeDirectory}/.config/opencode/gemini_api_key";
-    content = config.sops.placeholder.gemini_api_key_opencode;
   };
 
   home.file = {
@@ -168,15 +162,9 @@ in
   # skills linked one-by-one so the destination dirs stay real directories;
   # machine-local additions can then sit alongside without living in this repo
   // skillLinks ".claude/skills"
-  // skillLinks ".config/opencode/skills"
   // skillLinks ".gemini/config/skills";
 
   xdg.configFile = {
     "nvim".source = link "${dotfileDir}/vim";
-    "opencode/opencode.json".source = link "${dotfileDir}/opencode/opencode.json";
-    "opencode/tui.json".source = link "${dotfileDir}/opencode/tui.json";
-    "opencode/AGENTS.md".source = link "${dotfileDir}/agents/AGENTS.md";
-    "opencode/plugins".source = link "${dotfileDir}/opencode/plugins";
-    "opencode/notify-lib.cjs".source = link "${dotfileDir}/agents/notify-lib.cjs";
   };
 }

@@ -24,7 +24,6 @@ const GLOBAL = [
   "@anthropic-ai/claude-code",
   "neovim",
   "npm-check-updates",
-  "opencode-ai",
   "prettier",
 ];
 

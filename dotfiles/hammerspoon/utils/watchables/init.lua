@@ -9,8 +9,6 @@ local module = { cache = cache }
 local STUDIO_DISPLAY_UUID = '464307F2-7664-40E9-8705-3B2EB3451EF6'
 
 local updateBattery = function()
-  local burnRate = hs.battery.designCapacity() / math.abs(hs.battery.amperage())
-
   status.battery = {
     isCharging       = hs.battery.isCharging(),
     isCharged        = hs.battery.isCharged(),
@@ -20,7 +18,6 @@ local updateBattery = function()
     wattage          = hs.battery.watts(),
     timeRemaining    = hs.battery.timeRemaining(),
     timeToFullCharge = hs.battery.timeToFullCharge(),
-    burnRate         = burnRate,
   }
 end
 

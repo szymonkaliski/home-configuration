@@ -73,7 +73,7 @@ end
 module.start = function()
   local BASE_ICON = hs.image.imageFromPath(ICON_PATH):setSize({ w = 20, h = 20 })
   ICON_ON  = BASE_ICON
-  ICON_OFF = createGreyedIcon(BASE_ICON, 0.25)
+  ICON_OFF = createGreyedIcon(BASE_ICON, 0.5)
 
   cache.displayIdle = hs.settings.get('displayIdle') or false
   cache.menuItem    = hs.menubar.new(true, 'caffeine-menubar')

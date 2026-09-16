@@ -133,6 +133,7 @@ in
             --timeout=30s \
             --auth-key="$AUTH_KEY" \
             --hostname="${hostName}" \
+            --operator=szymon \
             --accept-routes && exit 0
           echo "tailscale up failed, attempt $i" >&2
           sleep 15

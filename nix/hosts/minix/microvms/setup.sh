@@ -113,13 +113,13 @@ fi
 
 cat << 'EOF' > /home/szymon/.bin/claude
 #!/bin/sh
-export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
+export PATH="/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
 exec npx -y @anthropic-ai/claude-code@latest --dangerously-skip-permissions --effort ultracode "$@"
 EOF
 chmod +x /home/szymon/.bin/claude
 cat << 'EOF' > /home/szymon/.bin/agy
 #!/bin/sh
-export PATH="/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
+export PATH="/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
 exec /run/current-system/sw/bin/agy --dangerously-skip-permissions "$@"
 EOF
 chmod +x /home/szymon/.bin/agy

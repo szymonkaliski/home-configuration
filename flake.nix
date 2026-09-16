@@ -60,6 +60,13 @@
             }).antigravity-cli;
       };
 
+      blockyOverlay = final: prev: {
+        blocky =
+          prev.lib.warnIf (prev.lib.versionAtLeast prev.blocky.version "0.32.0")
+            "blocky in the pinned nixpkgs serves /api/stats required by blocky-ui; drop blockyOverlay from flake.nix"
+            (import nixpkgs-unstable { inherit (prev.stdenv.hostPlatform) system; }).blocky;
+      };
+
       # home-manager re-imports nixpkgs from the module-level nixpkgs.* options,
       # so overlays and allowUnfree are set there, not on a pkgs instance
       mkHome =
@@ -131,7 +138,12 @@
 
       nixosConfigurations.minix = nixpkgs.lib.nixosSystem {
         modules = [
-          { nixpkgs.overlays = [ antigravityOverlay ]; }
+          {
+            nixpkgs.overlays = [
+              antigravityOverlay
+              blockyOverlay
+            ];
+          }
           ./nix/hosts/minix/system.nix
           ./nix/hosts/minix/hardware-configuration.nix
           ./nix/hosts/minix/microvms

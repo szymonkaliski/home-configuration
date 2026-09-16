@@ -95,6 +95,9 @@ in
       };
 
       prometheus.enable = true;
+
+      # in-memory 24h window behind GET /api/stats, read by blocky-ui
+      statistics.enable = true;
     };
   };
 

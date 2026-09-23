@@ -35,7 +35,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "fable",
+  "model": "opus",
   "hooks": {
     "Notification": [
       {
@@ -89,6 +89,11 @@
       "Writing",
       "Searching"
     ]
+  },
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "xhigh"
+    }
   },
   "promptSuggestionEnabled": false,
   "awaySummaryEnabled": false,

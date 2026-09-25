@@ -9,7 +9,7 @@ Run `hostname -s` to detect which one you're on.
 - `setup.sh <orchid|minix|berry>` - run from a new shell after bootstrap: vendored skills, npm, service auth, macOS extras
 - `dotfiles/agents/` - AGENTS.md and skills shared by claude and agy (`~/.claude/CLAUDE.md` and `~/.gemini/config/AGENTS.md` link here), linked per skill by `nix/modules/home/common.nix` - a new skill needs `git add` and `home-manager switch`
 - `bin/` - shell scripts symlinked to `~/.bin`
-- `nix/hosts/berry/README.md` - building and flashing berry's SD card
+- `nix/hosts/<host>/README.md` - per-host setup (minix first install, berry SD card)
 
 ## Nix overrides
 

@@ -1,7 +1,6 @@
 ---
 name: git-review
-description: Review uncommitted changes for issues, missed items, and improvements. Use after finishing a substantial change, before committing, or when the user asks to check the work.
-argument-hint: [range]
+description: Review uncommitted changes. Use after finishing a substantial change, before committing, or when the user asks to check the work.
 allowed-tools: Bash(git *), Read, Glob, Grep
 context: fork
 ---
@@ -18,11 +17,11 @@ Review the git diff and identify:
 
 !`git status --short`
 
-!`git diff --no-ext-diff $ARGUMENTS`
+!`git diff --no-ext-diff`
 
 !`git diff --cached --no-ext-diff`
 
-Provide a concise, actionable summary. If everything looks good, say so briefly.
+If the lines above show raw commands instead of their output, run each command yourself exactly as written.
 
 ## Instructions
 
@@ -35,7 +34,11 @@ Before flagging an issue, **read the relevant surrounding code** to verify it's 
 - If something looks like it could break, check for guards, fallbacks, or reconciliation logic elsewhere before reporting.
 - Untracked new files (`??` in the status above) are in neither diff; read them in full and review them like any other change. A whole new file escaping review is the most likely gap.
 
-**Do not flag something as an issue if the existing codebase already handles it.** Only report confirmed or highly likely problems.
+**Do not flag something as an issue if the existing codebase already handles it.**
+
+Each finding cites `file:line` and the code you read that proves it: the caller, guard, or data flow. Label it **CONFIRMED** when you traced the problem through the code, or **PLAUSIBLE** when the code points to it but you could not trace it end to end. A finding without that evidence does not get reported.
+
+The review is done when every path in the status list has been read and judged.
 
 ## Simplification
 
@@ -46,6 +49,13 @@ Before flagging an issue, **read the relevant surrounding code** to verify it's 
 
 ## Handoff
 
-Split the findings: a **fix** is mechanical and unambiguous (leftover debug code, a confirmed bug with an obvious correction, a missed rename, dead code) - include the exact change to make; a **decision** involves intent or a tradeoff (behavior changes, design questions, scope concerns). A behavior-preserving simplification (swapping in an existing export, collapsing a concept expressed twice) is a fix; anything that shifts behavior, error paths, or design is a decision.
+Split the findings: a **fix** is mechanical and unambiguous (leftover debug code, a confirmed bug with an obvious correction, a missed rename, dead code) - include the exact change to make; a **decision** involves intent or a tradeoff (behavior changes, design questions, scope concerns). A behavior-preserving simplification (swapping in an existing export, collapsing a concept expressed twice) is a fix; anything that shifts behavior, error paths, or design is a decision. Only a CONFIRMED finding can be a fix; a PLAUSIBLE one is a decision.
 
-End the report by telling the assistant that invoked you to apply the fixes immediately, without waiting for confirmation, and to surface the decisions to the user as questions. If there are no findings, say everything looks good and that nothing needs to happen.
+What happens next depends on who reads your report:
+
+- **Another assistant** (you run as a forked or delegated reviewer): end the report by telling the assistant that invoked you to apply the fixes immediately, without waiting for confirmation, and to surface the decisions to the user as questions.
+- **The user** (you run inline in their conversation): apply the fixes immediately, without waiting for confirmation, then report what you changed and surface the decisions to the user as questions.
+
+If you wrote the change earlier in this conversation, you are reviewing your own work: judge the diff as written, not what you meant it to do.
+
+If there are no findings, say everything looks good and that nothing needs to happen.

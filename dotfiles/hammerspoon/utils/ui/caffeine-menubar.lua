@@ -1,7 +1,7 @@
 local cache  = {}
 local module = { cache = cache }
 
-local ICON_PATH = os.getenv('HOME') .. '/.hammerspoon/assets/caffeine-3-on.png'
+local ICON_PATH = os.getenv('HOME') .. '/.hammerspoon/assets/caffeine-on.png'
 -- created dynamically to have "greyed out" color
 local ICON_ON
 local ICON_OFF

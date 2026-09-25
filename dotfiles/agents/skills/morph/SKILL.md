@@ -5,7 +5,7 @@ description: Build, serve, and monitor a morph page, a single .jsx file previewe
 
 # Morph
 
-morph serves one `.jsx` file (or a directory of them), hot-reloads on every save, and rewrites the file's own source when the reader interacts. The file is the state: there is no store and no HTTP state endpoint. The morph repo's `README.md` is the authority on mechanics; read it when you need more than this.
+morph serves one `.jsx` file (or a directory of them), hot-reloads on every save, and rewrites the file's own source when the reader interacts. The file is the state: there is no store and no HTTP state endpoint.
 
 ## Build an instrument, not a report
 
@@ -32,7 +32,6 @@ Reach for a document shape only when there is genuinely nothing to manipulate: a
 - npm imports are static and top-of-file: `import * as acorn from "acorn@8"` is fetched from esm.sh at view time, cached across hot-swaps, with React deduped to the host copy. The specifier text lands in the URL verbatim, so pin it (`"pkg@1.2.3"`, or a major like `"acorn@8"`). Dynamic `import()` of a bare name does not resolve, and a package that fails to load surfaces as `error` in the terminal.
 - A package's stylesheet is an import too: `import "katex@0.16.11/dist/katex.min.css"`, or a full `https://` URL. It becomes a `<link>` in the preview head, so its relative font URLs resolve. Deleting the import removes the stylesheet on the next save. The first paint waits for it (5s ceiling), and a stylesheet that fails to load only warns in the browser console. There are no CSS modules: `import s from "x.css"` binds an empty object.
 - **Files beside the document are served, and a relative path reaches them**: `<img src="photo.jpg" />`, at any depth (`images/logo.png`). Put images next to the document rather than inlining them as base64, which bloats the file past the point an agent can edit it. Dotfiles are refused, so nothing under `.git/` or a `.env` is reachable. A stylesheet beside the document goes through markup too, `<link rel="stylesheet" href="look.css" />`: `import "./look.css"` is a runtime error, because only bare and URL specifiers resolve.
-- The frame's origin is still opaque, so anything needing CORS fails even by relative path: `fetch`, and the side assets many wasm builds pull in next to themselves. Inline that data in the document, and prefer packages that inline their wasm. An in-page `#anchor` resolves against the host, so it navigates the frame rather than scrolling; use `onClick` with `scrollIntoView`.
 - Tailwind is loaded into the preview from a pinned CDN, so utilities and `dark:` work with no setup. Follow the reader's device theme, never hardcode dark. The page background is the exception: `html, body` live outside the React tree, so set it in a `<style>` block with a `prefers-color-scheme` override, or the white shell leaks at the edges.
 - Keep code samples in a template literal, `<pre>{`...`}</pre>`. JSX collapses whitespace in literal text, so code written as plain JSX text loses its newlines.
 - Write to `./tmp/YYYY-MM-DD-<slug>.morph.jsx` in the project root.
@@ -83,7 +82,7 @@ The monitor lives only as long as this session. Tell the reader that, and `TaskS
 
 ## Every save is published
 
-Keep one server for the whole session. Every save hot-reloads with Fast Refresh and the reader's state survives: `useState` is preserved, `useMorph` values live in the file. Editing a `useMorph` initializer is how you push a new value to the reader.
+Keep one server for the whole session. Every save hot-reloads with Fast Refresh and the reader's state survives: `useState` is preserved while the component's hook list stays stable (see "What survives a save"), and `useMorph` values live in the file. Editing a `useMorph` initializer is how you push a new value to the reader.
 
 Which means there is no staging area. The reader is looking at the page while you work, so each intermediate save is a frame in something they are watching. **Order your edits so the file is valid after every single one.**
 
@@ -94,6 +93,10 @@ So, always: **define first, then wire up.** The definition lands in one edit and
 Before saving JSX you just wrote, reread it for every identifier it references and confirm each one already exists in the file on disk. Prefer the smallest sequence of valid intermediates over the shortest sequence of edits: an extra tool call costs you nothing, a white screen costs the reader their scroll position and their confidence that the page works.
 
 Ordering correctly is not the same as verifying. **Do not poll to confirm your own edit rendered. Make the edit and move on.** This is the biggest time-sink to avoid. Do not run esbuild, tsc, or Prettier (morph reformats the file itself), do not open a browser or screenshot the page, and do not re-read the output hunting for a clean render. Never wait to confirm an error's absence: the monitor will tell you if there is one.
+
+### What survives a save
+
+You are editing the file while the reader is using the page, and Fast Refresh preserves `useState` only while a component's hook list stays stable. Adding a hook, renaming the component, or restructuring it remounts and silently resets every `useState` inside. So the reader collapses a section, you save, and it springs back open, repeatedly, with no error and no event, because a reset `useState` is invisible to you. They just quietly redo the work until they complain.
 
 Two things silently fail to survive a hot-swap, and both have the same fix: stash on `window`.
 
@@ -122,9 +125,7 @@ Practical shape: one `Annotatable`-style wrapper that takes an `id`, renders its
 
 `useMorph(initial)` is a `useState` whose **initializer literal is rewritten in the file** when the reader interacts. That is the whole channel, both ways: the reader's change lands in the `.jsx` and logs a `mutate Component.variable` line with a diff; to reply or reset, you edit the initializer and the page adopts it on reload.
 
-- **`useMorph` is the default. Reach for `useState` only when you can name the reason this value must not persist.** Getting this backwards is the most common way to make a page feel broken.
-
-  You are editing the file while the reader is using the page, and Fast Refresh preserves `useState` only while a component's hook list stays stable. Adding a hook, renaming the component, or restructuring it remounts and silently resets every `useState` inside. So the reader collapses a section, you save, and it springs back open, repeatedly, with no error and no event, because a reset `useState` is invisible to you. They just quietly redo the work until they complain.
+- **`useMorph` is the default. Reach for `useState` only when you can name the reason this value must not persist.** Getting this backwards is the most common way to make a page feel broken: your saves can reset `useState` (see "What survives a save").
 
   Anything the reader _deliberately sets_ is a preference: collapsed/expanded, chosen tab, sort order, filters, selected variant. Persist all of it.
 

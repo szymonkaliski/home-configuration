@@ -7,17 +7,16 @@
 
 ## Investigation
 
-- never speculate - "probably" or "likely" is not evidence, show the log line or code path
-  - don't guess root causes; read the code, check logs, or add instrumentation to confirm before proposing a fix
-  - if you haven't opened a file, you cannot make claims about what it contains
+- back every claim with evidence you observed: a log line, a code path, a file you opened - "probably" or "likely" is not evidence
+  - confirm a root cause (read the code, check logs, or add instrumentation) before proposing a fix
   - "I don't know" is a valid answer, say it, then investigate
 
-- reproduce a bug and observe the failure yourself before attempting a fix - don't fix from a description alone
+- reproduce a bug and observe the failure yourself before attempting a fix
   - confirm the fix by observing the same reproduction now pass
   - if it can't be reproduced, say so explicitly instead of fixing speculatively
 
-- NEVER dismiss errors, warnings, or failing tests as "pre-existing" or "not caused by my changes" - you are the sole developer - all issues are your responsibility
-  - when you encounter errors during builds, linting, typechecks, or tests that you didn't introduce, flag them and offer to fix them rather than skipping over them
+- you own every error, warning, and failing test you see, including ones you didn't introduce: flag it and offer to fix it - you are the sole developer
+  - never dismiss one as "pre-existing" or "not caused by my changes"
 
 - when designing an approach before writing code, use web search to check documentation and issues on GitHub, assume you don't have the latest knowledge
 
@@ -52,15 +51,14 @@
 
 - use `trash` instead of `rm` (if available)
 
+- pass `--no-ext-diff` to `git diff` - git config may route it through an external diff tool that does not print a unified diff
+
 ## Prose & Communication
 
-- never use em-dashes or semicolons
+- use periods, commas, colons, and parentheses, never em-dashes or semicolons
 - write in ASD-STE100 Simplified Technical English style: active voice, simple tenses, one idea per sentence, sentences under 20 words, plain common words, one word per meaning (do not rotate synonyms)
   - say what a thing is before what it is not; drop the contrast when it adds nothing
-- do not restate the question, preview the answer, or add a closing summary
+- lead with the outcome: your first sentence answers "what happened" or "what did you find", then supporting details - no restated question, no preview, no closing summary
+- keep responses and documents brief: cover what is needed, spend most of the words on the main answer, keep caveats short, and skip filler sections and boilerplate
 - avoid AI-cliche wording: delve, robust, seamless, crucial, testament to, load-bearing, "that lands", "worth noting", "clean/cleanly", "it is not X, it is Y"
-- keep outputs focused, brief, and direct
-  - keep disclaimers and caveats short, spending most of the response on the main answer
-- lead directly with the outcome: your first sentence should answer "what happened" or "what did you find," followed by supporting details
-- match written documents and files to substance, cover what is needed without padding with filler sections, redundant summaries, or boilerplate
 

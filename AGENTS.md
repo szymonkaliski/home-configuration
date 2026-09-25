@@ -7,8 +7,9 @@ Run `hostname -s` to detect which one you're on.
 
 - `bootstrap.sh <orchid|minix|berry>` - bare machine bootstrap: age key, home-manager symlink, system/home-manager switches
 - `setup.sh <orchid|minix|berry>` - run from a new shell after bootstrap: vendored skills, npm, service auth, macOS extras
-- `dotfiles/` - dotfiles used on various machines
+- `dotfiles/agents/` - AGENTS.md and skills shared by claude and agy (`~/.claude/CLAUDE.md` and `~/.gemini/config/AGENTS.md` link here), linked per skill by `nix/modules/home/common.nix` - a new skill needs `git add` and `home-manager switch`
 - `bin/` - shell scripts symlinked to `~/.bin`
+- `nix/hosts/berry/README.md` - building and flashing berry's SD card
 
 ## Nix overrides
 
@@ -40,15 +41,3 @@ Raspberry Pi - system and home-manager:
 sudo nixos-rebuild switch --flake ~/.config/home-manager#berry
 home-manager switch --flake ~/.config/home-manager#szymon@berry
 ```
-
-## Building berry's SD card
-
-berry's SD card image can be generated on minix:
-
-```sh
-ssh minix '~/.bin/build-berry-sd-image'
-```
-
-A freshly flashed card boots with password `berry` (`initialPassword` in `nix/hosts/berry/system.nix`), which `setup.sh` replaces.
-First boot needs ethernet, since wifi reads a sops secret that stays undecryptable until this host's age key is added to `.sops.yaml` and the secrets are re-encrypted.
-A reflashed card also has a new host key, so `keys.berryHost` needs updating before minix can ssh in again.

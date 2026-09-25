@@ -1,12 +1,13 @@
 ---
 name: git-commit
 description: Format, lint, test, and commit changes. Detects repo tooling automatically.
-argument-hint: [message]
 allowed-tools: Bash(git *), Read, Glob, Grep
 disable-model-invocation: true
 ---
 
 Commit all changes in the repo with proper formatting, linting, and testing.
+
+If the sections below show raw commands instead of their output, run each command yourself exactly as written.
 
 ## 1. Gather Context
 
@@ -40,7 +41,5 @@ Based on what you found:
 4. **Sync lockfiles**: If a dependency manifest is among the changes (`package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`), reconcile its lockfile so it is not left behind - `npm install --package-lock-only` (or `pnpm install --lockfile-only` / `yarn install --mode update-lockfile`), `cargo generate-lockfile`, `go mod tidy`, etc. Stage the refreshed lockfile in the same commit as the manifest change. This is what stops a later `install` from dirtying the tree.
 5. **Plan commits**: Look at the git log style. If the repo favors small, focused commits (one logical change each), split the staged/unstaged changes into multiple commits - group related files together by logical change. If the repo uses larger commits, a single commit is fine.
 6. **Stage & commit**: For each logical group, `git add` the relevant files by path (never `git add -A` - avoid staging `.env`, credentials, or large binaries) and commit with a message matching the repo's style. Go from most independent change to most dependent.
-
-If `$ARGUMENTS` is provided, use it as the commit message for a single commit of all changes. Otherwise, generate messages matching the repo's commit style, splitting into multiple commits when it matches the repo's pattern.
 
 Fix any formatting/lint issues automatically. If tests fail, report and stop. After the final commit, run `git status` - the tree must be clean; if a sync or build step left changes behind, fold them into the relevant commit before finishing.

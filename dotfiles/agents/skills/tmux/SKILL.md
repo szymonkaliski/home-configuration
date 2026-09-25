@@ -1,6 +1,6 @@
 ---
 name: tmux
-description: Read and control tmux panes from inside a tmux session - see what other panes show, send commands to them, create splits, run long-lived processes. ALWAYS use when asked about another pane, before running any tmux command, or when a command needs a real TTY or would outlive the shell tool timeout.
+description: Read and control tmux panes. ALWAYS use when asked about another pane, before running any tmux command, or when a command needs a real TTY or would outlive the shell tool timeout.
 ---
 
 # tmux
@@ -22,6 +22,7 @@ You are usually inside the user's own tmux session, on purpose: it is a shared s
 
 ## Sending input
 
+- before sending anything to a pane, capture it first and look - a pane running vim or a REPL will not run your shell command
 - send text literally, then Enter as a separate send - multiline or special-char text in one send triggers bracketed paste, which is not the same as typing:
 
   ```sh
@@ -48,5 +49,4 @@ You are usually inside the user's own tmux session, on purpose: it is a shared s
 ## Safety
 
 - never kill panes, windows, or sessions you did not create; never `kill-server`
-- before sending anything to a pane, capture it first and look - a pane running vim or a REPL will not run your shell command
 - clean up panes you created once done (`tmux kill-pane -t '%9'`), after capturing any output that matters

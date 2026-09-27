@@ -38,6 +38,8 @@ alias tl="tmux ls | sed 's/:/;/' | sed 's/\[.*\]//g' | column -t -s ';' | sed 's
 
 alias bat="bat --theme=base16"
 
+alias fable="claude --model fable"
+
 alias timestamp="date +%Y%m%d-%H%M"
 alias datestamp="date +%Y-%m-%d"
 

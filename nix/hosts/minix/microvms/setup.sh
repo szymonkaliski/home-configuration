@@ -117,6 +117,11 @@ export PATH="/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:
 exec npx -y @anthropic-ai/claude-code@latest --dangerously-skip-permissions --effort ultracode "$@"
 EOF
 chmod +x /home/szymon/.bin/claude
+cat << 'EOF' > /home/szymon/.bin/fable
+#!/bin/sh
+exec /home/szymon/.bin/claude --model fable "$@"
+EOF
+chmod +x /home/szymon/.bin/fable
 cat << 'EOF' > /home/szymon/.bin/agy
 #!/bin/sh
 export PATH="/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"

@@ -1,0 +1,600 @@
+#!/usr/bin/env node
+"use strict";
+
+const fs = require("fs");
+const path = require("path");
+const cp = require("child_process");
+
+const VALID_STATUSES = ["open", "active", "parked", "done"];
+const STATUS_ORDER = { active: 0, open: 1, parked: 2, done: 3 };
+const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+function fail(message) {
+  process.stderr.write(`plans: ${message}\n`);
+  process.exit(1);
+}
+
+function usage() {
+  return `usage: plans <command> [args]
+
+commands:
+  init                       create or update plans/ and plans/README.md
+  new <slug>                 create plans/YYYY-MM-DD-<slug>.md
+  list [--all]                list plans on all branches (--all also shows done)
+  show <name>                 print the newest copy of a plan
+  status <name> <status>      set a plan's status (open, active, parked, done)
+  --help                       print this message
+`;
+}
+
+function git(repoRoot, args, opts) {
+  return cp.execFileSync(
+    "git",
+    args,
+    Object.assign(
+      {
+        cwd: repoRoot,
+        encoding: "utf8",
+        maxBuffer: 1024 * 1024 * 64,
+        stdio: ["pipe", "pipe", "pipe"],
+      },
+      opts,
+    ),
+  );
+}
+
+function gitBuffer(repoRoot, args, opts) {
+  return cp.execFileSync(
+    "git",
+    args,
+    Object.assign(
+      {
+        cwd: repoRoot,
+        maxBuffer: 1024 * 1024 * 64,
+        stdio: ["pipe", "pipe", "pipe"],
+      },
+      opts,
+    ),
+  );
+}
+
+function getRepoRoot() {
+  let out;
+  try {
+    out = cp.execFileSync("git", ["rev-parse", "--show-toplevel"], {
+      encoding: "utf8",
+    });
+  } catch (e) {
+    fail("not inside a git repository");
+  }
+  return out.trim();
+}
+
+function getTemplatePath() {
+  const realScript = fs.realpathSync(__filename);
+  return path.join(path.dirname(realScript), "template", "README.md");
+}
+
+function parseFrontmatter(text) {
+  const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text);
+  if (!m) return null;
+  const fields = {};
+  for (const line of m[1].split(/\r?\n/)) {
+    const kv = /^([A-Za-z0-9_-]+):\s*(.*)$/.exec(line);
+    if (kv) fields[kv[1]] = kv[2].trim();
+  }
+  return { fields, inner: m[1], raw: m[0], body: text.slice(m[0].length) };
+}
+
+function isPlanContent(content) {
+  const fm = parseFrontmatter(content);
+  return !!(fm && fm.fields.status !== undefined);
+}
+
+function countTodos(content) {
+  let open = 0;
+  let done = 0;
+  let inFence = false;
+  for (const line of content.split(/\r?\n/)) {
+    if (/^\s*```/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    if (/^\s*- \[ \]/.test(line)) open++;
+    else if (/^\s*- \[[xX]\]/.test(line)) done++;
+  }
+  return { open, done, total: open + done };
+}
+
+function localDate(date) {
+  const d = date || new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function parseCatFileBatch(buf) {
+  const results = {};
+  let offset = 0;
+  while (offset < buf.length) {
+    const nl = buf.indexOf(0x0a, offset);
+    if (nl === -1) break;
+    const header = buf.slice(offset, nl).toString("utf8");
+    offset = nl + 1;
+    const parts = header.split(" ");
+    if (parts.length < 2) continue;
+    if (parts[1] === "missing") continue;
+    const sha = parts[0];
+    const size = parseInt(parts[2], 10);
+    results[sha] = buf.slice(offset, offset + size).toString("utf8");
+    offset += size + 1;
+  }
+  return results;
+}
+
+function listRefs(repoRoot) {
+  let out;
+  try {
+    out = git(repoRoot, [
+      "for-each-ref",
+      "--format=%(refname) %(symref)",
+      "refs/heads",
+      "refs/remotes",
+    ]);
+  } catch (e) {
+    out = "";
+  }
+  const refs = [];
+  for (const line of out.split("\n")) {
+    if (!line) continue;
+    const spaceIdx = line.indexOf(" ");
+    const refname = spaceIdx === -1 ? line : line.slice(0, spaceIdx);
+    const symref = spaceIdx === -1 ? "" : line.slice(spaceIdx + 1).trim();
+    if (symref) continue;
+    if (refname.startsWith("refs/heads/")) {
+      refs.push({
+        refname,
+        name: refname.slice("refs/heads/".length),
+        isRemote: false,
+      });
+    } else if (refname.startsWith("refs/remotes/")) {
+      refs.push({
+        refname,
+        name: refname.slice("refs/remotes/".length),
+        isRemote: true,
+      });
+    }
+  }
+  try {
+    git(repoRoot, ["symbolic-ref", "-q", "HEAD"]);
+  } catch (e) {
+    // a detached HEAD is on no branch, so it is a ref of its own
+    refs.push({ refname: "HEAD", name: "HEAD", isRemote: false });
+  }
+  return refs;
+}
+
+function lsTreePlans(repoRoot, ref) {
+  let out;
+  try {
+    out = git(repoRoot, ["ls-tree", ref, "--", "plans/"]);
+  } catch (e) {
+    return [];
+  }
+  const entries = [];
+  for (const line of out.split("\n")) {
+    if (!line) continue;
+    const tabIdx = line.indexOf("\t");
+    if (tabIdx === -1) continue;
+    const meta = line.slice(0, tabIdx).split(" ");
+    const filePath = line.slice(tabIdx + 1);
+    if (meta[1] !== "blob") continue;
+    if (!filePath.endsWith(".md")) continue;
+    if (filePath === "plans/README.md") continue;
+    entries.push({ path: filePath, sha: meta[2] });
+  }
+  return entries;
+}
+
+function commitTimesForRef(repoRoot, ref) {
+  let out;
+  try {
+    // a merge lists the files it changed against its first parent
+    out = git(repoRoot, [
+      "log",
+      "--pretty=format:%ct",
+      "--name-only",
+      "--diff-merges=first-parent",
+      ref,
+      "--",
+      "plans/",
+    ]);
+  } catch (e) {
+    return {};
+  }
+  const times = {};
+  let ct = null;
+  for (const line of out.split("\n")) {
+    if (line === "") continue;
+    if (/^\d+$/.test(line)) {
+      ct = parseInt(line, 10);
+      continue;
+    }
+    if (!(line in times)) times[line] = ct;
+  }
+  return times;
+}
+
+function catFileBatch(repoRoot, shas) {
+  if (shas.length === 0) return {};
+  const buf = gitBuffer(repoRoot, ["cat-file", "--batch"], {
+    input: shas.join("\n") + "\n",
+  });
+  return parseCatFileBatch(buf);
+}
+
+function workingTreePlanFiles(repoRoot) {
+  const plansDir = path.join(repoRoot, "plans");
+  if (!fs.existsSync(plansDir)) return [];
+  return fs
+    .readdirSync(plansDir)
+    .filter((f) => f.endsWith(".md") && f !== "README.md")
+    .map((f) => "plans/" + f);
+}
+
+function hashObjectBatch(repoRoot, absPaths) {
+  if (absPaths.length === 0) return [];
+  const out = git(repoRoot, ["hash-object", "--stdin-paths"], {
+    input: absPaths.join("\n") + "\n",
+  });
+  return out.trim().split("\n");
+}
+
+// Gathers every copy of every plan across the working tree and every local
+// and remote ref, groups copies by plan name, and resolves the newest copy
+// per plan. Used by list, show, and status.
+function gatherPlans(repoRoot) {
+  const refs = listRefs(repoRoot);
+
+  const refEntries = {};
+  const refTimes = {};
+  for (const ref of refs) {
+    refEntries[ref.name] = lsTreePlans(repoRoot, ref.refname);
+    refTimes[ref.name] = commitTimesForRef(repoRoot, ref.refname);
+  }
+
+  const headEntries = lsTreePlans(repoRoot, "HEAD");
+  const headShaByPath = {};
+  for (const e of headEntries) headShaByPath[e.path] = e.sha;
+
+  const workingFiles = workingTreePlanFiles(repoRoot);
+  const workingAbsPaths = workingFiles.map((p) => path.join(repoRoot, p));
+  const workingShas = hashObjectBatch(repoRoot, workingAbsPaths);
+
+  const workingCandidates = [];
+  const shaSet = new Set();
+  for (const e of headEntries) shaSet.add(e.sha);
+  for (const ref of refs)
+    for (const e of refEntries[ref.name]) shaSet.add(e.sha);
+
+  workingFiles.forEach((relPath, i) => {
+    const workingSha = workingShas[i];
+    const headSha = headShaByPath[relPath];
+    if (headSha === workingSha) return;
+    const absPath = path.join(repoRoot, relPath);
+    workingCandidates.push({
+      path: relPath,
+      content: fs.readFileSync(absPath, "utf8"),
+      ref: "working tree",
+      isRemote: false,
+      isWorkingTree: true,
+      mtime: Math.floor(fs.statSync(absPath).mtimeMs / 1000),
+    });
+  });
+
+  const contentBySha = catFileBatch(repoRoot, Array.from(shaSet));
+
+  const groups = {};
+  function addCandidate(cand) {
+    if (!isPlanContent(cand.content)) return;
+    const name = cand.path.slice("plans/".length);
+    if (!groups[name]) groups[name] = [];
+    groups[name].push(cand);
+  }
+
+  for (const ref of refs) {
+    for (const e of refEntries[ref.name]) {
+      const content = contentBySha[e.sha];
+      if (content === undefined) continue;
+      const ct = refTimes[ref.name][e.path];
+      addCandidate({
+        path: e.path,
+        content,
+        ref: ref.name,
+        isRemote: ref.isRemote,
+        isWorkingTree: false,
+        sha: e.sha,
+        ct: ct === undefined ? 0 : ct,
+      });
+    }
+  }
+  for (const cand of workingCandidates) addCandidate(cand);
+
+  const plans = [];
+  for (const name of Object.keys(groups)) {
+    const candidates = groups[name];
+    const wtWinners = candidates.filter((c) => c.isWorkingTree);
+    // time of the newest copy: the file mtime for a working-tree copy, else
+    // the commit time
+    let winners;
+    let time;
+    if (wtWinners.length > 0) {
+      winners = wtWinners;
+      time = wtWinners[0].mtime;
+    } else {
+      time = Math.max(...candidates.map((c) => c.ct));
+      winners = candidates.filter((c) => c.ct === time);
+    }
+    const content = winners[0].content;
+    const fm = parseFrontmatter(content);
+    const status = fm ? fm.fields.status : "open";
+    const todos = countTodos(content);
+    const unpushed = !winners.some((w) => w.isRemote);
+    const allRefs = Array.from(new Set(candidates.map((c) => c.ref)));
+    plans.push({
+      name,
+      status,
+      todos,
+      content,
+      winnerRefs: winners.map((w) => w.ref),
+      time,
+      unpushed,
+      allRefs,
+    });
+  }
+  return plans;
+}
+
+function cmdInit(repoRoot) {
+  const templatePath = getTemplatePath();
+  const plansDir = path.join(repoRoot, "plans");
+  fs.mkdirSync(plansDir, { recursive: true });
+  const templateContent = fs.readFileSync(templatePath, "utf8");
+  const templateFm = parseFrontmatter(templateContent);
+  const templateVersion = templateFm
+    ? parseInt(templateFm.fields.version, 10)
+    : null;
+  const readmePath = path.join(plansDir, "README.md");
+
+  if (!fs.existsSync(readmePath)) {
+    fs.writeFileSync(readmePath, templateContent);
+    console.log(`created plans/README.md (version ${templateVersion})`);
+  } else {
+    const existing = fs.readFileSync(readmePath, "utf8");
+    const existingFm = parseFrontmatter(existing);
+    const existingVersion =
+      existingFm && existingFm.fields.version !== undefined
+        ? parseInt(existingFm.fields.version, 10)
+        : null;
+    if (
+      existingVersion === null ||
+      (templateVersion !== null && templateVersion > existingVersion)
+    ) {
+      fs.writeFileSync(readmePath, templateContent);
+      console.log(
+        `updated plans/README.md from ${existingVersion} to ${templateVersion}`,
+      );
+    } else {
+      console.log(`kept plans/README.md (version ${existingVersion})`);
+    }
+  }
+}
+
+function extractFormatBlock(templateContent) {
+  const idx = templateContent.indexOf("## Format");
+  if (idx === -1) fail('template is missing a "## Format" section');
+  const after = templateContent.slice(idx);
+  const m = /```markdown\r?\n([\s\S]*?)```/.exec(after);
+  if (!m) fail('template is missing a fenced markdown block under "## Format"');
+  return m[1];
+}
+
+function cmdNew(repoRoot, args) {
+  const slug = args[0];
+  if (!slug) fail("usage: plans new <slug>");
+  if (!SLUG_RE.test(slug))
+    fail(
+      `invalid slug "${slug}", expected lowercase words separated by hyphens`,
+    );
+
+  cmdInit(repoRoot);
+
+  const templatePath = getTemplatePath();
+  const templateContent = fs.readFileSync(templatePath, "utf8");
+  const formatBlock = extractFormatBlock(templateContent);
+
+  const fileName = `plans/${localDate()}-${slug}.md`;
+  const absPath = path.join(repoRoot, fileName);
+  if (fs.existsSync(absPath)) fail(`${fileName} already exists`);
+
+  fs.writeFileSync(absPath, formatBlock);
+  console.log(path.relative(process.cwd(), absPath));
+}
+
+function padEnd(s, n) {
+  return s.length >= n ? s : s + " ".repeat(n - s.length);
+}
+
+function cmdList(repoRoot, args) {
+  const showAll = args.includes("--all");
+  let plans = gatherPlans(repoRoot);
+  if (!showAll) plans = plans.filter((p) => p.status !== "done");
+
+  plans.sort((a, b) => {
+    const oa =
+      STATUS_ORDER[a.status] !== undefined ? STATUS_ORDER[a.status] : 99;
+    const ob =
+      STATUS_ORDER[b.status] !== undefined ? STATUS_ORDER[b.status] : 99;
+    if (oa !== ob) return oa - ob;
+    return b.time - a.time;
+  });
+
+  if (plans.length === 0) {
+    console.log("no plans");
+    return;
+  }
+
+  const header = ["STATUS", "OPEN", "DATE", "PUSHED", "PLAN", "REFS"];
+  const rows = plans.map((p) => [
+    p.status,
+    `${p.todos.open}/${p.todos.total}`,
+    localDate(new Date(p.time * 1000)),
+    p.unpushed ? "no" : "yes",
+    p.name,
+    p.winnerRefs.join(", "),
+  ]);
+
+  const widths = header.map((h, i) =>
+    Math.max(h.length, ...rows.map((r) => r[i].length)),
+  );
+  for (const r of [header, ...rows]) {
+    console.log(
+      r
+        .map((cell, i) => padEnd(cell, widths[i]))
+        .join("  ")
+        .trimEnd(),
+    );
+  }
+}
+
+function resolvePlanName(plans, input) {
+  const normalize = (s) => s.replace(/^plans\//, "").replace(/\.md$/, "");
+  const target = normalize(input);
+  const bare = (p) => normalize(p.name);
+
+  const exact = plans.filter((p) => bare(p) === target);
+  if (exact.length === 1) return exact[0];
+
+  const substr = plans.filter((p) => bare(p).includes(target));
+  if (substr.length === 1) return substr[0];
+  if (substr.length > 1) {
+    fail(
+      `"${input}" matches several plans: ${substr.map((p) => p.name).join(", ")}`,
+    );
+  }
+  fail(`no plan matches "${input}"`);
+}
+
+function cmdShow(repoRoot, args) {
+  const input = args[0];
+  if (!input) fail("usage: plans show <name>");
+  const plans = gatherPlans(repoRoot);
+  const plan = resolvePlanName(plans, input);
+  process.stdout.write(plan.content);
+  const refLine =
+    plan.winnerRefs.join(", ") + (plan.unpushed ? " (unpushed)" : "");
+  process.stderr.write(`ref: ${refLine}\n`);
+}
+
+function setStatusInContent(content, status, dateStr) {
+  const fm = parseFrontmatter(content);
+  if (!fm) fail("plan file has no frontmatter");
+  let sawStatus = false;
+  let sawClosed = false;
+  const lines = fm.inner
+    .split(/\r?\n/)
+    .map((line) => {
+      const kv = /^([A-Za-z0-9_-]+):/.exec(line);
+      if (kv && kv[1] === "status") {
+        sawStatus = true;
+        return `status: ${status}`;
+      }
+      if (kv && kv[1] === "closed") {
+        sawClosed = true;
+        return status === "done" ? `closed: ${dateStr}` : null;
+      }
+      return line;
+    })
+    .filter((line) => line !== null);
+  if (!sawStatus) lines.push(`status: ${status}`);
+  if (status === "done" && !sawClosed) lines.push(`closed: ${dateStr}`);
+  return `---\n${lines.join("\n")}\n---\n${fm.body}`;
+}
+
+function cmdStatus(repoRoot, args) {
+  const input = args[0];
+  const status = args[1];
+  if (!input || !status) fail("usage: plans status <name> <status>");
+  if (!VALID_STATUSES.includes(status))
+    fail(
+      `invalid status "${status}", expected one of ${VALID_STATUSES.join(", ")}`,
+    );
+
+  const plans = gatherPlans(repoRoot);
+  const plan = resolvePlanName(plans, input);
+
+  const absPath = path.join(repoRoot, "plans", plan.name);
+  if (!fs.existsSync(absPath)) {
+    fail(
+      `"${plan.name}" is not in the working tree, held on: ${plan.allRefs.filter((r) => r !== "working tree").join(", ")}`,
+    );
+  }
+
+  let currentBranch = null;
+  try {
+    currentBranch = git(repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"]).trim();
+  } catch (e) {
+    currentBranch = null;
+  }
+  const isLocalWinner =
+    plan.winnerRefs.includes("working tree") ||
+    plan.winnerRefs.includes(currentBranch);
+  if (!isLocalWinner) {
+    process.stderr.write(
+      `warning: a newer copy of "${plan.name}" exists on: ${plan.winnerRefs.join(", ")}\n`,
+    );
+  }
+
+  const content = fs.readFileSync(absPath, "utf8");
+  const updated = setStatusInContent(content, status, localDate());
+  fs.writeFileSync(absPath, updated);
+}
+
+function main() {
+  const argv = process.argv.slice(2);
+  if (argv.length === 0 || argv[0] === "--help" || argv[0] === "-h") {
+    process.stdout.write(usage());
+    process.exit(argv.length === 0 ? 1 : 0);
+  }
+
+  const command = argv[0];
+  const rest = argv.slice(1);
+
+  if (!["init", "new", "list", "show", "status"].includes(command)) {
+    fail(`unknown command "${command}"\n\n${usage()}`);
+  }
+
+  const repoRoot = getRepoRoot();
+
+  switch (command) {
+    case "init":
+      cmdInit(repoRoot);
+      break;
+    case "new":
+      cmdNew(repoRoot, rest);
+      break;
+    case "list":
+      cmdList(repoRoot, rest);
+      break;
+    case "show":
+      cmdShow(repoRoot, rest);
+      break;
+    case "status":
+      cmdStatus(repoRoot, rest);
+      break;
+  }
+}
+
+main();

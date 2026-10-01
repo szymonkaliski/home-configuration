@@ -1,10 +1,15 @@
 ---
-status: active
+status: done
+closed: 2026-10-01
 ---
 
 # Plans skill: capture, list, and resume work plans in any repository
 
 Each repository that the user works in gets a `plans/` directory with one markdown file per plan. An agent writes a plan at the end of a session. A later session, on any machine and any branch, lists the plans and continues one. Today the user types the capture prompt by hand, the plans have no common shape or status, and a plan on one branch is invisible from another branch.
+
+## Outcome
+
+The skill exists and is installed on minix. Commit `adc659c` added `dotfiles/agents/skills/plans/` (the skill text, the script, and the README template at version 5), `bin/plans`, the pointer line in `AGENTS.md`, and the two files in `plans/`. Commit `daac833` made `bin/microvm` copy the skills into a staged VM at each start. A second repository with 25 old plans adopted the convention, and its listing on `main` shows a plan that lives on another branch. Commit `7cb1435` on `dev/vaillant-rf` holds the first plan of this repository, and that branch stays local. No plan follows. The laptop gets the skill with a pull and `home-manager switch`.
 
 ## Start here
 
@@ -207,3 +212,4 @@ Decisions by the user on 2026-09-27:
 - 2026-09-28: README version 4, by user decision after a review of the trial: the meaning of `closed`, the check of the full text at the close of a plan, and the rule for open work that the user declines (decisions 25 to 27). The last todo is ticked (decision 28).
 - 2026-09-28: Cleanup in the second repository under README version 4, not committed there. Each done plan has an `Outcome` and the close date 2026-09-28. Two new plans hold the follow-up work, and 6 items are not planned. The user removed one parked plan. It stays in `plans list` until each ref that holds the file has the removal, so a commit on a second branch removed it there too.
 - 2026-10-01: README version 5, by user decision: a plan is one way to work, most work gets none, and the agent no longer suggests plans on its own. The one suggestion that stays is step 2 of "To finish a plan".
+- 2026-10-01: Commits `adc659c` and `daac833` hold the work. The plan is done.

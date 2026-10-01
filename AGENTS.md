@@ -10,6 +10,7 @@ Run `hostname -s` to detect which one you're on.
 - `dotfiles/agents/` - AGENTS.md and skills shared by claude and agy (`~/.claude/CLAUDE.md` and `~/.gemini/config/AGENTS.md` link here), linked per skill by `nix/modules/home/common.nix` - a new skill needs `git add` and `home-manager switch`
 - `bin/` - shell scripts symlinked to `~/.bin`
 - `nix/hosts/<host>/README.md` - per-host setup (minix first install, berry SD card)
+- `plans/` - work plans, read `plans/README.md` before you read, write, or change a plan
 
 ## Nix overrides
 

@@ -18,12 +18,12 @@ function usage() {
   return `usage: plans <command> [args]
 
 commands:
-  init                       create or update plans/ and plans/README.md
-  new <slug>                 create plans/YYYY-MM-DD-<slug>.md
+  init                        create plans/ and plans/README.md
+  new <slug>                  create plans/YYYY-MM-DD-<slug>.md, update plans/README.md
   list [--all]                list plans on all branches (--all also shows done)
   show <name>                 print the newest copy of a plan
   status <name> <status>      set a plan's status (open, active, parked, done)
-  --help                       print this message
+  --help                      print this message
 `;
 }
 
@@ -43,27 +43,10 @@ function git(repoRoot, args, opts) {
   );
 }
 
-function gitBuffer(repoRoot, args, opts) {
-  return cp.execFileSync(
-    "git",
-    args,
-    Object.assign(
-      {
-        cwd: repoRoot,
-        maxBuffer: 1024 * 1024 * 64,
-        stdio: ["pipe", "pipe", "pipe"],
-      },
-      opts,
-    ),
-  );
-}
-
 function getRepoRoot() {
   let out;
   try {
-    out = cp.execFileSync("git", ["rev-parse", "--show-toplevel"], {
-      encoding: "utf8",
-    });
+    out = git(process.cwd(), ["rev-parse", "--show-toplevel"]);
   } catch (e) {
     fail("not inside a git repository");
   }
@@ -83,7 +66,7 @@ function parseFrontmatter(text) {
     const kv = /^([A-Za-z0-9_-]+):\s*(.*)$/.exec(line);
     if (kv) fields[kv[1]] = kv[2].trim();
   }
-  return { fields, inner: m[1], raw: m[0], body: text.slice(m[0].length) };
+  return { fields, inner: m[1], body: text.slice(m[0].length) };
 }
 
 function isPlanContent(content) {
@@ -229,8 +212,9 @@ function commitTimesForRef(repoRoot, ref) {
 
 function catFileBatch(repoRoot, shas) {
   if (shas.length === 0) return {};
-  const buf = gitBuffer(repoRoot, ["cat-file", "--batch"], {
-    input: shas.join("\n") + "\n",
+  const buf = git(repoRoot, ["cat-file", "--batch"], {
+    input: Buffer.from(shas.join("\n") + "\n"),
+    encoding: "buffer",
   });
   return parseCatFileBatch(buf);
 }
@@ -275,7 +259,6 @@ function gatherPlans(repoRoot) {
 
   const workingCandidates = [];
   const shaSet = new Set();
-  for (const e of headEntries) shaSet.add(e.sha);
   for (const ref of refs)
     for (const e of refEntries[ref.name]) shaSet.add(e.sha);
 
@@ -315,7 +298,6 @@ function gatherPlans(repoRoot) {
         ref: ref.name,
         isRemote: ref.isRemote,
         isWorkingTree: false,
-        sha: e.sha,
         ct: ct === undefined ? 0 : ct,
       });
     }
@@ -338,8 +320,7 @@ function gatherPlans(repoRoot) {
       winners = candidates.filter((c) => c.ct === time);
     }
     const content = winners[0].content;
-    const fm = parseFrontmatter(content);
-    const status = fm ? fm.fields.status : "open";
+    const status = parseFrontmatter(content).fields.status;
     const todos = countTodos(content);
     const unpushed = !winners.some((w) => w.isRemote);
     const allRefs = Array.from(new Set(candidates.map((c) => c.ref)));
@@ -357,38 +338,46 @@ function gatherPlans(repoRoot) {
   return plans;
 }
 
-function cmdInit(repoRoot) {
-  const templatePath = getTemplatePath();
-  const plansDir = path.join(repoRoot, "plans");
-  fs.mkdirSync(plansDir, { recursive: true });
-  const templateContent = fs.readFileSync(templatePath, "utf8");
-  const templateFm = parseFrontmatter(templateContent);
-  const templateVersion = templateFm
-    ? parseInt(templateFm.fields.version, 10)
-    : null;
-  const readmePath = path.join(plansDir, "README.md");
+function readmeVersion(text) {
+  const fm = parseFrontmatter(text);
+  if (!fm || fm.fields.version === undefined) return null;
+  return parseInt(fm.fields.version, 10);
+}
 
+function readTemplate() {
+  const content = fs.readFileSync(getTemplatePath(), "utf8");
+  return { content, version: readmeVersion(content) };
+}
+
+function cmdInit(repoRoot) {
+  const plansDir = path.join(repoRoot, "plans");
+  if (fs.existsSync(plansDir)) fail("plans/ already exists");
+  const template = readTemplate();
+  fs.mkdirSync(plansDir);
+  fs.writeFileSync(path.join(plansDir, "README.md"), template.content);
+  console.log(`created plans/README.md (version ${template.version})`);
+}
+
+// Brings the README of an existing plans/ up to the template. A README with
+// no version is not from the template and stays as it is.
+function syncReadme(repoRoot) {
+  const template = readTemplate();
+  const readmePath = path.join(repoRoot, "plans", "README.md");
   if (!fs.existsSync(readmePath)) {
-    fs.writeFileSync(readmePath, templateContent);
-    console.log(`created plans/README.md (version ${templateVersion})`);
-  } else {
-    const existing = fs.readFileSync(readmePath, "utf8");
-    const existingFm = parseFrontmatter(existing);
-    const existingVersion =
-      existingFm && existingFm.fields.version !== undefined
-        ? parseInt(existingFm.fields.version, 10)
-        : null;
-    if (
-      existingVersion === null ||
-      (templateVersion !== null && templateVersion > existingVersion)
-    ) {
-      fs.writeFileSync(readmePath, templateContent);
-      console.log(
-        `updated plans/README.md from ${existingVersion} to ${templateVersion}`,
-      );
-    } else {
-      console.log(`kept plans/README.md (version ${existingVersion})`);
-    }
+    fs.writeFileSync(readmePath, template.content);
+    console.log(`created plans/README.md (version ${template.version})`);
+    return;
+  }
+  const existingVersion = readmeVersion(fs.readFileSync(readmePath, "utf8"));
+  if (existingVersion === null) {
+    process.stderr.write("plans: kept plans/README.md, it has no version\n");
+    return;
+  }
+  if (template.version > existingVersion) {
+    fs.writeFileSync(readmePath, template.content);
+    console.log(
+      `updated plans/README.md from ${existingVersion} to ${template.version}`,
+    );
   }
 }
 
@@ -409,11 +398,10 @@ function cmdNew(repoRoot, args) {
       `invalid slug "${slug}", expected lowercase words separated by hyphens`,
     );
 
-  cmdInit(repoRoot);
+  if (fs.existsSync(path.join(repoRoot, "plans"))) syncReadme(repoRoot);
+  else cmdInit(repoRoot);
 
-  const templatePath = getTemplatePath();
-  const templateContent = fs.readFileSync(templatePath, "utf8");
-  const formatBlock = extractFormatBlock(templateContent);
+  const formatBlock = extractFormatBlock(readTemplate().content);
 
   const fileName = `plans/${localDate()}-${slug}.md`;
   const absPath = path.join(repoRoot, fileName);

@@ -14,10 +14,10 @@ The script `${CLAUDE_SKILL_DIR}/plans` does the mechanical work. `${CLAUDE_SKILL
 
 The user asks to capture, save, or write down the plan for later.
 
-1. Run `${CLAUDE_SKILL_DIR}/plans init`. Then make sure that the agent instruction file of the repository (`AGENTS.md` or `CLAUDE.md`) tells a reader about `plans/` and points to `plans/README.md`. When the file lacks this, add one line where it fits.
-2. Split the session into topics: the main work, the follow-ups, and the ideas to return to. Each topic gets one plan. Run `${CLAUDE_SKILL_DIR}/plans list --all` to find the plans that already exist. A topic with a plan in the working tree updates that plan. A new topic gets `${CLAUDE_SKILL_DIR}/plans new <slug>`.
+1. When the repository has no `plans/` directory, run `${CLAUDE_SKILL_DIR}/plans init`. Make sure that the agent instruction file of the repository (`AGENTS.md` or `CLAUDE.md`) tells a reader about `plans/` and points to `plans/README.md`. When the file lacks this, add one line where it fits.
+2. The user chooses the plans. When the user named the plans to write, that is the choice. Otherwise list the topics of the session (the main work, the follow-ups, the ideas to return to), run `${CLAUDE_SKILL_DIR}/plans list --all` to find the plans that already exist, and show the user each topic as a new plan or as an update of a plan. Write the topics that the user chooses. A topic with a plan in the working tree updates that plan. A new topic gets `${CLAUDE_SKILL_DIR}/plans new <slug>`.
 3. Replace each placeholder of the format. Write for a _cold start_: a reader with no memory of this session continues the work from the plan alone. `Start here` names the first action. Each todo has a `verify:` line. Each measurement keeps the command that produced it.
-4. Check each plan. The step is complete when no placeholder is left, each path that the plan cites is tracked by git or sits in `plans/`, and `${CLAUDE_SKILL_DIR}/plans list --all` shows the plan.
+4. Check each plan. The step is complete when no placeholder is left, each path that the plan cites exists in the repository and `git check-ignore <path>` prints nothing for it, and `${CLAUDE_SKILL_DIR}/plans list --all` shows the plan.
 5. Tell the user the path of each plan. The user decides when to commit.
 
 ## Resume
@@ -32,7 +32,7 @@ The user asks which plans exist, or names a plan to continue.
 
 ## Close
 
-The work of a plan is finished, or it is on hold.
+The result that the title of a plan names exists, or the work is on hold.
 
-- Finished: follow "To finish a plan" in the README. Open todos go to a new plan through the capture steps. `${CLAUDE_SKILL_DIR}/plans status <name> done` sets the status and the close date.
+- Finished: follow "To finish a plan" in the README. Write the plan for the follow-up work through the capture steps. `${CLAUDE_SKILL_DIR}/plans status <name> done` sets the status and the close date.
 - On hold: run `${CLAUDE_SKILL_DIR}/plans status <name> parked`, and add a dated `Log` entry that says why.

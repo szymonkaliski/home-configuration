@@ -50,6 +50,10 @@ stage_vm_home() {
     jq -r '.claudeAiOauth.subscriptionType // empty' "$HOME/.claude/.credentials.json" 2>/dev/null > "$home/.claude/subscription-type" || true
     jq -r '.model // empty' "$HOME/.claude/settings.json" 2>/dev/null > "$home/.claude/anthropic-model" || true
     command cp -L "$HOME/.gemini/antigravity-cli/antigravity-oauth-token" "$home/.gemini/antigravity-cli/antigravity-oauth-token" 2>/dev/null || true
+
+    # refresh the host's skills; skills that exist only in the guest stay
+    rsync -aL "$HOME/.claude/skills/" "$home/.claude/skills/" 2>/dev/null || true
+    rsync -aL "$HOME/.gemini/config/skills/" "$home/.gemini/config/skills/" 2>/dev/null || true
   else
     mkdir -p "$home/.config"
 

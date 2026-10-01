@@ -74,9 +74,6 @@
     "type": "command",
     "command": "~/.claude/statusline-command.sh"
   },
-  "enabledPlugins": {
-    "typescript-lsp@claude-plugins-official": true
-  },
   "spinnerTipsEnabled": false,
   "spinnerVerbs": {
     "mode": "replace",

@@ -187,6 +187,7 @@ in
     ip = "192.168.1.4";
     mac = "B4:B2:91:DB:EC:58";
     mqttBase = "friday/lgtv";
+    httpPort = ports.lgtv2mqtt2;
   };
 
   xdg.configFile."lgtv2mqtt2/mqtt.json".text = builtins.toJSON {
@@ -293,6 +294,10 @@ in
     description = "LG TV to MQTT bridge";
     needsMqtt = true;
     command = "node cli.js";
+    restartTriggers = [
+      (builtins.hashString "sha256" config.xdg.configFile."lgtv2mqtt2/lgtv.json".text)
+      (builtins.hashString "sha256" config.xdg.configFile."lgtv2mqtt2/mqtt.json".text)
+    ];
   };
 
   systemd.user.services.friday-homebridge = mkProjectService {

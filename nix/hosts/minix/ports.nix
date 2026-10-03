@@ -14,4 +14,5 @@
   nodeExporter = 10012;
   smartctl = 10013;
   homebridgeUi = 10014;
+  ps5Mqtt = 10015;
 }

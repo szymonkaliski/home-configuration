@@ -24,6 +24,7 @@ in
     ../../modules/home/boot-notify.nix
     ./home/getmail.nix
     ./home/neolink.nix
+    ./home/ps5-mqtt.nix
   ];
 
   home.homeDirectory = "/home/szymon";

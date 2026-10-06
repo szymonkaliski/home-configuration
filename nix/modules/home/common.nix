@@ -162,7 +162,14 @@ in
   # skills linked one-by-one so the destination dirs stay real directories;
   # machine-local additions can then sit alongside without living in this repo
   // skillLinks ".claude/skills"
-  // skillLinks ".gemini/config/skills";
+  // skillLinks ".gemini/config/skills"
+  // lib.optionalAttrs pkgs.stdenv.isDarwin {
+    # copied into the store, not linked: it must stay readable while ~/Documents is blocked
+    ".claude/tcc-heal.js" = {
+      source = ../../../dotfiles/claude/tcc-heal.js;
+      executable = true;
+    };
+  };
 
   xdg.configFile = {
     "nvim".source = link "${dotfileDir}/vim";

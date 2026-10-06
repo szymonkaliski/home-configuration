@@ -1,7 +1,6 @@
 {
   "env": {
     "DISABLE_INSTALLATION_CHECKS": "1",
-    "DISABLE_AUTOUPDATER": "1",
     "CLAUDE_CODE_NO_FLICKER": "1",
     "CLAUDE_CODE_SUBAGENT_MODEL": "opus"
   },
@@ -64,6 +63,38 @@
           {
             "type": "command",
             "command": "~/.claude/notify.js"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.claude/tcc-heal.js ]; then ~/.claude/tcc-heal.js; fi"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.claude/tcc-heal.js ]; then ~/.claude/tcc-heal.js; fi"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash|Read|Edit|Write|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.claude/tcc-heal.js ]; then ~/.claude/tcc-heal.js; fi"
           }
         ]
       }

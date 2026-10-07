@@ -9,7 +9,10 @@ let
   keys = import ../../keys.nix;
 in
 {
-  imports = [ ../../modules/nixos/common.nix ];
+  imports = [
+    ../../modules/nixos/common.nix
+    ./rtl-sdr.nix
+  ];
 
   # create plain .img for flashing
   sdImage.compressImage = false;

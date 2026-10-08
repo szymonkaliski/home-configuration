@@ -96,6 +96,7 @@ in
     isNormalUser = true;
     extraGroups = [
       "audio"
+      "dialout" # USB serial (/dev/ttyUSB*)
       "gpio"
       "spi"
       "video"

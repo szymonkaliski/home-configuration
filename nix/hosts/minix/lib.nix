@@ -99,4 +99,33 @@ in
       // lib.optionalAttrs (randomizedDelay != null) { RandomizedDelaySec = randomizedDelay; };
       Install.WantedBy = [ "timers.target" ];
     };
+
+  # systemd user service that mirrors an MQTT topic tree into the journal
+  mkMqttLog =
+    {
+      # names the ExecStart script, which the journal shows as the line identifier
+      name,
+      description,
+      topic,
+      format,
+    }:
+    {
+      Unit = {
+        Description = description;
+        After = [ "network-online.target" ];
+        Wants = [ "network-online.target" ];
+      };
+      Service = {
+        ExecStartPre = waitForMosquitto;
+        ExecStart = pkgs.writeShellScript name ''
+          exec ${pkgs.mosquitto}/bin/mosquitto_sub \
+            -h ${mqtt.host} -p ${toString mqtt.port} \
+            -u ${mqtt.username} -P ${mqtt.password} \
+            -R -F ${lib.escapeShellArg format} -t ${lib.escapeShellArg topic}
+        '';
+        Restart = "always";
+        RestartSec = 5;
+      };
+      Install.WantedBy = [ "default.target" ];
+    };
 }

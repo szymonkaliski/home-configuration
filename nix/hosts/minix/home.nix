@@ -11,10 +11,10 @@ let
   mqtt = import ./mqtt.nix;
   ports = import ./ports.nix;
   inherit (import ./lib.nix { inherit pkgs lib; })
-    waitForMosquitto
     waitForInternet
     mkProjectService
     mkTimer
+    mkMqttLog
     ;
 in
 {
@@ -361,25 +361,25 @@ in
   };
 
   # the blind controller has no serial console so MQTT is the only place its
-  # diagnostics show up; mirror the whole device topic tree for debugging
-  systemd.user.services.friday-blind-controller-log = {
-    Unit = {
-      Description = "Blind controller MQTT log";
-      After = [ "network-online.target" ];
-      Wants = [ "network-online.target" ];
-    };
-    Service = {
-      ExecStartPre = waitForMosquitto;
-      ExecStart = pkgs.writeShellScript "blind-controller-log" ''
-        exec ${pkgs.mosquitto}/bin/mosquitto_sub \
-          -h ${mqtt.host} -p ${toString mqtt.port} \
-          -u ${mqtt.username} -P ${mqtt.password} \
-          -R -F '%t %p' -t 'friday/blind_controller/#'
-      '';
-      Restart = "always";
-      RestartSec = 5;
-    };
-    Install.WantedBy = [ "default.target" ];
+  # diagnostics show up; mirror the whole device topic tree for debugging.
+  # bin/debug-logs and bin/debug-edges in diy-blind-roller read this unit's
+  # journal and parse each line as '<topic> <payload>'
+  systemd.user.services.friday-blind-controller-log = mkMqttLog {
+    name = "blind-controller-log";
+    description = "Blind controller MQTT log";
+    topic = "friday/blind_controller/#";
+    format = "%t %p";
+  };
+
+  # vaillant-rf2mqtt publishes JSON objects on some topics and plain strings on
+  # others. %j gives one JSON object per message (receive time, topic, flags)
+  # with the payload as a JSON string. %J would embed JSON payloads, but it
+  # drops each message with a payload that is not JSON
+  systemd.user.services.friday-vaillant-log = mkMqttLog {
+    name = "vaillant-log";
+    description = "Vaillant MQTT log";
+    topic = "friday/vaillant/#";
+    format = "%j";
   };
 
   systemd.user.services.xiaomiclock2mqtt = mkProjectService {

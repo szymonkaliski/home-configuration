@@ -4,11 +4,18 @@ let
   mqtt = import ../mqtt.nix;
   dataDir = "${config.xdg.dataHome}/ps5-mqtt";
 
-  # in rest mode the PS5 answers only unicast discovery
-  # quadlet strips double quotes from Environment= values, podman reads env files verbatim
-  staticDevicesEnv = pkgs.writeText "ps5-mqtt-static-devices.env" ''
-    STATIC_DEVICES=${
-      builtins.toJSON [
+  options = pkgs.writeText "ps5-mqtt-options.json" (
+    builtins.toJSON {
+      mqtt = {
+        inherit (mqtt) host port;
+        user = mqtt.username;
+        pass = mqtt.password;
+      };
+      frontendPort = ports.ps5Mqtt;
+      credentialsStoragePath = "/config/credentials.json";
+      include_ps4_devices = false;
+      # in rest mode the PS5 answers only unicast discovery
+      static_devices = [
         {
           id = "00E4210E32C7";
           name = "PS5-567";
@@ -20,9 +27,9 @@ let
           systemVersion = "14100003";
           transitioning = false;
         }
-      ]
+      ];
     }
-  '';
+  );
 in
 {
   services.podman.enable = true;
@@ -34,20 +41,19 @@ in
     # pinned: 1.7.0 broke standby and discovery
     image = "ghcr.io/funkeyflo/ps5-mqtt:1.7.3";
     environment = {
-      MQTT_HOST = mqtt.host;
-      MQTT_PORT = toString mqtt.port;
-      MQTT_USERNAME = mqtt.username;
-      MQTT_PASSWORD = mqtt.password;
-      FRONTEND_PORT = toString ports.ps5Mqtt;
-      CREDENTIAL_STORAGE_PATH = "/config/credentials.json";
-      INCLUDE_PS4_DEVICES = "false";
+      CONFIG_PATH = "/options.json";
       # errors are only logged through the debug namespaces
       # webserver:playactor echoes the pairing credentials
       DEBUG = "@ha:ps5:*,-@ha:ps5:webserver:playactor";
     };
-    environmentFile = [ "${staticDevicesEnv}" ];
-    volumes = [ "${dataDir}:/config" ];
+    volumes = [
+      "${dataDir}:/config"
+      "${options}:/options.json:ro"
+    ];
     # discovery broadcasts on the LAN
     network = "host";
+    # playactor runs through a shell, timed-out calls orphan it to PID 1
+    # the node entrypoint never reaps orphans, podman-init does
+    extraConfig.Container.RunInit = true;
   };
 }

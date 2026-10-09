@@ -55,7 +55,7 @@ if [ -n "$ts_suffix" ]; then
   vm_context="${vm_context} Those ports are PRIVATE to the tailnet. To make a port public (reachable by anyone, not just the tailnet) when asked to funnel it, run 'tailscale funnel --bg --https=443 http://127.0.0.1:<PORT>'; it then lives at https://${ts_dns}/ . Stop with 'tailscale funnel --https=443 off'. Only one port can be funnelled at a time, and the first hit after VM boot can fail for a minute while the TLS cert provisions."
 fi
 
-mkdir -p /home/szymon/.config/agents /home/szymon/.claude /home/szymon/.gemini/config
+mkdir -p /home/szymon/.config/agents /home/szymon/.claude /home/szymon/.config/opencode /home/szymon/.gemini/config
 {
   echo "$vm_context"
   if [ -f /mnt/host/AGENTS.md ]; then
@@ -65,6 +65,7 @@ mkdir -p /home/szymon/.config/agents /home/szymon/.claude /home/szymon/.gemini/c
 } > /home/szymon/.config/agents/AGENTS.md
 
 ln -sf /home/szymon/.config/agents/AGENTS.md /home/szymon/.claude/CLAUDE.md
+ln -sf /home/szymon/.config/agents/AGENTS.md /home/szymon/.config/opencode/AGENTS.md
 ln -sf /home/szymon/.config/agents/AGENTS.md /home/szymon/.gemini/config/AGENTS.md
 
 # patch agent configs for the VM environment
@@ -86,6 +87,20 @@ if (fs.existsSync(claudePath)) {
 
   fs.writeFileSync(claudePath, JSON.stringify(config, null, 2));
 }
+
+// patch opencode: skip permission prompts (opencode has no global skip flag,
+// so it must come from config; scoped to the VM copy, not the shared dotfile)
+// also inject chromium path for playwright mcp
+const opencodePath = "/home/szymon/.config/opencode/opencode.json";
+if (fs.existsSync(opencodePath)) {
+  let raw = fs.readFileSync(opencodePath, "utf8");
+  raw = raw.replaceAll("/home/szymon/.nix-profile/bin/chromium", vmChromium);
+
+  const config = JSON.parse(raw);
+  config.permission = "allow";
+  fs.writeFileSync(opencodePath, JSON.stringify(config, null, 2));
+}
+
 // patch agy: point the playwright mcp at the VM chromium (the shared
 // dotfile carries no --executable-path, so inject it by server name)
 const agyMcpPath = "/home/szymon/.gemini/config/mcp_config.json";
@@ -122,6 +137,12 @@ cat << 'EOF' > /home/szymon/.bin/fable
 exec /home/szymon/.bin/claude --model fable "$@"
 EOF
 chmod +x /home/szymon/.bin/fable
+cat << 'EOF' > /home/szymon/.bin/opencode
+#!/bin/sh
+export PATH="/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
+exec npx -y opencode-ai@latest --auto "$@"
+EOF
+chmod +x /home/szymon/.bin/opencode
 cat << 'EOF' > /home/szymon/.bin/agy
 #!/bin/sh
 export PATH="/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"

@@ -7,7 +7,7 @@ Run `hostname -s` to detect which one you're on.
 
 - `bootstrap.sh <orchid|minix|berry>` - bare machine bootstrap: age key, home-manager symlink, system/home-manager switches
 - `setup.sh <orchid|minix|berry>` - run from a new shell after bootstrap: vendored skills, npm, service auth, macOS extras
-- `dotfiles/agents/` - AGENTS.md and skills shared by claude and agy (`~/.claude/CLAUDE.md` and `~/.gemini/config/AGENTS.md` link here), linked per skill by `nix/modules/home/common.nix` - a new skill needs `git add` and `home-manager switch`
+- `dotfiles/agents/` - AGENTS.md and skills shared by claude, opencode, and agy (`~/.claude/CLAUDE.md`, `~/.config/opencode/AGENTS.md`, and `~/.gemini/config/AGENTS.md` link here), linked per skill by `nix/modules/home/common.nix` - a new skill needs `git add` and `home-manager switch`
 - `bin/` - shell scripts symlinked to `~/.bin`
 - `nix/hosts/<host>/README.md` - per-host setup (minix first install, berry SD card)
 - `plans/` - work plans, read `plans/README.md` before you read, write, or change a plan

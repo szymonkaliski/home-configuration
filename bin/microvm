@@ -51,8 +51,9 @@ stage_vm_home() {
     jq -r '.model // empty' "$HOME/.claude/settings.json" 2>/dev/null > "$home/.claude/anthropic-model" || true
     command cp -L "$HOME/.gemini/antigravity-cli/antigravity-oauth-token" "$home/.gemini/antigravity-cli/antigravity-oauth-token" 2>/dev/null || true
 
-    # refresh the host's skills; skills that exist only in the guest stay
+    # refresh the host's skills and opencode config; guest-only files stay
     rsync -aL "$HOME/.claude/skills/" "$home/.claude/skills/" 2>/dev/null || true
+    rsync -aL --exclude=/node_modules --exclude=/package.json --exclude=/package-lock.json --exclude=/notify.log --exclude=/AGENTS.md "$HOME/.config/opencode/" "$home/.config/opencode/" 2>/dev/null || true
     rsync -aL "$HOME/.gemini/config/skills/" "$home/.gemini/config/skills/" 2>/dev/null || true
   else
     mkdir -p "$home/.config"
@@ -62,6 +63,8 @@ stage_vm_home() {
     rsync -aL --exclude=/projects --exclude=/notify.log --exclude=/notify-pending "$HOME/.claude/" "$home/.claude/" 2>/dev/null || true
     command cp -L "$HOME/.claude.json" "$home/.claude.json" 2>/dev/null || true
     command cp -rL "$HOME/.config/gcloud" "$home/.config/gcloud" 2>/dev/null || true
+    # don't ship opencode's regenerable npm state or notification log
+    rsync -aL --exclude=/node_modules --exclude=/package.json --exclude=/package-lock.json --exclude=/notify.log "$HOME/.config/opencode/" "$home/.config/opencode/" 2>/dev/null || true
     rsync -aL --exclude=/antigravity-cli/brain --exclude=/antigravity-cli/log --exclude=/antigravity-cli/cache --exclude=/notify.log --exclude=/notify-pending "$HOME/.gemini/" "$home/.gemini/" 2>/dev/null || true
 
     # VMs auth via the long-lived token, not credentials file
@@ -78,7 +81,7 @@ stage_vm_home() {
     jq -r '.model // empty' "$home/.claude/settings.json" 2>/dev/null > "$home/.claude/anthropic-model" || true
 
     # setup.sh symlinks the merged AGENTS.md at each harness's path
-    rm -f "$home/.claude/CLAUDE.md" "$home/.gemini/config/AGENTS.md"
+    rm -f "$home/.claude/CLAUDE.md" "$home/.config/opencode/AGENTS.md" "$home/.gemini/config/AGENTS.md"
 
     touch "$home/.staged"
   fi

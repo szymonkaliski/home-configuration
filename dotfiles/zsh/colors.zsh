@@ -71,6 +71,11 @@ if [ -d ~/.zsh/plugins/base16-shell/ ]; then
 
   base16_load() {
     source ~/.base16_theme
+    # base16-shell wraps OSC 4/10/11 in DCS passthrough when $TMUX is set,
+    # which bypasses tmux's per-pane palette; sending unwrapped sequences too
+    # populates tmux's palette so tmux can answer OSC color queries itself
+    # (e.g. over mosh)
+    [ -n "$TMUX" ] && TMUX="" source ~/.base16_theme
   }
 
   base16() {

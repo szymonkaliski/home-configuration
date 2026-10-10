@@ -42,7 +42,8 @@ in
     image = "ghcr.io/funkeyflo/ps5-mqtt:1.7.3";
     environment = {
       CONFIG_PATH = "/options.json";
-      # errors are only logged through the debug namespaces
+      DISCOVERY_TOPIC = "ps5-mqtt";
+      # errors are only logged through the debug namespaces;
       # webserver:playactor echoes the pairing credentials
       DEBUG = "@ha:ps5:*,-@ha:ps5:webserver:playactor";
     };
@@ -52,8 +53,7 @@ in
     ];
     # discovery broadcasts on the LAN
     network = "host";
-    # playactor runs through a shell, timed-out calls orphan it to PID 1
-    # the node entrypoint never reaps orphans, podman-init does
+    # playactor runs through a shell, and so needs an init
     extraConfig.Container.RunInit = true;
   };
 }

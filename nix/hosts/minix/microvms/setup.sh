@@ -88,16 +88,14 @@ if (fs.existsSync(claudePath)) {
   fs.writeFileSync(claudePath, JSON.stringify(config, null, 2));
 }
 
-// patch opencode: skip permission prompts (opencode has no global skip flag,
-// so it must come from config; scoped to the VM copy, not the shared dotfile)
-// also inject chromium path for playwright mcp
+// patch opencode: allow all permissions and inject VM chromium path for playwright mcp
 const opencodePath = "/home/szymon/.config/opencode/opencode.json";
 if (fs.existsSync(opencodePath)) {
   let raw = fs.readFileSync(opencodePath, "utf8");
   raw = raw.replaceAll("/home/szymon/.nix-profile/bin/chromium", vmChromium);
 
   const config = JSON.parse(raw);
-  config.permission = "allow";
+  config.permissions = [{ action: "*", resource: "*", effect: "allow" }];
   fs.writeFileSync(opencodePath, JSON.stringify(config, null, 2));
 }
 
@@ -140,7 +138,7 @@ chmod +x /home/szymon/.bin/fable
 cat << 'EOF' > /home/szymon/.bin/opencode
 #!/bin/sh
 export PATH="/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
-exec npx -y opencode-ai@latest --auto "$@"
+exec npx -y --package=@opencode/cli@latest opencode --auto "$@"
 EOF
 chmod +x /home/szymon/.bin/opencode
 cat << 'EOF' > /home/szymon/.bin/agy

@@ -22,9 +22,9 @@ const reset = tty ? "\x1b[0m" : "";
 
 const GLOBAL = [
   "@anthropic-ai/claude-code",
+  "@opencode/cli",
   "neovim",
   "npm-check-updates",
-  "opencode-ai",
   "prettier",
 ];
 

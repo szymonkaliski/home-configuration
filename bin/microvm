@@ -53,7 +53,7 @@ stage_vm_home() {
 
     # refresh the host's skills and opencode config; guest-only files stay
     rsync -aL "$HOME/.claude/skills/" "$home/.claude/skills/" 2>/dev/null || true
-    rsync -aL --exclude=/node_modules --exclude=/package.json --exclude=/package-lock.json --exclude=/notify.log --exclude=/AGENTS.md "$HOME/.config/opencode/" "$home/.config/opencode/" 2>/dev/null || true
+    rsync -aL --exclude=/notify.log --exclude=/AGENTS.md "$HOME/.config/opencode/" "$home/.config/opencode/" 2>/dev/null || true
     rsync -aL "$HOME/.gemini/config/skills/" "$home/.gemini/config/skills/" 2>/dev/null || true
   else
     mkdir -p "$home/.config"
@@ -63,8 +63,7 @@ stage_vm_home() {
     rsync -aL --exclude=/projects --exclude=/notify.log --exclude=/notify-pending "$HOME/.claude/" "$home/.claude/" 2>/dev/null || true
     command cp -L "$HOME/.claude.json" "$home/.claude.json" 2>/dev/null || true
     command cp -rL "$HOME/.config/gcloud" "$home/.config/gcloud" 2>/dev/null || true
-    # don't ship opencode's regenerable npm state or notification log
-    rsync -aL --exclude=/node_modules --exclude=/package.json --exclude=/package-lock.json --exclude=/notify.log "$HOME/.config/opencode/" "$home/.config/opencode/" 2>/dev/null || true
+    rsync -aL --exclude=/notify.log "$HOME/.config/opencode/" "$home/.config/opencode/" 2>/dev/null || true
     rsync -aL --exclude=/antigravity-cli/brain --exclude=/antigravity-cli/log --exclude=/antigravity-cli/cache --exclude=/notify.log --exclude=/notify-pending "$HOME/.gemini/" "$home/.gemini/" 2>/dev/null || true
 
     # VMs auth via the long-lived token, not credentials file

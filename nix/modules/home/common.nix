@@ -180,7 +180,7 @@ in
   xdg.configFile = {
     "nvim".source = link "${dotfileDir}/vim";
     "opencode/opencode.json".source = link "${dotfileDir}/opencode/opencode.json";
-    "opencode/tui.json".source = link "${dotfileDir}/opencode/tui.json";
+    "opencode/cli.json".source = link "${dotfileDir}/opencode/cli.json";
     "opencode/AGENTS.md".source = link "${dotfileDir}/agents/AGENTS.md";
     "opencode/plugins".source = link "${dotfileDir}/opencode/plugins";
     "opencode/notify-lib.cjs".source = link "${dotfileDir}/agents/notify-lib.cjs";

@@ -50,6 +50,9 @@
 
 - pass `--no-ext-diff` to `git diff` - git config may route it through an external diff tool that does not print a unified diff
 
+- in `chrome-devtools` MCP, open the first URL in `pageId: 1` with `navigate_page`
+  - for extra tabs, call `new_page` with `background: true` and omit `isolatedContext` (the server already runs `--isolated`, and `isolatedContext` opens a new window)
+
 ## Prose & Communication
 
 - use periods, commas, colons, and parentheses, never em-dashes or semicolons
@@ -57,4 +60,4 @@
   - say what a thing is before what it is not; drop the contrast when it adds nothing
 - lead with the outcome: your first sentence answers "what happened" or "what did you find", then supporting details - no restated question, no preview, no closing summary
 - keep responses and documents brief: cover what is needed, spend most of the words on the main answer, keep caveats short, and skip filler sections and boilerplate
-- avoid AI-cliche wording: delve, robust, seamless, crucial, testament to, load-bearing, "that lands", "worth noting", "clean/cleanly", "it is not X, it is Y"
+- avoid AI-cliché wording: delve, robust, seamless, crucial, testament to, load-bearing, "that lands", "worth noting", "clean/cleanly", "it is not X, it is Y"

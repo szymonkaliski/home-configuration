@@ -3,5 +3,12 @@
   "theme": {
     "name": "system"
   },
-  "plugins": ["*", "-opencode.notifications"]
+  "plugins": ["*", "-opencode.notifications"],
+  "session": {
+    "sidebar": "hide"
+  },
+  "tabs": {
+    "mode": "off",
+    "scope": "cwd"
+  }
 }

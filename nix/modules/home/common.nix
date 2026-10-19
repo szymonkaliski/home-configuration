@@ -20,6 +20,21 @@ let
         value.source = link "${dotfileDir}/agents/skills/${name}";
       }) skillNames
     );
+
+  # Determinate Nix 3.23 emits activity type 10113 (actStringly) in
+  # internal-json logs. nix-output-monitor 2.2.0 fails on unknown activity and
+  # result types (maralorn/nix-output-monitor#320, PR #321).
+  lastVerifiedBrokenNom = "2.2.0";
+  nh = pkgs.nh.override {
+    nix-output-monitor =
+      lib.warnIf (lib.versionOlder lastVerifiedBrokenNom pkgs.nix-output-monitor.version)
+        "nix-output-monitor ${pkgs.nix-output-monitor.version} > ${lastVerifiedBrokenNom}: re-run the drop check in nom-unknown-activity-types.patch, then drop the patch or bump lastVerifiedBrokenNom in modules/home/common.nix"
+        (
+          pkgs.nix-output-monitor.overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [ ../../pkgs/nom-unknown-activity-types.patch ];
+          })
+        );
+  };
 in
 {
   home.username = "szymon";
@@ -43,7 +58,7 @@ in
     pkgs.live-server
     pkgs.mosquitto
     pkgs.neovim
-    pkgs.nh
+    nh
     pkgs.nil
     pkgs.nixfmt
     pkgs.nnn

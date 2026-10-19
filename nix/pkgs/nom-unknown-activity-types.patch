@@ -1,0 +1,62 @@
+fix(json): handle unknown activity and result types gracefully
+
+Determinate Nix 3.23 adds activity type 10113 (actStringly) and result type
+10111 to its internal-json log output. nix-output-monitor 2.2.0 fails with
+ParseNixJSONMessageError on any activity type outside 0 and 100..112 or any
+result type outside 100..108.
+
+Upstream issue: https://github.com/maralorn/nix-output-monitor/issues/320
+Upstream PR: https://github.com/maralorn/nix-output-monitor/pull/321
+
+Drop this patch once upstream merges PR #321 and nixpkgs updates past 2.2.0:
+
+  curl -s https://raw.githubusercontent.com/maralorn/nix-output-monitor/main/nix-output-monitor/lib/NOM/Parser/JSON.hs | grep -n 'invalid activity type'
+
+A hit means upstream still fails on unknown activity types.
+
+--- a/lib/NOM/NixMessage/JSON.hs
++++ b/lib/NOM/NixMessage/JSON.hs
+@@ -40,6 +40,7 @@ data ActivityType where
+   PostBuildHookType :: ActivityType
+   BuildWaitingType :: ActivityType
+   FetchTreeType :: ActivityType
++  OtherType :: Int -> ActivityType
+   deriving stock (Show, Eq)
+ 
+ -- | nix src/libutil/include/nix/util/logging.hh ActivityType
+@@ -71,6 +72,7 @@ data ActivityResult where
+   SetExpected :: ActivityType -> Int -> ActivityResult
+   PostBuildLogLine :: Text -> ActivityResult
+   FetchStatus :: Text -> ActivityResult
++  OtherResult :: Int -> ActivityResult
+   deriving stock (Show, Eq)
+ 
+ data ActivityProgress = MkActivityProgress
+--- a/lib/NOM/Parser/JSON.hs
++++ b/lib/NOM/Parser/JSON.hs
+@@ -45,7 +45,7 @@ parseActivityType = \case
+   110 -> pure PostBuildHookType
+   111 -> pure BuildWaitingType
+   112 -> pure FetchTreeType
+-  other -> fail ("invalid activity type: " <> show other)
++  other -> pure (OtherType other)
+ 
+ parseAction :: JSON.Decoder NixJSONMessage
+ parseAction = JSON.object $ do
+@@ -121,7 +121,7 @@ parseResultAction = do
+       pure $ SetExpected activityType number
+     107 -> PostBuildLogLine <$> one txt
+     108 -> FetchStatus <$> one txt
+-    other -> fail ("invalid activity result type: " <> show other)
++    other -> pure (OtherResult other)
+   pure MkResultAction{id = idField, result}
+ 
+ parseStopAction :: JSON.FieldsDecoder StopAction
+@@ -136,6 +136,7 @@ parseStartAction = do
+   let txt = textFields
+   activity <- case activityType of
+     UnknownType -> pure Unknown
++    OtherType _ -> pure Unknown
+     CopyPathType ->
+       three txt >>= \(path, from, to) -> do
+         path' <- parseStorePath path

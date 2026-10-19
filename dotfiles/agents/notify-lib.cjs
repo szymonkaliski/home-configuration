@@ -127,36 +127,51 @@ function readPushoverConfig() {
   return { kind: "ok", token: vars.PUSHOVER_TOKEN, user: vars.PUSHOVER_USER };
 }
 
+function isOnPath(command) {
+  return (process.env.PATH || "").split(":").some((dir) => {
+    try {
+      fs.accessSync(`${dir}/${command}`, fs.constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+}
+
 // tnotify reaches the terminal the session runs in, which is where the user
-// would act on the alert, so it goes first. Pushover is the fallback for when
-// that terminal isn't reachable (a microVM has no tnotify at all) and one event
-// stays one alert.
+// would act on the alert, so it goes first where it is installed (orchid).
+// Pushover is the fallback for a host without tnotify (minix, a microVM) and
+// for a terminal tnotify can't reach, and one event stays one alert.
 async function deliver({ title, body, log }) {
   log({ phase: "deliver", body });
 
-  try {
-    const args = ["-t", title, body];
-    if (process.env.TMUX) {
-      const tty = execSync("tmux display-message -p '#{pane_tty}'", {
-        encoding: "utf8",
-      }).trim();
-      const fd = fs.openSync(tty, "w");
-      try {
-        execFileSync("tnotify", args, { stdio: ["ignore", fd, "ignore"] });
-      } finally {
-        fs.closeSync(fd);
+  if (isOnPath("tnotify")) {
+    try {
+      const args = ["-t", title, body];
+      if (process.env.TMUX) {
+        const tty = execSync("tmux display-message -p '#{pane_tty}'", {
+          encoding: "utf8",
+        }).trim();
+        const fd = fs.openSync(tty, "w");
+        try {
+          execFileSync("tnotify", args, { stdio: ["ignore", fd, "ignore"] });
+        } finally {
+          fs.closeSync(fd);
+        }
+      } else {
+        execFileSync("tnotify", [...args, "--native"], { stdio: "ignore" });
       }
-    } else {
-      execFileSync("tnotify", [...args, "--native"], { stdio: "ignore" });
+      log({ phase: "sent", channel: "tnotify", body });
+      return;
+    } catch (err) {
+      log({
+        phase: "channel-failed",
+        channel: "tnotify",
+        error: String((err && err.message) || err),
+      });
     }
-    log({ phase: "sent", channel: "tnotify", body });
-    return;
-  } catch (err) {
-    log({
-      phase: "channel-failed",
-      channel: "tnotify",
-      error: String((err && err.message) || err),
-    });
+  } else {
+    log({ phase: "skipped", reason: "tnotify-not-on-path" });
   }
 
   const pushover = readPushoverConfig();

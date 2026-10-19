@@ -1,0 +1,97 @@
+#!/usr/bin/env node
+"use strict";
+
+// Consults the oracle: a fresh Claude Code session with read-only tools, no
+// hooks, and no MCP servers. It reads the briefing file, prints the answer,
+// then a last line `oracle session: <id>` for a follow-up with --resume.
+
+const fs = require("fs");
+const { spawnSync } = require("child_process");
+
+const MODEL = "fable";
+const EFFORT = "xhigh";
+const TOOLS = "Read,Grep,Glob";
+
+const PROMPT = `You are the oracle. A coding agent consults you for a second opinion on a plan, a bug, or a change. The agent wrote the briefing in the user message. The agent shows your answer to the user word for word.
+
+The briefing is a lead. Another agent chose its facts and files, so they can be incomplete or biased. Read the files it names, and any other files you need, and check each claim against the code before you rely on it. Your tools are read-only.
+
+Look for what the agent missed: a wrong assumption, a simpler path, a risk, a better fix. When the evidence supports the agent's direction, agree, and name the evidence that convinced you.
+
+Answer in this shape:
+- Verdict: one or two sentences.
+- Findings: at most five bullets, most important first. Cite file:line for each claim about code.
+- Recommendation: the one next step you would take, and why.
+
+Keep the answer under 400 words. Mark each conclusion that rests on an assumption.
+
+When missing information could change a conclusion, end with a \`## Context request\` section. List each item the agent must supply (a command output, a log, a decision from the user) and the conclusion it could change. Request only what your tools cannot reach. When the agent answers a context request, give your revised answer and make no further request.`;
+
+const USAGE = `usage: oracle <briefing.md>
+       oracle --resume <session-id> <follow-up.md>`;
+
+//   { kind: "consult", file }
+//   { kind: "resume", sessionId, file }
+function parseArgs(argv) {
+  if (argv.length === 1 && !argv[0].startsWith("-")) {
+    return { kind: "consult", file: argv[0] };
+  }
+  if (argv.length === 3 && argv[0] === "--resume") {
+    return { kind: "resume", sessionId: argv[1], file: argv[2] };
+  }
+  console.error(USAGE);
+  process.exit(2);
+}
+
+const request = parseArgs(process.argv.slice(2));
+const briefing = fs.readFileSync(request.file, "utf8");
+
+const args = [
+  "-p",
+  "--model",
+  MODEL,
+  "--effort",
+  EFFORT,
+  "--tools",
+  TOOLS,
+  "--strict-mcp-config",
+  "--settings",
+  JSON.stringify({ disableAllHooks: true }),
+  "--append-system-prompt",
+  PROMPT,
+  "--output-format",
+  "json",
+];
+if (request.kind === "resume") args.push("--resume", request.sessionId);
+
+const res = spawnSync("claude", args, {
+  input: briefing,
+  encoding: "utf8",
+  maxBuffer: 64 * 1024 * 1024,
+  stdio: ["pipe", "pipe", "inherit"],
+});
+if (res.error) {
+  console.error(`oracle: ${res.error.message}`);
+  process.exit(1);
+}
+
+let out;
+try {
+  out = JSON.parse(res.stdout);
+} catch {
+  console.error(`oracle: claude exited ${res.status} without JSON output`);
+  console.error(res.stdout);
+  process.exit(1);
+}
+if (out.is_error) {
+  const detail =
+    out.result ||
+    (Array.isArray(out.errors) && out.errors.join("; ")) ||
+    out.subtype;
+  console.error(`oracle: ${detail}`);
+  process.exit(1);
+}
+
+process.stdout.write(
+  `${out.result.trim()}\n\noracle session: ${out.session_id}\n`,
+);

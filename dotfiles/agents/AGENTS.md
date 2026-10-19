@@ -25,7 +25,7 @@
 ## Subagents
 
 - the main thread orchestrates: scope the work, delegate, judge the results, synthesize
-- every subagent runs on the harness's configured subagent model: leave the model unset on every spawn path (subagent tools, workflow/orchestration scripts, agent definitions, agent teams), also where the harness's own reference suggests otherwise
+- every subagent runs on the harness's configured subagent model: leave the model unset on every spawn path (subagent tools, workflow/orchestration scripts, agent definitions, agent teams), also where the harness's own reference suggests otherwise, except the `oracle` skill, whose script pins its own model
 - delegate: independent read-only fan-out (codebase search, multi-file research, doc/web lookups) launched in one message; an unrelated edit that came up mid-session; research whose result isn't blocking the current step (run it in the background)
 - keep inline: anything that fits in a handful of tool calls; steps that depend on each other; work that needs the current conversation's context; edits to files the main thread or another agent touches (lockfiles, configs, anything a formatter rewrites); destructive or outward-facing actions (push, delete, deploy)
 - one subagent per task, no re-delegation; prefer fewer, larger subagents over many narrow ones

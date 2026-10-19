@@ -126,15 +126,6 @@ async function main() {
 
   // global registry packages
   console.log(`${green}global packages:${reset}`);
-  const missing = GLOBAL.filter((p) => !registry.has(p));
-  if (missing.length) {
-    console.log(`  installing: ${missing.join(", ")}`);
-    run("npm", ["install", "-g", ...missing]);
-  } else {
-    console.log(`${dim}  all listed packages present${reset}`);
-  }
-  upgradeGlobals(GLOBAL);
-
   const extra = [...registry].filter(
     (p) => !GLOBAL.includes(p) && !KEEP.has(p),
   );
@@ -146,8 +137,26 @@ async function main() {
     else console.log(`${dim}  keeping ${p}${reset}`);
   }
 
+  const missing = GLOBAL.filter((p) => !registry.has(p));
+  if (missing.length) {
+    console.log(`  installing: ${missing.join(", ")}`);
+    run("npm", ["install", "-g", ...missing]);
+  } else {
+    console.log(`${dim}  all listed packages present${reset}`);
+  }
+  upgradeGlobals(GLOBAL);
+
   // local linked repos
   console.log(`${green}local links:${reset}`);
+  for (const [dir, name] of linkedDir) {
+    if (LOCAL.includes(dir)) continue;
+    const answer = await ask(
+      `${yellow}  unlink unlisted '${name}'?${reset} (y/n) `,
+    );
+    if (answer === "y") run("npm", ["uninstall", "-g", name]);
+    else console.log(`${dim}  keeping ${name}${reset}`);
+  }
+
   if (!projects) {
     console.log(`${dim}  PROJECTS_PATH not set, skipping local links${reset}`);
     return;
@@ -166,16 +175,6 @@ async function main() {
     console.log(`  link ${dir}`);
     run("npm", ["install"], { cwd: path });
     run("npm", ["link"], { cwd: path });
-  }
-
-  // unlink globals linked from repos we no longer list
-  for (const [dir, name] of linkedDir) {
-    if (LOCAL.includes(dir)) continue;
-    const answer = await ask(
-      `${yellow}  unlink unlisted '${name}'?${reset} (y/n) `,
-    );
-    if (answer === "y") run("npm", ["uninstall", "-g", name]);
-    else console.log(`${dim}  keeping ${name}${reset}`);
   }
 }
 

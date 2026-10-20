@@ -100,14 +100,14 @@ in
       Install.WantedBy = [ "timers.target" ];
     };
 
-  # systemd user service that mirrors an MQTT topic tree into the journal
+  # systemd user service that mirrors an MQTT topic tree into the journal as
+  # one JSON object per message (%j: receive time, topic, flags, payload string)
   mkMqttLog =
     {
       # names the ExecStart script, which the journal shows as the line identifier
       name,
       description,
       topic,
-      format,
     }:
     {
       Unit = {
@@ -121,7 +121,7 @@ in
           exec ${pkgs.mosquitto}/bin/mosquitto_sub \
             -h ${mqtt.host} -p ${toString mqtt.port} \
             -u ${mqtt.username} -P ${mqtt.password} \
-            -R -F ${lib.escapeShellArg format} -t ${lib.escapeShellArg topic}
+            -R -F %j -t ${lib.escapeShellArg topic}
         '';
         Restart = "always";
         RestartSec = 5;

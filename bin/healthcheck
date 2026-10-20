@@ -152,6 +152,39 @@ check "xiaomiclock-synced" bash -c '
   fi
 '
 
+check "vaillant-online" bash -c '
+  lwt=$(mosquitto_sub -h localhost -p 1883 -u mqtt -P mqtt-secure -t "friday/vaillant/lwt" -C 1 -W 5)
+  if [[ "$lwt" != "Online" ]]; then
+    echo "lwt: ${lwt:-(timeout)}"
+    exit 1
+  fi
+  recent=$(journalctl --user -u friday-vaillant-log --since "1 hour ago" -o cat \
+    | jq -R -r "fromjson? | select(.topic == \"friday/vaillant/room_temperature\") | .tst" \
+    | tail -1)
+  if [[ -z "$recent" ]]; then
+    echo "no room_temperature in the last hour"
+    exit 1
+  fi
+'
+
+check "vaillant-rf-errors" bash -c '
+  journalctl --user -u friday-vaillant-log --since "24 hours ago" -o cat \
+    | /home/szymon/Projects/vaillant-rf2mqtt/analysis/exchanges.js --check
+'
+
+check "blind-controller-online" bash -c '
+  lwt=$(mosquitto_sub -h localhost -p 1883 -u mqtt -P mqtt-secure -t "friday/blind_controller/lwt" -C 1 -W 5)
+  if [[ "$lwt" != "Online" ]]; then
+    echo "lwt: ${lwt:-(timeout)}"
+    exit 1
+  fi
+'
+
+check "blind-controller-errors" bash -c '
+  journalctl --user -u friday-blind-controller-log --since "24 hours ago" -o cat \
+    | /home/szymon/Projects/diy-blind-roller/bin/debug-edges --check
+'
+
 check "telegraphist-serves-https" bash -c '
   status=$(curl -so /dev/null -w "%{http_code}" --max-time 10 https://minix.golden-minor.ts.net:10006/)
   if [[ "$status" != "200" ]]; then

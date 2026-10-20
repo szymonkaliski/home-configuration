@@ -150,6 +150,8 @@ in
               "friday/sensor_studio/temperature"
               "friday/sensor_studio/humidity"
               "friday/sensor_studio/pressure"
+              "friday/vaillant/room_temperature"
+              "friday/vaillant/room_humidity"
             ];
             topic_parsing = [
               {

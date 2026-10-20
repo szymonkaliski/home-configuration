@@ -214,7 +214,11 @@ in
           (tsPanel null "Temperatures (°C)" 0 0 24 8 [
             {
               expr = ''env_value{metric="temperature",device="sensor_living_room_temperature"}'';
-              legend = "living room";
+              legend = "{{device}}";
+            }
+            {
+              expr = ''env_value{device="vaillant",metric="room_temperature"}'';
+              legend = "{{device}}_{{metric}}";
             }
             {
               expr = ''heater_value{metric="current_temperature"}'';
@@ -225,6 +229,10 @@ in
             {
               expr = ''env_value{metric="humidity"}'';
               legend = "{{device}}";
+            }
+            {
+              expr = ''env_value{device="vaillant",metric="room_humidity"}'';
+              legend = "{{device}}_{{metric}}";
             }
           ])
           (tsPanel null "Studio pressure (hPa)" 12 8 12 8 [

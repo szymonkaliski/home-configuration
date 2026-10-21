@@ -291,6 +291,10 @@ check "archivist-completed-fetch-recently" bash -c '
   fi
 '
 
+check "property-search-scrape" bash -c '
+  node /home/szymon/Projects/property-search/dist/run-scrape.js --check
+'
+
 errors=()
 for (( _j=0; _j < n; _j++ )); do
   wait -n -p _pid

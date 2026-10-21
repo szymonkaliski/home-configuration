@@ -473,7 +473,7 @@ in
 
   systemd.user.timers.vitalist = mkTimer {
     description = "Vitalist sync timer";
-    onCalendar = "*-*-* 12:00:00";
+    onCalendar = "hourly";
     randomizedDelay = "5m";
   };
 

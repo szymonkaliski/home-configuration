@@ -559,6 +559,7 @@ in
     description = "Property Search scraper";
     extraUnits = [ "sops-nix.service" ];
     needsInternet = true;
+    build = "npm run build";
     command = "npm run scrape";
     oneshot = true;
     timeoutStart = "60min";

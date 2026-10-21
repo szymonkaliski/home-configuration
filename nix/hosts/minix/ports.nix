@@ -16,4 +16,5 @@
   homebridgeUi = 10014;
   ps5Mqtt = 10015;
   lgtv2mqtt2 = 10016;
+  mqttDashboard = 10017;
 }

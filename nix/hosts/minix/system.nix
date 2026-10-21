@@ -55,6 +55,10 @@ let
             url = "http://minix:${toString ports.zigbee2mqtt}";
           }
           {
+            name = "mqtt";
+            url = "http://minix:${toString ports.mqttDashboard}/explorer";
+          }
+          {
             name = "glances";
             url = "http://minix:${toString ports.glances}";
           }
@@ -94,6 +98,23 @@ let
     PUSHOVERRC=${config.sops.templates."pushoverrc".path} \
       exec ${config.users.users.szymon.home}/.bin/notify-pushover "$message"
   '';
+
+  mqttDashboardSeed = pkgs.writeText "mqtt-dashboard-seed.json" (
+    builtins.toJSON {
+      brokers = [
+        {
+          name = "minix";
+          inherit (mqtt)
+            host
+            port
+            username
+            password
+            ;
+          is_enabled = true;
+        }
+      ];
+    }
+  );
 in
 {
   imports = [
@@ -324,6 +345,26 @@ in
 
   # zigbee2mqtt exits if the broker isn't up yet
   systemd.services.zigbee2mqtt = {
+    after = [ "mosquitto.service" ];
+    wants = [ "mosquitto.service" ];
+  };
+
+  virtualisation.oci-containers.containers.mqtt-dashboard = {
+    image = "ghcr.io/jmischler72/mqtt-dashboard:latest";
+    environment = {
+      TZ = config.time.timeZone;
+      MQTT_DASHBOARD_HTTP_ADDR = ":${toString ports.mqttDashboard}";
+      MQTT_DASHBOARD_SEED_FILE = "/seed.json";
+    };
+    volumes = [
+      "mqtt-dashboard:/app/data"
+      "${mqttDashboardSeed}:/seed.json:ro"
+    ];
+    extraOptions = [ "--network=host" ];
+    labels."io.containers.autoupdate" = "registry";
+  };
+
+  systemd.services.podman-mqtt-dashboard = {
     after = [ "mosquitto.service" ];
     wants = [ "mosquitto.service" ];
   };

@@ -199,6 +199,10 @@ in
       source = link "${dotfileDir}/opencode/cli.json";
       force = true;
     };
+    "opencode/service.json" = {
+      source = link "${dotfileDir}/opencode/service.json";
+      force = true;
+    };
     "opencode/AGENTS.md".source = link "${dotfileDir}/agents/AGENTS.md";
     "opencode/plugins".source = link "${dotfileDir}/opencode/plugins";
     "opencode/notify-lib.cjs".source = link "${dotfileDir}/agents/notify-lib.cjs";

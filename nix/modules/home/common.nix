@@ -195,9 +195,28 @@ in
   xdg.configFile = {
     "nvim".source = link "${dotfileDir}/vim";
     "opencode/opencode.json".source = link "${dotfileDir}/opencode/opencode.json";
-    "opencode/cli.json".source = link "${dotfileDir}/opencode/cli.json";
+    "opencode/cli.json" = {
+      source = link "${dotfileDir}/opencode/cli.json";
+      force = true;
+    };
     "opencode/AGENTS.md".source = link "${dotfileDir}/agents/AGENTS.md";
     "opencode/plugins".source = link "${dotfileDir}/opencode/plugins";
     "opencode/notify-lib.cjs".source = link "${dotfileDir}/agents/notify-lib.cjs";
   };
+
+  # OpenCode writes cli.json via temp-file rename, replacing the symlink with a
+  # 0600 regular file; if a newer regular file is left behind, copy it into the
+  # repo before removing it so linkGeneration restores the symlink.
+  home.activation.syncOpencodeCliConfig =
+    lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ]
+      ''
+        cliConfig="$HOME/.config/opencode/cli.json"
+        repoCliConfig="${dotfileDir}/opencode/cli.json"
+        if [[ -f "$cliConfig" && ! -L "$cliConfig" ]]; then
+          if [[ "$cliConfig" -nt "$repoCliConfig" ]]; then
+            run install -m 644 "$cliConfig" "$repoCliConfig"
+          fi
+          run rm "$cliConfig"
+        fi
+      '';
 }

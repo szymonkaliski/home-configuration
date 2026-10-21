@@ -1,7 +1,8 @@
 {
   "$schema": "https://opencode.ai/v2/cli.json",
   "theme": {
-    "name": "system"
+    "name": "system",
+    "mode": "system"
   },
   "plugins": ["*", "-opencode.notifications"],
   "session": {
@@ -10,5 +11,6 @@
   "tabs": {
     "mode": "off",
     "scope": "cwd"
-  }
+  },
+  "animations": true
 }

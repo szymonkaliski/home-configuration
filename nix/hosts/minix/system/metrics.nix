@@ -11,22 +11,32 @@ let
     ${pkgs.mosquitto}/bin/mosquitto_sub \
       -h ${mqtt.host} -p ${toString mqtt.port} \
       -u ${mqtt.username} -P ${mqtt.password} \
-      --retained-only -W 2 -t 'neolink/+/status' -t 'neolink/+/status/pir' -v 2>/dev/null |
+      --retained-only -W 2 \
+      -t 'neolink/+/status' -t 'neolink/+/status/pir' \
+      -t 'friday/vaillant/fault_status' -t 'friday/vaillant/system_status' \
+      -v 2>/dev/null |
       ${pkgs.gawk}/bin/awk '{
         split($1, t, "/");
-        if (t[4] == "pir")
+        if (t[1] == "neolink" && t[4] == "pir")
           printf "camera_pir,device=%s value=%d\n", t[2], ($2 == "on") ? 1 : 0
-        else
+        else if (t[1] == "neolink")
           printf "camera_state,device=%s value=%d\n", t[2], ($2 == "connected") ? 1 : 0
+        else if ($1 == "friday/vaillant/fault_status")
+          printf "vaillant_state,metric=fault_status value=%d\n", ($2 == "ok" || $2 == "0") ? 0 : 1
+        else if ($1 == "friday/vaillant/system_status")
+          printf "vaillant_state,metric=system_status value=%d\n", ($2 == "heating" || $2 == "1") ? 1 : ($2 == "cooling" || $2 == "2") ? 2 : ($2 == "hot_water" || $2 == "3") ? 3 : 0
       }'
     exit 0
   '';
   # ookla's own cli; the license notice goes to stderr on every run since the
   # telegraf user has no writable home to remember the acceptance in.
   # bandwidth is bytes/s, the panels want Mbit/s; packetLoss is absent when
-  # not measured and reported as -1 (the panel filters `>= 0`)
+  # not measured and reported as -1 (the panel filters `>= 0`).
+  # pinned to Plus Poznań (60356, fallback Play Poznań 23677) so auto-pick does
+  # not rotate onto regional servers that cap below 1 Gbps
   internetSpeedSample = pkgs.writeShellScript "internet-speed-sample" ''
-    ${pkgs.ookla-speedtest}/bin/speedtest --accept-license --accept-gdpr --format=json 2>/dev/null |
+    (${pkgs.ookla-speedtest}/bin/speedtest --accept-license --accept-gdpr -s 60356 --format=json 2>/dev/null ||
+      ${pkgs.ookla-speedtest}/bin/speedtest --accept-license --accept-gdpr -s 23677 --format=json 2>/dev/null) |
       ${pkgs.jq}/bin/jq -r '"internet_speed download=\(.download.bandwidth * 8 / 1e6),upload=\(.upload.bandwidth * 8 / 1e6),latency=\(.ping.latency),jitter=\(.ping.jitter),packet_loss=\(.packetLoss // -1)"'
   '';
 in
@@ -88,17 +98,21 @@ in
       processors.enum = [
         {
           namepass = [
-            "heater_active"
             "camera_status"
+            "vaillant_state"
           ];
           mapping = [
             {
               fields = [ "value" ];
               value_mappings = {
-                ON = 1;
-                OFF = 0;
                 connected = 1;
                 disconnected = 0;
+                ok = 0;
+                fault = 1;
+                standby = 0;
+                heating = 1;
+                cooling = 2;
+                hot_water = 3;
               };
             }
           ];
@@ -150,8 +164,13 @@ in
               "friday/sensor_studio/temperature"
               "friday/sensor_studio/humidity"
               "friday/sensor_studio/pressure"
+              "friday/vaillant/outdoor_temperature"
               "friday/vaillant/room_temperature"
               "friday/vaillant/room_humidity"
+              "friday/vaillant/electricity_heating"
+              "friday/vaillant/gas_heating"
+              "friday/vaillant/electricity_hot_water"
+              "friday/vaillant/gas_hot_water"
             ];
             topic_parsing = [
               {
@@ -161,36 +180,34 @@ in
             ];
           }
           {
+            name_override = "vaillant_state";
+            data_format = "value";
+            data_type = "string";
+            topics = [
+              "friday/vaillant/fault_status"
+              "friday/vaillant/system_status"
+            ];
+            topic_parsing = [
+              {
+                topic = "friday/vaillant/+";
+                tags = "_/_/metric";
+              }
+            ];
+          }
+          {
             name_override = "heater";
             data_format = "value";
             data_type = "float";
             topics = [
               "friday/hjm/heater_1/current_temperature"
-              "friday/hjm/heater_1/temperature"
-              "friday/hjm/heater_1/power"
+              "friday/hjm/heater_1/energy"
               "friday/hjm/heater_2/current_temperature"
-              "friday/hjm/heater_2/temperature"
-              "friday/hjm/heater_2/power"
+              "friday/hjm/heater_2/energy"
             ];
             topic_parsing = [
               {
                 topic = "friday/hjm/+/+";
                 tags = "_/_/device/metric";
-              }
-            ];
-          }
-          {
-            name_override = "heater_active";
-            data_format = "value";
-            data_type = "string";
-            topics = [
-              "friday/hjm/heater_1/active"
-              "friday/hjm/heater_2/active"
-            ];
-            topic_parsing = [
-              {
-                topic = "friday/hjm/+/+";
-                tags = "_/_/device/_";
               }
             ];
           }

@@ -167,6 +167,14 @@ check "vaillant-online" bash -c '
   fi
 '
 
+check "vaillant-no-fault" bash -c '
+  fault=$(mosquitto_sub -h localhost -p 1883 -u mqtt -P mqtt-secure -t "friday/vaillant/fault_status" -C 1 -W 5)
+  if [[ "$fault" != "ok" ]]; then
+    echo "fault_status: ${fault:-(timeout)}"
+    exit 1
+  fi
+'
+
 check "vaillant-rf-errors" bash -c '
   journalctl --user -u friday-vaillant-log --since "24 hours ago" -o cat \
     | /home/szymon/Projects/vaillant-rf2mqtt/analysis/exchanges.js --check

@@ -490,12 +490,21 @@ export default Plugin.define({
     let leftBoxRef;
     let rightBoxRef;
 
-    function syncWidth() {
-      const w =
-        context.renderer?.root?.width ||
+    function syncWidth(footerBox = leftBoxRef) {
+      const footerRow = footerBox?.parent;
+      const promptRoot = footerRow?.parent;
+      const rootW =
         context.renderer?.width ||
-        leftBoxRef?.parent?.width ||
+        context.renderer?.root?.width ||
+        context.renderer?.root?.getNativeSceneLayout?.()?.width ||
         80;
+      const promptW =
+        promptRoot?.getNativeSceneLayout?.()?.width ||
+        footerRow?.getNativeSceneLayout?.()?.width ||
+        0;
+      const isHome = context.ui.router?.current?.()?.type === "home";
+      const maxW = isHome ? Math.min(75, rootW) : rootW;
+      const w = promptW > 0 ? Math.min(promptW, maxW) : maxW;
       if (w > 0 && w !== termWidth()) {
         setTermWidth(w);
       }
@@ -509,11 +518,12 @@ export default Plugin.define({
             ? w.width
             : context.renderer?.width;
       if (typeof nextW === "number" && nextW > 0) {
-        setTermWidth(nextW);
+        const isHome = context.ui.router?.current?.()?.type === "home";
+        setTermWidth(isHome ? Math.min(75, nextW) : nextW);
+        applyLayout(leftBoxRef, true);
       } else {
-        syncWidth();
+        applyLayout(leftBoxRef);
       }
-      applyLayout(leftBoxRef);
       context.renderer?.requestRender?.();
     };
 
@@ -558,11 +568,13 @@ export default Plugin.define({
       }
     }
 
-    function applyLayout(footerBox = leftBoxRef) {
+    function applyLayout(footerBox = leftBoxRef, skipSyncWidth = false) {
       const root = context.renderer?.root;
       if (!root || root.isDestroyed) return;
 
-      syncWidth();
+      if (!skipSyncWidth) {
+        syncWidth(footerBox);
+      }
 
       if (cachedBase16) {
         applyBase16ToTheme(context.theme, cachedBase16);
@@ -941,7 +953,6 @@ export default Plugin.define({
 
       const footerRow = footerBox?.parent;
       if (footerRow) {
-        const w = termWidth();
         for (
           let anc = footerRow;
           anc && anc !== root && !anc.isDestroyed;
@@ -949,11 +960,19 @@ export default Plugin.define({
         ) {
           lockStyle(anc, ["minWidth"], 0);
         }
-        lockStyle(footerRow, ["width", "maxWidth"], w);
+        lockStyle(footerRow, ["width", "maxWidth"], "100%");
         lockStyle(footerRow, ["gap"], 1);
         lockStyle(footerRow, ["marginTop"], 1);
         for (const sib of footerRow.getChildren?.() ?? []) {
-          if (sib === leftBoxRef || sib === rightBoxRef) continue;
+          if (
+            sib === footerBox ||
+            sib === leftBoxRef ||
+            sib === rightBoxRef ||
+            sib.id === "theme.footer.left" ||
+            sib.id === "theme.footer.right"
+          ) {
+            continue;
+          }
           if (sib.visible !== false) {
             sib.visible = false;
           }
@@ -1279,16 +1298,22 @@ export default Plugin.define({
         return themeGreen(context.theme);
       });
 
+      let ownEl;
       onCleanup(() => {
-        if (leftBoxRef) {
-          lifecycleNodes.delete(leftBoxRef);
-          context.renderer?.unregisterLifecyclePass?.(leftBoxRef);
+        if (ownEl) {
+          lifecycleNodes.delete(ownEl);
+          context.renderer?.unregisterLifecyclePass?.(ownEl);
+          if (leftBoxRef === ownEl) {
+            leftBoxRef = undefined;
+          }
         }
       });
 
       return (
         <box
+          id="theme.footer.left"
           ref={(el) => {
+            ownEl = el;
             leftBoxRef = el;
             registerLifecycleNode(el);
           }}
@@ -1412,10 +1437,19 @@ export default Plugin.define({
         ),
       );
 
+      let ownEl;
+      onCleanup(() => {
+        if (ownEl && rightBoxRef === ownEl) {
+          rightBoxRef = undefined;
+        }
+      });
+
       return (
         <Show when={hasNormalItems()}>
           <box
+            id="theme.footer.right"
             ref={(el) => {
+              ownEl = el;
               rightBoxRef = el;
             }}
             flexDirection="row"

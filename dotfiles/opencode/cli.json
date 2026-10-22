@@ -4,7 +4,7 @@
     "name": "system",
     "mode": "system"
   },
-  "plugins": ["*", "-opencode.notifications"],
+  "plugins": ["*", "-opencode.notifications", "-opencode.prompt.footer"],
   "session": {
     "sidebar": "hide"
   },

@@ -1,19 +1,19 @@
 local windowMetadata = require('ext.window').windowMetadata
-local runScript      = require('ext.task').runScript
-local log            = hs.logger.new("screenshot-with-meta", "debug")
+local runScript = require('ext.task').runScript
+local log = hs.logger.new('screenshot-with-meta', 'debug')
 
-local cache  = {}
+local cache = {}
 local module = { cache = cache }
 
-local ADD_OCR_TO_IMAGE_PATH       = os.getenv('HOME') .. '/.bin/add-ocr-to-image'
+local ADD_OCR_TO_IMAGE_PATH = os.getenv('HOME') .. '/.bin/add-ocr-to-image'
 local ADD_WHEREFROMS_TO_IMAGE_PATH = os.getenv('HOME') .. '/.bin/add-wherefroms-to-image'
-local SCREENSHOT_PATH              = os.getenv('HOME') .. '/Library/CloudStorage/Dropbox/Screenshots/'
+local SCREENSHOT_PATH = os.getenv('HOME') .. '/Library/CloudStorage/Dropbox/Screenshots/'
 
-local SCREENCAPTURE_PATH           = '/usr/sbin/screencapture'
+local SCREENCAPTURE_PATH = '/usr/sbin/screencapture'
 
 local genScreenshotPath = function()
   local screenshotName = os.date('Screenshot %Y-%m-%d at %H.%M.%S.png')
-  local fileName       = SCREENSHOT_PATH .. screenshotName
+  local fileName = SCREENSHOT_PATH .. screenshotName
   return fileName
 end
 
@@ -22,11 +22,13 @@ local sendNotification = function(fileName)
     os.execute('open -R "' .. fileName .. '"')
   end
 
-  hs.notify.new(revealFile, {
-    title        = 'Screenshot',
-    subTitle     = 'Captured!',
-    contentImage = fileName
-  }):send()
+  hs.notify
+    .new(revealFile, {
+      title = 'Screenshot',
+      subTitle = 'Captured!',
+      contentImage = fileName,
+    })
+    :send()
 end
 
 local addMetaToScreenshot = function(win, fileName)
@@ -38,10 +40,7 @@ local addMetaToScreenshot = function(win, fileName)
 
   -- adds OCR to the image; --url prepends the source URL to kMDItemFinderComment
   -- because Dropbox only syncs that xattr to Linux (not kMDItemWhereFroms)
-  runScript(
-    ADD_OCR_TO_IMAGE_PATH,
-    (meta ~= nil and meta ~= '') and { '--url', meta, fileName } or { fileName }
-  )
+  runScript(ADD_OCR_TO_IMAGE_PATH, (meta ~= nil and meta ~= '') and { '--url', meta, fileName } or { fileName })
 end
 
 -- screencapture can exit before the file is fully flushed to disk
@@ -51,7 +50,7 @@ local processScreenshot = function(focusedWindow, fileName, attempt)
   local image = hs.image.imageFromPath(fileName)
 
   if image then
-    log.i("processing screenshot: " .. fileName)
+    log.i('processing screenshot: ' .. fileName)
     hs.pasteboard.writeObjects(image)
     sendNotification(fileName)
     addMetaToScreenshot(focusedWindow, fileName)
@@ -59,16 +58,18 @@ local processScreenshot = function(focusedWindow, fileName, attempt)
   end
 
   if attempt < 5 then
-    log.w("file not ready (attempt " .. attempt .. "): " .. fileName)
+    log.w('file not ready (attempt ' .. attempt .. '): ' .. fileName)
     hs.timer.doAfter(0.5, function()
       processScreenshot(focusedWindow, fileName, attempt + 1)
     end)
   else
-    log.e("file not ready after 5 attempts: " .. fileName)
-    hs.notify.new({
-      title    = "Screenshot",
-      subTitle = "Failed to process screenshot"
-    }):send()
+    log.e('file not ready after 5 attempts: ' .. fileName)
+    hs.notify
+      .new({
+        title = 'Screenshot',
+        subTitle = 'Failed to process screenshot',
+      })
+      :send()
   end
 end
 
@@ -77,26 +78,24 @@ module.start = function()
   -- TODO: capture screen with mouse, not sure how to calculate this for screencapture though
   hs.hotkey.bind({ 'cmd', 'shift' }, '3', function()
     local focusedWindow = hs.window.frontmostWindow()
-    local fileName      = genScreenshotPath()
+    local fileName = genScreenshotPath()
 
-    cache[fileName] = hs.task.new(
-      SCREENCAPTURE_PATH,
-      function() cache[fileName] = nil; processScreenshot(focusedWindow, fileName) end,
-      { "-D1", fileName }
-    )
+    cache[fileName] = hs.task.new(SCREENCAPTURE_PATH, function()
+      cache[fileName] = nil
+      processScreenshot(focusedWindow, fileName)
+    end, { '-D1', fileName })
     cache[fileName]:start()
   end)
 
   -- normal picker, with additional metadata for focused window
   hs.hotkey.bind({ 'cmd', 'shift' }, '4', function()
     local focusedWindow = hs.window.frontmostWindow()
-    local fileName      = genScreenshotPath()
+    local fileName = genScreenshotPath()
 
-    cache[fileName] = hs.task.new(
-      SCREENCAPTURE_PATH,
-      function() cache[fileName] = nil; processScreenshot(focusedWindow, fileName) end,
-      { "-i", fileName }
-    )
+    cache[fileName] = hs.task.new(SCREENCAPTURE_PATH, function()
+      cache[fileName] = nil
+      processScreenshot(focusedWindow, fileName)
+    end, { '-i', fileName })
     cache[fileName]:start()
   end)
 
@@ -113,9 +112,9 @@ module.start = function()
       return
     end
 
-    local fileName      = genScreenshotPath()
+    local fileName = genScreenshotPath()
     local mousePosition = hs.mouse.absolutePosition()
-    local windowCenter  = hs.geometry.getcenter(focusedWindow:frame())
+    local windowCenter = hs.geometry.getcenter(focusedWindow:frame())
 
     -- center mouse in the window frame
     hs.mouse.absolutePosition(windowCenter)
@@ -124,11 +123,10 @@ module.start = function()
     -- that's why the `addMetaToScreenshot` is inside the callback when screencapture terminates,
     -- it will run _after_ the code which simulates mouse click:
 
-    cache[fileName] = hs.task.new(
-      SCREENCAPTURE_PATH,
-      function() cache[fileName] = nil; processScreenshot(focusedWindow, fileName) end,
-      { "-w", fileName }
-    )
+    cache[fileName] = hs.task.new(SCREENCAPTURE_PATH, function()
+      cache[fileName] = nil
+      processScreenshot(focusedWindow, fileName)
+    end, { '-w', fileName })
     cache[fileName]:start()
 
     -- click
@@ -142,7 +140,6 @@ module.start = function()
   end)
 end
 
-module.stop = function()
-end
+module.stop = function() end
 
 return module

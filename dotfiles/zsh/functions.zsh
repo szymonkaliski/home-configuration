@@ -1,6 +1,6 @@
 command_not_found_handler() {
   # a PATH without comma re-enters this handler for "comma" itself
-  if ! whence -p comma >/dev/null; then
+  if ! whence -p comma > /dev/null; then
     print -u2 "zsh: command not found: $1"
     return 127
   fi
@@ -9,7 +9,7 @@ command_not_found_handler() {
 
 # history
 h() {
-  if [ "$#" -eq 0 ]; then
+  if [ $# -eq 0 ]; then
     history
   else
     history 0 | egrep -i --color=auto $@
@@ -60,7 +60,7 @@ name() {
 serve() {
   local port="3000"
 
-  if [ "$#" -ne 0 ]; then
+  if [ $# -ne 0 ]; then
     port="$@"
   fi
 
@@ -96,19 +96,19 @@ extract() {
     echo "extracts files based on extensions"
   elif [[ -f $1 ]]; then
     case ${(L)1} in
-      *.tar.bz2) tar -jxvf $1  ;;
-      *.tar.gz)  tar -zxvf $1  ;;
-      *.tar.xz)  tar -xvf $1   ;;
-      *.bz2)     bunzip2 $1    ;;
-      *.gz)      gunzip $1     ;;
-      *.jar)     unzip $1      ;;
-      *.rar)     unrar x $1    ;;
-      *.tar)     tar -xvf $1   ;;
-      *.tbz2)    tar -jxvf $1  ;;
-      *.tgz)     tar -zxvf $1  ;;
-      *.zip)     unzip $1      ;;
-      *.Z)       uncompress $1 ;;
-      *)         echo "unable to extract '$1'"
+      *.tar.bz2) tar -jxvf $1 ;;
+      *.tar.gz) tar -zxvf $1 ;;
+      *.tar.xz) tar -xvf $1 ;;
+      *.bz2) bunzip2 $1 ;;
+      *.gz) gunzip $1 ;;
+      *.jar) unzip $1 ;;
+      *.rar) unrar x $1 ;;
+      *.tar) tar -xvf $1 ;;
+      *.tbz2) tar -jxvf $1 ;;
+      *.tgz) tar -zxvf $1 ;;
+      *.zip) unzip $1 ;;
+      *.Z) uncompress $1 ;;
+      *) echo "unable to extract '$1'" ;;
     esac
   else
     echo "file '$1' does not exist!"
@@ -117,7 +117,7 @@ extract() {
 
 # sanitize permissions
 sanitize() {
-  if [ "$#" -eq 0 ]; then
+  if [ $# -eq 0 ]; then
     local DIR="."
   else
     local DIR="$@"
@@ -167,25 +167,25 @@ repeatedly() {
 }
 
 timer() {
-  if [ "$#" -eq 0 ]; then
+  if [ $# -eq 0 ]; then
     # count up if no time given
     stopwatch
   else
     # count down if time given
-    local start=$(($(date +%s) + $(seconds $1)));
+    local start=$(($(date +%s) + $(seconds $1)))
 
     while [ "$start" -ge $(date +%s) ]; do
-      echo -ne "$(date -u --date @$(($start - $(date +%s))) +%H:%M:%S)\r";
+      echo -ne "$(date -u --date @$(($start - $(date +%s))) +%H:%M:%S)\r"
       sleep 0.1
     done
   fi
 }
 
 stopwatch() {
-  local start=$(date +%s);
+  local start=$(date +%s)
 
   while true; do
-    echo -ne "$(date -u --date @$(($(date +%s) - $start)) +%H:%M:%S)\r";
+    echo -ne "$(date -u --date @$(($(date +%s) - $start)) +%H:%M:%S)\r"
     sleep 0.1
   done
 }
@@ -232,7 +232,7 @@ catcsv() {
 
 # archive stuff by year
 archive() {
-  if [ "$#" -eq 0 ]; then
+  if [ $# -eq 0 ]; then
     echo "pass file/folder as argument"
   else
     mkdir -p Archive
@@ -247,11 +247,15 @@ archive() {
 watchexec() {
   local -a opts
 
-  while [ "$#" -gt 0 ]; do
+  while [ $# -gt 0 ]; do
     case "$1" in
-      --) opts+=( "$1" ); shift; break ;;
-      -*) opts+=( "$1" ) ;;
-      *)  break
+      --)
+        opts+=("$1")
+        shift
+        break
+        ;;
+      -*) opts+=("$1") ;;
+      *) break ;;
     esac
     shift
   done
@@ -263,9 +267,9 @@ timg() {
   # timg auto-detects the wrong graphics protocol inside tmux, so force it: sixel
   # when the attached client advertises it (telegraphist's xterm.js does), else kitty.
   local proto=kitty
-  if [[ -n "$TMUX" ]] && \
-     tmux list-clients -t "$(tmux display -p '#{session_name}')" \
-       -F '#{client_termfeatures}' 2>/dev/null | grep -q sixel; then
+  if [[ -n "$TMUX" ]] &&
+    tmux list-clients -t "$(tmux display -p '#{session_name}')" \
+      -F '#{client_termfeatures}' 2> /dev/null | grep -q sixel; then
     proto=sixel
   fi
   command timg -p "$proto" "$@"
@@ -274,4 +278,3 @@ timg() {
 hl() {
   rg --passthru --colors match:bg:16 --colors match:fg:0 --colors match:style:nobold "$@"
 }
-

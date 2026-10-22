@@ -31,17 +31,19 @@ load_syntax_highlight() {
 
   source ~/.zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
 
-  FAST_HIGHLIGHT_STYLES[precommand]='fg=magenta'
-  FAST_HIGHLIGHT_STYLES[commandseparator]='fg=yellow'
-  FAST_HIGHLIGHT_STYLES[path]='fg=default'
-  FAST_HIGHLIGHT_STYLES[path-to-dir]='fg=default'
-  FAST_HIGHLIGHT_STYLES[single-hyphen-option]='fg=yellow'
-  FAST_HIGHLIGHT_STYLES[double-hyphen-option]='fg=yellow'
-  FAST_HIGHLIGHT_STYLES[back-quoted-argument]='fg=magenta'
-  FAST_HIGHLIGHT_STYLES[single-quoted-argument]='fg=red'
-  FAST_HIGHLIGHT_STYLES[double-quoted-argument]='fg=red'
-  FAST_HIGHLIGHT_STYLES[variable]='fg=red'
-  FAST_HIGHLIGHT_STYLES[global-alias]='fg=magenta'
+  FAST_HIGHLIGHT_STYLES+=(
+    precommand 'fg=magenta'
+    commandseparator 'fg=yellow'
+    path 'fg=default'
+    path-to-dir 'fg=default'
+    single-hyphen-option 'fg=yellow'
+    double-hyphen-option 'fg=yellow'
+    back-quoted-argument 'fg=magenta'
+    single-quoted-argument 'fg=red'
+    double-quoted-argument 'fg=red'
+    variable 'fg=red'
+    global-alias 'fg=magenta'
+  )
 
   FAST_HIGHLIGHT[no_check_paths]=1
   FAST_HIGHLIGHT[use_brackets]=1
@@ -60,7 +62,7 @@ load_gitstatus() {
   setup_git_prompt_status
 }
 
-load_z # I often want to jump somewhere immediately when opening a shell
+load_z      # I often want to jump somewhere immediately when opening a shell
 load_direnv # same for direnv
 
 # deferred loading
@@ -69,4 +71,3 @@ load_direnv # same for direnv
 zsh-defer -t 0.5 -p load_autopair
 zsh-defer -t 0.5 -p load_syntax_highlight
 zsh-defer -t 1.0 -p load_gitstatus
-

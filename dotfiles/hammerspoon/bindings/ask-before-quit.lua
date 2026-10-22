@@ -1,6 +1,6 @@
 local allWindowsCount = require('ext.application').allWindowsCount
 
-local cache  = { bindings = {} }
+local cache = { bindings = {} }
 local module = { cache = cache }
 
 -- ask before quitting app when there are multiple windows
@@ -33,9 +33,9 @@ module.start = function()
 
   cache.filter:subscribe({
     hs.window.filter.windowFocused,
-    hs.window.filter.windowUnfocused
+    hs.window.filter.windowUnfocused,
   }, function(_, appName, event)
-    askBeforeQuitting(appName, { enabled = (event == "windowFocused") })
+    askBeforeQuitting(appName, { enabled = (event == 'windowFocused') })
   end)
 end
 

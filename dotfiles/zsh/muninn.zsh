@@ -13,7 +13,7 @@ if [ -d $WIKI_PATH ]; then
   wiki() {
     pushd $WIKI_PATH > /dev/null
 
-    if [ "$#" -eq 0 ]; then
+    if [ $# -eq 0 ]; then
       v +"Wiki"
     else
       v +"Wiki $1"
@@ -27,7 +27,7 @@ if [ -d $WIKI_PATH ]; then
   inbox() {
     local file=$WIKI_PATH/inbox.md
 
-    if [ "$#" -eq 0 ]; then
+    if [ $# -eq 0 ]; then
       cat $file
     else
       echo "\n$@\n" >> $file

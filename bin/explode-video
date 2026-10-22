@@ -28,7 +28,7 @@ case "$ext" in
   gif)
     magick convert "$input_file" -coalesce -background white -alpha remove +adjoin "$output_dir/%04d.png"
     ;;
-  mp4|mov)
+  mp4 | mov)
     ffmpeg -i "$input_file" "$output_dir/%04d.png"
     ;;
   *)

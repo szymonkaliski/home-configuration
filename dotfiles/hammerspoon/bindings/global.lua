@@ -1,13 +1,13 @@
-local activeScreen       = require('ext.screen').activeScreen
+local activeScreen = require('ext.screen').activeScreen
 local smartLaunchOrFocus = require('ext.application').smartLaunchOrFocus
-local system             = require('ext.system')
-local window             = require('ext.window')
-local unescape           = require('ext.utils').unescape
-local runScript          = require('ext.task').runScript
+local system = require('ext.system')
+local window = require('ext.window')
+local unescape = require('ext.utils').unescape
+local runScript = require('ext.task').runScript
 
 local module = {}
 
-local dropCliLog = hs.logger.new('drop-cli', 'debug');
+local dropCliLog = hs.logger.new('drop-cli', 'debug')
 
 local DROP_CLI_PATH = os.getenv('HOME') .. '/.bin/drop-cli'
 
@@ -23,13 +23,13 @@ local forcePaste = function()
 end
 
 local startsWith = function(str, start)
-   return str:sub(1, #start) == start
+  return str:sub(1, #start) == start
 end
 
 -- fake drop item
 local forceDrop = function()
-  local data      = hs.pasteboard.readAllData()
-  local fileUrl   = data['public.file-url']
+  local data = hs.pasteboard.readAllData()
+  local fileUrl = data['public.file-url']
   local arguments = {}
 
   if fileUrl == nil then
@@ -42,7 +42,7 @@ local forceDrop = function()
 
     arguments = { filePath }
   else
-    local filePath  = unescape(fileUrl):gsub('file://', '')
+    local filePath = unescape(fileUrl):gsub('file://', '')
     local plainText = data['public.utf8-plain-text']
 
     if plainText ~= nil then
@@ -73,27 +73,28 @@ module.start = function()
 
   -- toggles
   hs.fnutils.each({
-    { key = '/', fn = system.toggleConsole      },
-    { key = 'q', fn = system.displaySleep       },
+    { key = '/', fn = system.toggleConsole },
+    { key = 'q', fn = system.displaySleep },
     { key = 'r', fn = system.restartHammerspoon },
-    { key = 't', fn = system.toggleTheme        },
-    { key = 'd', fn = forceDrop                 },
-    { key = 'v', fn = forcePaste                },
+    { key = 't', fn = system.toggleTheme },
+    { key = 'd', fn = forceDrop },
+    { key = 'v', fn = forcePaste },
   }, function(object)
     hs.hotkey.bind(ultra, object.key, object.fn)
   end)
 
   -- apps
   hs.fnutils.each({
-    { key = 'return', apps = config.apps.terms        },
-    { key = 'space',  apps = config.apps.browsers     },
-    { key = ',',      apps = { 'System Preferences' } },
+    { key = 'return', apps = config.apps.terms },
+    { key = 'space', apps = config.apps.browsers },
+    { key = ',', apps = { 'System Preferences' } },
   }, function(object)
-    hs.hotkey.bind(ultra, object.key, function() smartLaunchOrFocus(object.apps) end)
+    hs.hotkey.bind(ultra, object.key, function()
+      smartLaunchOrFocus(object.apps)
+    end)
   end)
 end
 
-module.stop = function()
-end
+module.stop = function() end
 
 return module

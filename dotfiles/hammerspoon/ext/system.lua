@@ -1,6 +1,6 @@
 local activateFrontmost = require('ext.application').activateFrontmost
-local capitalize        = require('ext.utils').capitalize
-local template          = require('ext.template')
+local capitalize = require('ext.utils').capitalize
+local template = require('ext.template')
 
 local module = {}
 
@@ -24,15 +24,18 @@ end
 module.setTheme = function(theme)
   -- I used to set Alfred theme here too, but that's not necessary
   -- Alfred remembers which theme was set when the system was in the light or dark mode
-  hs.osascript.javascript(template([[
+  hs.osascript.javascript(template(
+    [[
     var systemEvents = Application("System Events");
 
     ObjC.import("stdlib");
 
     systemEvents.appearancePreferences.darkMode = {DARK_MODE};
-  ]], {
-    DARK_MODE = theme == 'dark' and 'true' or 'false'
-  }))
+  ]],
+    {
+      DARK_MODE = theme == 'dark' and 'true' or 'false',
+    }
+  ))
 end
 
 module.toggleTheme = function()
@@ -42,11 +45,13 @@ module.toggleTheme = function()
 
   local imagePath = os.getenv('HOME') .. '/.hammerspoon/assets/theme.png'
 
-  hs.notify.new({
-    title        = 'Theme',
-    subTitle     = 'Switched to: ' .. (isDarkModeEnabled and 'Light' or 'Dark'),
-    contentImage = imagePath
-  }):send()
+  hs.notify
+    .new({
+      title = 'Theme',
+      subTitle = 'Switched to: ' .. (isDarkModeEnabled and 'Light' or 'Dark'),
+      contentImage = imagePath,
+    })
+    :send()
 end
 
 module.restartHammerspoon = function()
@@ -54,4 +59,3 @@ module.restartHammerspoon = function()
 end
 
 return module
-

@@ -2,7 +2,7 @@ local module = {}
 
 -- run function without window animation
 module.noAnim = function(callback)
-  local lastAnimDuration      = hs.window.animationDuration
+  local lastAnimDuration = hs.window.animationDuration
   hs.window.animationDuration = 0
 
   callback()
@@ -22,13 +22,13 @@ end
 
 -- capitalize string
 module.capitalize = function(str)
-  return str:gsub("^%l", string.upper)
+  return str:gsub('^%l', string.upper)
 end
 
 module.unescape = function(str)
-  local ret = string.gsub(str, "+", " ")
+  local ret = string.gsub(str, '+', ' ')
 
-  ret = string.gsub(ret, "%%(%x%x)", function(hex)
+  ret = string.gsub(ret, '%%(%x%x)', function(hex)
     return string.char(tonumber(hex, 16))
   end)
 
@@ -49,13 +49,16 @@ module.debounce = function(func, wait, immediate)
 
     local callNow = immediate and not timeout
 
-    if timeout then timeout:stop() end
+    if timeout then
+      timeout:stop()
+    end
 
     timeout = hs.timer.doAfter(wait, later)
 
-    if callNow then func() end
+    if callNow then
+      func()
+    end
   end
 end
 
 return module
-

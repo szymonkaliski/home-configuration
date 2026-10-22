@@ -36,4 +36,3 @@ fi
 
 # clean paths
 typeset -gU path
-

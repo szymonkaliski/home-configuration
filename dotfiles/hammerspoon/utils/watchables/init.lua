@@ -1,22 +1,22 @@
-local status            = hs.watchable.new('status')
-local log               = hs.logger.new('watchables', 'debug')
+local status = hs.watchable.new('status')
+local log = hs.logger.new('watchables', 'debug')
 local isDarkModeEnabled = require('ext.system').isDarkModeEnabled
-local debounce          = require('ext.utils').debounce
+local debounce = require('ext.utils').debounce
 
-local cache  = { status = status }
+local cache = { status = status }
 local module = { cache = cache }
 
 local STUDIO_DISPLAY_UUID = '464307F2-7664-40E9-8705-3B2EB3451EF6'
 
 local updateBattery = function()
   status.battery = {
-    isCharging       = hs.battery.isCharging(),
-    isCharged        = hs.battery.isCharged(),
-    percentage       = hs.battery.percentage(),
-    powerSource      = hs.battery.powerSource(),
-    amperage         = hs.battery.amperage(),
-    wattage          = hs.battery.watts(),
-    timeRemaining    = hs.battery.timeRemaining(),
+    isCharging = hs.battery.isCharging(),
+    isCharged = hs.battery.isCharged(),
+    percentage = hs.battery.percentage(),
+    powerSource = hs.battery.powerSource(),
+    amperage = hs.battery.amperage(),
+    wattage = hs.battery.watts(),
+    timeRemaining = hs.battery.timeRemaining(),
     timeToFullCharge = hs.battery.timeToFullCharge(),
   }
 end
@@ -24,11 +24,17 @@ end
 local updateScreen = function()
   local screens = hs.screen.allScreens()
 
-  status.connectedScreens         = #screens
-  status.connectedScreenIds       = hs.fnutils.map(screens, function(screen) return screen:id() end)
-  status.connectedScreenNames     = hs.fnutils.map(screens, function(screen) return screen:name() end)
-  status.isLaptopScreenConnected  = hs.screen.findByName('Color LCD') ~= nil
-  status.isStudioDisplayConnected = hs.fnutils.find(screens, function(s) return s:getUUID() == STUDIO_DISPLAY_UUID end) ~= nil
+  status.connectedScreens = #screens
+  status.connectedScreenIds = hs.fnutils.map(screens, function(screen)
+    return screen:id()
+  end)
+  status.connectedScreenNames = hs.fnutils.map(screens, function(screen)
+    return screen:name()
+  end)
+  status.isLaptopScreenConnected = hs.screen.findByName('Color LCD') ~= nil
+  status.isStudioDisplayConnected = hs.fnutils.find(screens, function(s)
+    return s:getUUID() == STUDIO_DISPLAY_UUID
+  end) ~= nil
 
   log.d('updated screens:', hs.inspect(status.connectedScreenNames))
 end
@@ -54,7 +60,7 @@ local updateUSB = function()
 end
 
 local updateTheme = function()
-  status.theme = isDarkModeEnabled() and "dark" or "light"
+  status.theme = isDarkModeEnabled() and 'dark' or 'light'
 
   log.d('updated theme:', status.theme)
 end
@@ -66,9 +72,9 @@ module.start = function()
     -- wifi    = hs.wifi.watcher.new(updateWiFi),
 
     battery = hs.battery.watcher.new(updateBattery),
-    screen  = hs.screen.watcher.new(debounce(updateScreen, 1)),
-    theme   = hs.distributednotifications.new(updateTheme, "AppleInterfaceThemeChangedNotification"),
-    usb     = hs.usb.watcher.new(debounce(updateUSB, 3)),
+    screen = hs.screen.watcher.new(debounce(updateScreen, 1)),
+    theme = hs.distributednotifications.new(updateTheme, 'AppleInterfaceThemeChangedNotification'),
+    usb = hs.usb.watcher.new(debounce(updateUSB, 3)),
   }
 
   hs.fnutils.each(cache.watchers, function(watcher)

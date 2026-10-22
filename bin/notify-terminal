@@ -11,4 +11,3 @@ elif hash terminal-notifier 2> /dev/null; then
 else
   /usr/bin/osascript -e "display notification \"$*\" with title \"Terminal\""
 fi
-

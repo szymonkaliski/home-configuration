@@ -23,7 +23,7 @@ module.keys = function(T)
 end
 
 module.uniq = function(T)
-  local hash    = {}
+  local hash = {}
   local results = {}
 
   hs.fnutils.each(T, function(value)

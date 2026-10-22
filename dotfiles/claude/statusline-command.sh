@@ -7,7 +7,7 @@ cwd=$(echo "$input" | jq -r '.workspace.current_dir')
 hostname=$(hostname -s)
 
 # HOST_COLOR is exported by dotfiles/zsh/colors.zsh
-promptcolor=$(( 30 + ${HOST_COLOR:-5} ))
+promptcolor=$((30 + ${HOST_COLOR:-5}))
 
 vm_prefix=""
 if [[ "$hostname" == vm-* ]]; then
@@ -44,8 +44,10 @@ usage_segment() {
 
   local p color secs d h m rem
   p=$(printf '%.0f' "$used")
-  if [ "$p" -ge 80 ]; then color="31"
-  elif [ "$p" -ge 50 ]; then color="33"
+  if [ "$p" -ge 80 ]; then
+    color="31"
+  elif [ "$p" -ge 50 ]; then
+    color="33"
   else color="32"; fi
 
   if [ -z "$reset" ]; then
@@ -53,14 +55,21 @@ usage_segment() {
     return
   fi
 
-  secs=$(( reset - now ))
+  secs=$((reset - now))
   [ "$secs" -lt 0 ] && secs=0
-  d=$(( secs / 86400 )); h=$(( secs % 86400 / 3600 )); m=$(( secs % 3600 / 60 ))
-  if [ "$d" -gt 0 ] && [ "$h" -gt 0 ]; then rem="${d}d${h}h"
-  elif [ "$d" -gt 0 ]; then rem="${d}d"
-  elif [ "$h" -gt 0 ] && [ "$m" -gt 0 ]; then rem="${h}h${m}m"
-  elif [ "$h" -gt 0 ]; then rem="${h}h"
-  elif [ "$m" -gt 0 ]; then rem="${m}m"
+  d=$((secs / 86400))
+  h=$((secs % 86400 / 3600))
+  m=$((secs % 3600 / 60))
+  if [ "$d" -gt 0 ] && [ "$h" -gt 0 ]; then
+    rem="${d}d${h}h"
+  elif [ "$d" -gt 0 ]; then
+    rem="${d}d"
+  elif [ "$h" -gt 0 ] && [ "$m" -gt 0 ]; then
+    rem="${h}h${m}m"
+  elif [ "$h" -gt 0 ]; then
+    rem="${h}h"
+  elif [ "$m" -gt 0 ]; then
+    rem="${m}m"
   else rem="<1m"; fi
 
   printf '\033[%sm%d%%\033[0m %s' "$color" "$p" "$rem"
@@ -81,13 +90,13 @@ done
 [ -n "$usage" ] && usage=" $usage"
 
 if git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
-  branch=$(git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null || git -C "$cwd" rev-parse --short HEAD 2>/dev/null)
+  branch=$(git -C "$cwd" symbolic-ref --short HEAD 2> /dev/null || git -C "$cwd" rev-parse --short HEAD 2> /dev/null)
 
   if [ ${#branch} -gt 20 ]; then
     branch="...${branch: -17}"
   fi
 
-  if git -C "$cwd" diff-index --quiet HEAD -- 2>/dev/null && [ -z "$(git -C "$cwd" ls-files --others --exclude-standard 2>/dev/null)" ]; then
+  if git -C "$cwd" diff-index --quiet HEAD -- 2> /dev/null && [ -z "$(git -C "$cwd" ls-files --others --exclude-standard 2> /dev/null)" ]; then
     branch_color="32"
   else
     branch_color="31"
@@ -104,7 +113,7 @@ if [ -n "$usage" ] && [ -n "$COLUMNS" ]; then
   left_len=$(printf '%s' "$left" | sed "$strip" | wc -m | tr -d ' ')
   usage_len=$(printf '%s' "$usage" | sed "$strip" | wc -m | tr -d ' ')
   margin=4
-  pad=$(( COLUMNS - left_len - usage_len - margin ))
+  pad=$((COLUMNS - left_len - usage_len - margin))
   if [ "$pad" -ge 1 ]; then
     printf '%s%*s%s' "$left" "$pad" "" "$usage"
   else

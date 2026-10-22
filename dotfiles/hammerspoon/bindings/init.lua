@@ -1,4 +1,4 @@
-local cache  = {}
+local cache = {}
 local module = { cache = cache }
 
 -- modifiers in use:

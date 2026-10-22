@@ -1,16 +1,18 @@
-local activeScreen      = require('ext.screen').activeScreen
-local cycleWindowFocus  = require('ext.window').cycleWindowFocus
+local activeScreen = require('ext.screen').activeScreen
+local cycleWindowFocus = require('ext.window').cycleWindowFocus
 local focusAndHighlight = require('ext.window').focusAndHighlight
 
 local ANIMATION_DURATION = 0.2
 local MARGIN = 8
 
-local cache  = {}
+local cache = {}
 local module = { cache = cache }
 
 local selectMenuItem = function(path)
   local app = hs.application.frontmostApplication()
-  if not app then return false end
+  if not app then
+    return false
+  end
   return app:selectMenuItem(path)
 end
 
@@ -23,16 +25,12 @@ end
 
 local snapHalf = function(win, side)
   local screenFrame = win:screen():frame()
-  local x = side == 'left'
-    and screenFrame.x + MARGIN
-    or  screenFrame.x + screenFrame.w / 2 + MARGIN / 2
+  local x = side == 'left' and screenFrame.x + MARGIN or screenFrame.x + screenFrame.w / 2 + MARGIN / 2
 
-  setFrameWithUndo(win, hs.geometry.rect(
-    x,
-    screenFrame.y + MARGIN,
-    screenFrame.w / 2 - MARGIN * 1.5,
-    screenFrame.h - MARGIN * 2
-  ))
+  setFrameWithUndo(
+    win,
+    hs.geometry.rect(x, screenFrame.y + MARGIN, screenFrame.w / 2 - MARGIN * 1.5, screenFrame.h - MARGIN * 2)
+  )
 end
 
 local windowIsOnRight = function(win)
@@ -99,10 +97,7 @@ local pushWindowPrevScreen = function(win)
 end
 
 module.start = function()
-  cache.windowFilter = hs.window.filter.new()
-    :setCurrentSpace(true)
-    :setDefaultFilter()
-    :keepActive()
+  cache.windowFilter = hs.window.filter.new():setCurrentSpace(true):setDefaultFilter():keepActive()
 
   local bind = function(key, fn)
     hs.hotkey.bind({ 'ctrl', 'shift' }, key, fn, nil, fn)
@@ -112,16 +107,21 @@ module.start = function()
     local success = selectMenuItem({ 'Window', 'Fill' })
     if not success then
       local win = hs.window.frontmostWindow()
-      if not win then return end
+      if not win then
+        return
+      end
 
       local screenFrame = win:screen():frame()
 
-      setFrameWithUndo(win, hs.geometry.rect(
-        screenFrame.x + MARGIN,
-        screenFrame.y + MARGIN,
-        screenFrame.w - MARGIN * 2,
-        screenFrame.h - MARGIN * 2
-      ))
+      setFrameWithUndo(
+        win,
+        hs.geometry.rect(
+          screenFrame.x + MARGIN,
+          screenFrame.y + MARGIN,
+          screenFrame.w - MARGIN * 2,
+          screenFrame.h - MARGIN * 2
+        )
+      )
     end
   end)
 
@@ -129,17 +129,22 @@ module.start = function()
     local success = selectMenuItem({ 'Window', 'Center' })
     if not success then
       local win = hs.window.frontmostWindow()
-      if not win then return end
+      if not win then
+        return
+      end
 
       local screenFrame = win:screen():frame()
       local winFrame = win:frame()
 
-      setFrameWithUndo(win, hs.geometry.rect(
-        screenFrame.x + (screenFrame.w - winFrame.w) / 2,
-        screenFrame.y + (screenFrame.h - winFrame.h) / 2,
-        winFrame.w,
-        winFrame.h
-      ))
+      setFrameWithUndo(
+        win,
+        hs.geometry.rect(
+          screenFrame.x + (screenFrame.w - winFrame.w) / 2,
+          screenFrame.y + (screenFrame.h - winFrame.h) / 2,
+          winFrame.w,
+          winFrame.h
+        )
+      )
     end
   end)
 
@@ -147,7 +152,9 @@ module.start = function()
     local success = selectMenuItem({ 'Window', 'Move & Resize', 'Return to Previous Size' })
     if not success then
       local win = hs.window.frontmostWindow()
-      if not win then return end
+      if not win then
+        return
+      end
 
       local prevFrame = previousFrames[win:id()]
 
@@ -165,16 +172,18 @@ module.start = function()
       return win:screen():id() == screen:id()
     end)
 
-    if (#windowsOnScreen == 0) then
+    if #windowsOnScreen == 0 then
       return
     end
 
     local win = hs.window.frontmostWindow()
-    if not win then return end
+    if not win then
+      return
+    end
 
     local isOnRight = windowIsOnRight(win)
 
-    if (#windowsOnScreen == 1) then
+    if #windowsOnScreen == 1 then
       local menuItem = isOnRight and 'Left' or 'Right'
       local success = selectMenuItem({ 'Window', 'Move & Resize', menuItem })
 
@@ -191,14 +200,18 @@ module.start = function()
     end
   end)
 
-  bind('[', function() pushWindowPrevScreen() end)
-  bind(']', function() pushWindowNextScreen() end)
+  bind('[', function()
+    pushWindowPrevScreen()
+  end)
+  bind(']', function()
+    pushWindowNextScreen()
+  end)
 
   hs.fnutils.each({
-    { key = 'h', cmd = 'west'  },
+    { key = 'h', cmd = 'west' },
     { key = 'j', cmd = 'south' },
     { key = 'k', cmd = 'north' },
-    { key = 'l', cmd = 'east'  }
+    { key = 'l', cmd = 'east' },
   }, function(object)
     bind(object.key, function()
       focusAndHighlight(object.cmd)
@@ -230,7 +243,6 @@ module.start = function()
   end)
 end
 
-module.stop = function()
-end
+module.stop = function() end
 
 return module

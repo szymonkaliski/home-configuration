@@ -296,22 +296,22 @@ check "property-search-scrape" bash -c '
 '
 
 errors=()
-for (( _j=0; _j < n; _j++ )); do
+for ((_j = 0; _j < n; _j++)); do
   wait -n -p _pid
   i=${pids[$_pid]}
   status=$(cat "$tmpdir/$i.status")
   if [[ "$status" == "ok" ]]; then
     printf "  %b%4s%b  %s\n" "$green" "ok" "$reset" "${names[$i]}"
   else
-    output=$(cat "$tmpdir/$i.output" 2>/dev/null)
+    output=$(cat "$tmpdir/$i.output" 2> /dev/null)
     printf "  %b%4s%b  %s %b%s%b\n" "$red" "fail" "$reset" "${names[$i]}" "$dim" "$output" "$reset"
     errors+=("${names[$i]}: $output")
   fi
 done
 
-if (( ${#errors[@]} > 0 )); then
+if ((${#errors[@]} > 0)); then
   msg=$(printf '%s\n' "${errors[@]}")
-  if [[ ! -t 1 ]] && command -v notify-pushover &>/dev/null; then
+  if [[ ! -t 1 ]] && command -v notify-pushover &> /dev/null; then
     notify-pushover "Healthcheck failed:
 $msg"
   fi

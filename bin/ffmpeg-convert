@@ -6,7 +6,7 @@ set -f
 
 # set ffmpeg options
 case $1 in
-  ipad|iPad)
+  ipad | iPad)
     OPTIONS="-c:a aac -ac 2 -b:a 160k -s 1024x768 -c:v libx264 -preset slow -crf 23 -movflags +faststart"
     EXT=".iPad.mp4"
     ;;
@@ -18,7 +18,7 @@ case $1 in
     OPTIONS="-c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart -max_muxing_queue_size 1024"
     EXT=".H264.mp4"
     ;;
-  h265|hevc)
+  h265 | hevc)
     OPTIONS="-c:v libx265 -preset medium -crf 26 -tag:v hvc1 -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart -max_muxing_queue_size 1024"
     EXT=".H265.mp4"
     ;;
@@ -53,8 +53,7 @@ shift
 
 # convert files
 # shellcheck disable=SC2086
-for f in "$@"
-do
+for f in "$@"; do
   if [[ -n $EXT ]]; then
     ffmpeg -threads 0 -i "${f}" $OPTIONS "${f%.*}$EXT"
   else

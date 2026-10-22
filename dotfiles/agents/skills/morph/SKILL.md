@@ -64,13 +64,13 @@ Monitor({
 
 The filter drops the tags that are not the reader: `ready`, `port`, `open`, `close`, `new`, and `gone` are server and route lifecycle, and `update` fires on **your own** saves, so including it would notify you about yourself on every edit. Everything else is the reader acting or the page breaking. One event per line as `HH:MM:SS <tag> <message>`:
 
-| tag                       | what happened                                                       | what you do                                                       |
-| ------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `mutate`                  | the reader changed a `useMorph` value                               | read the `.jsx` for the full value, then edit the file to respond |
-| `skip`                    | a change was refused, usually a non-literal                         | fix the initializer; the reader watched it roll back              |
-| `warn`                    | a file read or write failed, so a reader change may not have landed | re-read the `.jsx` to see what is actually there                  |
-| `error`                   | an edit broke the preview                                           | fix until `ok` follows                                            |
-| `ok`                      | the preview recovered after an `error`                              | nothing, the fix landed                                           |
+| tag      | what happened                                                       | what you do                                                       |
+| -------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `mutate` | the reader changed a `useMorph` value                               | read the `.jsx` for the full value, then edit the file to respond |
+| `skip`   | a change was refused, usually a non-literal                         | fix the initializer; the reader watched it roll back              |
+| `warn`   | a file read or write failed, so a reader change may not have landed | re-read the `.jsx` to see what is actually there                  |
+| `error`  | an edit broke the preview                                           | fix until `ok` follows                                            |
+| `ok`     | the preview recovered after an `error`                              | nothing, the fix landed                                           |
 
 A notification carries only the tag line, never the value, so a `mutate` always means opening the file. Respond in the same turn rather than batching; `error` is urgent.
 

@@ -43,7 +43,7 @@ cdf() {
 
 # shorter open
 o() {
-  if [ "$#" -ne 0 ]; then
+  if [ $# -ne 0 ]; then
     ARG="${1:+"$@"}"
   else
     ARG="."
@@ -51,4 +51,3 @@ o() {
 
   open $ARG
 }
-

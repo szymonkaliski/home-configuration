@@ -1,33 +1,39 @@
-local forceFocus      = require('ext.window').forceFocus
+local forceFocus = require('ext.window').forceFocus
 local highlightWindow = require('ext.drawing').highlightWindow
-local template        = require('ext.template')
-local log             = hs.logger.new('application', 'debug')
+local template = require('ext.template')
+local log = hs.logger.new('application', 'debug')
 
-local cache  = { launchTimer = nil }
+local cache = { launchTimer = nil }
 local module = { cache = cache }
 
 -- activate frontmost window if exists
 module.activateFrontmost = function()
   local frontmostWindow = hs.window.frontmostWindow()
-  if frontmostWindow then frontmostWindow:raise():focus() end
+  if frontmostWindow then
+    frontmostWindow:raise():focus()
+  end
 end
 
 -- force application launch or focus
 module.forceLaunchOrFocus = function(appName)
-  local appInstance  = hs.application.get(appName)
-  local isRunning    = appInstance ~= nil and appInstance:isRunning()
+  local appInstance = hs.application.get(appName)
+  local isRunning = appInstance ~= nil and appInstance:isRunning()
   local focusTimeout = isRunning and 0.05 or 1.5
 
   -- first focus/launch with hammerspoon
   hs.application.launchOrFocus(appName)
 
   -- clear timer if exists
-  if cache.launchTimer then cache.launchTimer:stop() end
+  if cache.launchTimer then
+    cache.launchTimer:stop()
+  end
 
   -- wait for window to appear and try hard to show the window
   cache.launchTimer = hs.timer.doAfter(focusTimeout, function()
-    local frontmostApp     = hs.application.frontmostApplication()
-    local frontmostWindows = hs.fnutils.filter(frontmostApp:allWindows(), function(win) return win:isStandard() end)
+    local frontmostApp = hs.application.frontmostApplication()
+    local frontmostWindows = hs.fnutils.filter(frontmostApp:allWindows(), function(win)
+      return win:isStandard()
+    end)
 
     -- break if this app is not frontmost (when/why?)
     if frontmostApp:title() ~= appName then
@@ -51,7 +57,7 @@ end
 -- smart app launch or focus or cycle windows
 module.smartLaunchOrFocus = function(launchApps)
   local frontmostWindow = hs.window.frontmostWindow()
-  local runningWindows  = {}
+  local runningWindows = {}
 
   launchApps = type(launchApps) == 'table' and launchApps or { launchApps }
 
@@ -67,10 +73,12 @@ module.smartLaunchOrFocus = function(launchApps)
     end)
 
     -- sort by id, so windows don't jump randomly every time
-    table.sort(standardWindows, function(a, b) return a:id() > b:id() end)
+    table.sort(standardWindows, function(a, b)
+      return a:id() > b:id()
+    end)
 
     -- concat with all running windows
-    hs.fnutils.concat(runningWindows, standardWindows);
+    hs.fnutils.concat(runningWindows, standardWindows)
   end)
 
   if #runningApps == 0 then
@@ -92,7 +100,9 @@ module.smartLaunchOrFocus = function(launchApps)
     else
       -- otherwise cycle through all the windows
       local newIndex = currentIndex + 1
-      if newIndex > #runningWindows then newIndex = 1 end
+      if newIndex > #runningWindows then
+        newIndex = 1
+      end
 
       forceFocus(runningWindows[newIndex])
     end
@@ -103,11 +113,14 @@ end
 
 -- count all windows on all spaces
 module.allWindowsCount = function(appName)
-  local _, result = hs.applescript.applescript(template([[
+  local _, result = hs.applescript.applescript(template(
+    [[
     tell application "{APP_NAME}"
       count every window where visible is true
     end tell
-  ]], { APP_NAME = appName }))
+  ]],
+    { APP_NAME = appName }
+  ))
 
   return tonumber(result) or 0
 end

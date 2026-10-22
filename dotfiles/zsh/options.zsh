@@ -12,15 +12,15 @@ setopt inc_append_history     # write to the history file immediately, not when 
 setopt share_history          # share history between all sessions
 
 # other
-setopt auto_param_slash       # add trailing slash to directory names
-setopt auto_remove_slash      # remove trailing slash when appropriate
-setopt combining_chars        # fixes for completion and UTF-8
-setopt complete_in_word       # completion "inside" word
-setopt correct                # correct only commands
-setopt list_types             # show ls -F style marks in file completion
-setopt no_beep                # no beep on zle errors
-setopt no_cdable_vars         # who wants to cd apache?
-setopt no_check_jobs          # don't report on bg processes when exiting
-setopt no_hup                 # and don't kill them
-setopt no_list_beep           # no beep sound when complete list displayed
-setopt prompt_subst           # dynamic prompt changes
+setopt auto_param_slash  # add trailing slash to directory names
+setopt auto_remove_slash # remove trailing slash when appropriate
+setopt combining_chars   # fixes for completion and UTF-8
+setopt complete_in_word  # completion "inside" word
+setopt correct           # correct only commands
+setopt list_types        # show ls -F style marks in file completion
+setopt no_beep           # no beep on zle errors
+setopt no_cdable_vars    # who wants to cd apache?
+setopt no_check_jobs     # don't report on bg processes when exiting
+setopt no_hup            # and don't kill them
+setopt no_list_beep      # no beep sound when complete list displayed
+setopt prompt_subst      # dynamic prompt changes

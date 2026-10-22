@@ -170,7 +170,7 @@ function shCanReadRepoFromLaunchd() {
   PROBE_DIR="$(mktemp -d)"
   PROBE_PLIST="$PROBE_DIR/$PROBE_LABEL.plist"
 
-  cat > "$PROBE_PLIST" <<EOF
+  cat > "$PROBE_PLIST" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -229,7 +229,7 @@ if [[ $HOST == "orchid" ]]; then
   # connections to this Mac over Tailscale; disabling it fixed that
   read -rp "$(tput setaf 3)Install the ECN-disable daemon for SSH from iOS?$(tput sgr0) (y/N) " RESP
   if [ "$RESP" == "y" ] || [ "$RESP" == "Y" ]; then
-    sudo tee /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist > /dev/null <<'EOF'
+    sudo tee /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist > /dev/null << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -249,14 +249,14 @@ if [[ $HOST == "orchid" ]]; then
 </plist>
 EOF
     sudo chown root:wheel /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist
-    sudo launchctl bootout system /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist 2>/dev/null
+    sudo launchctl bootout system /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist 2> /dev/null
     sudo launchctl bootstrap system /Library/LaunchDaemons/com.szymonkaliski.disable-ecn.plist
   fi
 
   # determinate nix encrypts the /nix volume if the boot disk has FileVault on,
   # which causes a password prompt at every boot, /nix store is public anyway
   # so we can decrypt it
-  if [[ "$(diskutil info 'Nix Store' 2>/dev/null | awk -F': +' '/FileVault:/{print $2}')" == "Yes" ]]; then
+  if [[ "$(diskutil info 'Nix Store' 2> /dev/null | awk -F': +' '/FileVault:/{print $2}')" == "Yes" ]]; then
     read -rp "$(tput setaf 3)Decrypt the Nix Store volume?$(tput sgr0) (y/N) " RESP
     if [ "$RESP" == "y" ] || [ "$RESP" == "Y" ]; then
       security find-generic-password -s "Nix Store" -w /Library/Keychains/System.keychain | sudo diskutil apfs decryptVolume "Nix Store" -stdinpassphrase

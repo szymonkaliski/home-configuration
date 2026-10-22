@@ -14,7 +14,7 @@ fi
 FORCE=0
 URL=""
 
-while (( "$#" )); do
+while (("$#")); do
   case "$1" in
     --force)
       FORCE=1
@@ -57,7 +57,8 @@ fi
 
 CONTENTS=$($XML esc <<< "$RAW")
 
-HEX=$( (cat << EOF
+HEX=$( (
+  cat << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -73,8 +74,8 @@ EOF
 osascript \
   -e 'on run argv' \
   -e 'tell application "Finder" to set comment of (POSIX file (item 1 of argv) as alias) to (item 2 of argv)' \
-  -e 'end run' -- "$1" "$RAW" \
-  || echo "warning: osascript failed to set Finder comment in .DS_Store"
+  -e 'end run' -- "$1" "$RAW" ||
+  echo "warning: osascript failed to set Finder comment in .DS_Store"
 
 xattr -w -x com.apple.metadata:kMDItemFinderComment "$HEX" "$1"
 

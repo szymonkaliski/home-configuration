@@ -1,14 +1,11 @@
-local activeScreen    = require('ext.screen').activeScreen
-local capitalize      = require('ext.utils').capitalize
-local focusScreen     = require('ext.screen').focusScreen
+local activeScreen = require('ext.screen').activeScreen
+local capitalize = require('ext.utils').capitalize
+local focusScreen = require('ext.screen').focusScreen
 local highlightWindow = require('ext.drawing').highlightWindow
 
 local cache = {
   windowPositions = hs.settings.get('windowPositions') or {},
-  windowFilter = hs.window.filter.new()
-    :setCurrentSpace(true)
-    :setDefaultFilter()
-    :keepActive()
+  windowFilter = hs.window.filter.new():setCurrentSpace(true):setDefaultFilter():keepActive(),
 }
 
 local module = { cache = cache }
@@ -28,14 +25,18 @@ module.windowHints = function()
 end
 
 module.windowMetadata = function(win)
-  if not win then return nil end
+  if not win then
+    return nil
+  end
 
   local app = win:application()
-  if not app then return nil end
+  if not app then
+    return nil
+  end
 
-  local name  = app:name()
+  local name = app:name()
   local title = win:title()
-  local meta  = ''
+  local meta = ''
 
   if name == 'Google Chrome' then
     if string.match(title, 'Find in page') then
@@ -104,12 +105,16 @@ module.cycleWindowFocus = function(direction)
     local activeWindowIndex = hs.fnutils.indexOf(windows, win)
 
     if activeWindowIndex then
-      if direction == "prev" then
+      if direction == 'prev' then
         activeWindowIndex = activeWindowIndex - 1
-        if activeWindowIndex < 1 then activeWindowIndex = #windows end
+        if activeWindowIndex < 1 then
+          activeWindowIndex = #windows
+        end
       else
         activeWindowIndex = activeWindowIndex + 1
-        if activeWindowIndex > #windows then activeWindowIndex = 1 end
+        if activeWindowIndex > #windows then
+          activeWindowIndex = 1
+        end
       end
 
       module.forceFocus(windows[activeWindowIndex])
@@ -126,24 +131,28 @@ end
 -- works for windows and screens!
 module.focusAndHighlight = function(cmd)
   local ONLY_FRONTMOST = true
-  local STRICT_ANGLE   = true
+  local STRICT_ANGLE = true
 
-  local focusedWindow  = hs.window.focusedWindow()
-  local focusedScreen  = activeScreen()
+  local focusedWindow = hs.window.focusedWindow()
+  local focusedScreen = activeScreen()
 
-  local winCmd         = 'windowsTo' .. capitalize(cmd)
-  local screenCmd      = 'to' .. capitalize(cmd)
+  local winCmd = 'windowsTo' .. capitalize(cmd)
+  local screenCmd = 'to' .. capitalize(cmd)
 
-  local windowsToFocus    = cache.windowFilter[winCmd](cache.windowFilter, focusedWindow, ONLY_FRONTMOST, STRICT_ANGLE)
+  local windowsToFocus = cache.windowFilter[winCmd](cache.windowFilter, focusedWindow, ONLY_FRONTMOST, STRICT_ANGLE)
   local screenInDirection = focusedScreen[screenCmd](focusedScreen)
-  local filterWindows     = cache.windowFilter:getWindows()
+  local filterWindows = cache.windowFilter:getWindows()
 
   local windowOnSameOrNextScreen = function(testWin, currentScreen, nextScreen)
     return testWin:screen():id() == currentScreen:id() or (nextScreen and testWin:screen():id() == nextScreen:id())
   end
 
   -- focus window if we have any, and it's on nearest or current screen (don't jump over empty screens)
-  if windowsToFocus and #windowsToFocus > 0 and windowOnSameOrNextScreen(windowsToFocus[1], focusedScreen, screenInDirection) then
+  if
+    windowsToFocus
+    and #windowsToFocus > 0
+    and windowOnSameOrNextScreen(windowsToFocus[1], focusedScreen, screenInDirection)
+  then
     module.forceFocus(windowsToFocus[1])
   -- focus screen in given direction if exists
   elseif screenInDirection then

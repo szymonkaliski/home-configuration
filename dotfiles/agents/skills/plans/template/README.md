@@ -1,5 +1,5 @@
 ---
-version: 5
+version: 6
 ---
 
 # Plans
@@ -16,6 +16,7 @@ The `plans` skill manages this file. An update of the skill replaces the text.
 
 ## Format
 
+<!-- prettier-ignore -->
 ```markdown
 ---
 status: open

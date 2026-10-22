@@ -9,14 +9,14 @@ autoload -Uz compinit # load completions
 # do a full rebuild + bytecode-compile at most once a day so newly installed
 # completions still get picked up
 _zdump="${ZDOTDIR:-$HOME}/.zcompdump"
-_zfresh=( ${_zdump}(N.mh-24) ) # exists and modified within the last 24h
-if (( $#_zfresh )); then
-  compinit -C -d "$_zdump"     # trust the cache, skip the slow security audit
+_zfresh=(${_zdump}(N.mh-24)) # exists and modified within the last 24h
+if (($#_zfresh)); then
+  compinit -C -d "$_zdump" # trust the cache, skip the slow security audit
 else
-  compinit -d "$_zdump"        # full rebuild at most once a day (picks up new completions)
+  compinit -d "$_zdump" # full rebuild at most once a day (picks up new completions)
 fi
 # bytecode-compile the dump whenever stale
-if [[ -s "$_zdump" && ( ! -s "${_zdump}.zwc" || "$_zdump" -nt "${_zdump}.zwc" ) ]]; then
+if [[ -s "$_zdump" && (! -s "${_zdump}.zwc" || "$_zdump" -nt "${_zdump}.zwc") ]]; then
   zcompile "$_zdump"
 fi
 unset _zdump _zfresh
@@ -89,7 +89,7 @@ function _comp_base16() {
 }
 
 compctl -K _comp_base16 base16
-compctl -K _comp_tm     tm
+compctl -K _comp_tm tm
 
 compctl -g '*.tar.bz2 *.tar.gz *.bz2 *.gz *.jar *.rar *.tar *.tbz2 *.tgz *.zip *.Z' + -g '*(-/)' extract
 
@@ -99,47 +99,47 @@ zstyle ':completion:*:*:git:*' user-commands \
   minix-ls:'list repos on minix' \
   minix-push:'push a repo to minix'
 
-function _git-minix-clone() { compadd $(git minix-ls 2>/dev/null) }
-function _git-minix-rm() { compadd $(git minix-ls 2>/dev/null) }
+function _git-minix-clone() { compadd $(git minix-ls 2> /dev/null); }
+function _git-minix-rm() { compadd $(git minix-ls 2> /dev/null); }
 
 compctl -f -x "c[-1,retry]" -c -- retry
 compctl -f -x "c[-1,repeatedly]" -c -- repeatedly
 compctl -f -x "c[-1,watchexec]" -c -- watchexec
 
-if (( $+commands[microvm] )); then
+if (($+commands[microvm])); then
   function _microvm() {
     local -a subcmds=(start stop restart ssh diff list ls stop-all kill kill-all clean clean-all)
     local max_vms=$(sed -n 's/^MAX_VMS=//p' "$(command -v microvm)")
-    if (( CURRENT == 2 )); then
+    if ((CURRENT == 2)); then
       _describe 'command' subcmds
       return
     fi
     case "${words[2]}" in
       start)
-        if [[ "${words[CURRENT-1]}" == "--dir" ]]; then
+        if [[ "${words[CURRENT - 1]}" == "--dir" ]]; then
           _directories
         elif [[ "${words[CURRENT]}" == -* ]]; then
           _arguments '*:option:(--dir)'
         else
           local -a vms
           for i in $(seq 1 $max_vms); do
-            local state=$(systemctl is-active "microvm@vm-${i}" 2>/dev/null)
+            local state=$(systemctl is-active "microvm@vm-${i}" 2> /dev/null)
             [[ "$state" != "active" ]] && vms+=("$i")
           done
           compadd -a vms
         fi
         ;;
-      stop|ssh)
+      stop | ssh)
         local -a vms
         for i in $(seq 1 $max_vms); do
-          [[ "$(systemctl is-active "microvm@vm-${i}" 2>/dev/null)" == "active" ]] && vms+=("$i")
+          [[ "$(systemctl is-active "microvm@vm-${i}" 2> /dev/null)" == "active" ]] && vms+=("$i")
         done
         compadd -a vms
         ;;
       clean)
         local -a vms
         for i in $(seq 1 $max_vms); do
-          [[ "$(systemctl is-active "microvm@vm-${i}" 2>/dev/null)" != "active" ]] && vms+=("$i")
+          [[ "$(systemctl is-active "microvm@vm-${i}" 2> /dev/null)" != "active" ]] && vms+=("$i")
         done
         compadd -a vms
         ;;

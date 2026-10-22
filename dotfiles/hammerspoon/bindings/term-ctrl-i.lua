@@ -1,7 +1,7 @@
 -- ctrl-i is tab in terminal, I want both in vim
 -- remapping ctrl-i to F6, and mapping it in vim
 
-local cache  = { bindings = {} }
+local cache = { bindings = {} }
 local module = { cache = cache }
 
 local rebindCtrlI = function(appName, options)
@@ -26,9 +26,9 @@ module.start = function()
 
   cache.filter:subscribe({
     hs.window.filter.windowFocused,
-    hs.window.filter.windowUnfocused
+    hs.window.filter.windowUnfocused,
   }, function(_, appName, event)
-    rebindCtrlI(appName, { enabled = (event == "windowFocused") })
+    rebindCtrlI(appName, { enabled = (event == 'windowFocused') })
   end)
 end
 

@@ -1,17 +1,17 @@
-local windowMetadata = require("ext.window").windowMetadata
+local windowMetadata = require('ext.window').windowMetadata
 
-local log    = hs.logger.new("logger", "debug")
-local cache  = {}
+local log = hs.logger.new('logger', 'debug')
+local cache = {}
 local module = { cache = cache }
 
 module.sleepWatcher = function(_, _, _, _, event)
   if event == hs.caffeinate.watcher.systemWillSleep or event == hs.caffeinate.watcher.systemWillPowerOff then
-    log.d("stopping logger")
+    log.d('stopping logger')
     cache.timer:stop()
   end
 
   if event == hs.caffeinate.watcher.systemDidWake then
-    log.d("starting logger")
+    log.d('starting logger')
     cache.timer:start()
   end
 end
@@ -29,14 +29,14 @@ local prepareLogValues = function(win)
 
   local name = sanitize(app:name())
 
-  if name == "loginwindow" then
+  if name == 'loginwindow' then
     return nil, nil, nil
   end
 
   local title, meta = windowMetadata(win)
 
-  title = sanitize(title or "")
-  meta  = sanitize(meta or "")
+  title = sanitize(title or '')
+  meta = sanitize(meta or '')
 
   return name, title, meta
 end
@@ -58,7 +58,7 @@ module.start = function()
     END
   ]])
 
-  cache.watcherSleep = hs.watchable.watch("status.sleepEvent", module.sleepWatcher)
+  cache.watcherSleep = hs.watchable.watch('status.sleepEvent', module.sleepWatcher)
 
   cache.timer = hs.timer.doEvery(10, function()
     -- logging sometimes makes mouse lock up?
@@ -67,25 +67,31 @@ module.start = function()
     end
 
     local win = hs.window.focusedWindow()
-    if not win then return end
+    if not win then
+      return
+    end
 
     local app, title, meta = prepareLogValues(win)
-    if not app then return end
+    if not app then
+      return
+    end
 
-    local time      = os.time()
+    local time = os.time()
     local statement = "INSERT INTO log VALUES('" .. app .. "', '" .. title .. "', '" .. time .. "', '" .. meta .. "')"
-    local insert    = cache.db:execute(statement)
+    local insert = cache.db:execute(statement)
 
     if insert ~= hs.sqlite3.OK then
       local errmsg = cache.db:errmsg()
 
       if errmsg ~= cache.lastError then
-        hs.notify.new({
-          title    = "Logger failed",
-          subTitle = "Look into Hammerspoon Console for more info"
-        }):send()
+        hs.notify
+          .new({
+            title = 'Logger failed',
+            subTitle = 'Look into Hammerspoon Console for more info',
+          })
+          :send()
 
-        log.e("failed insert: " .. errmsg .. "\n" .. statement)
+        log.e('failed insert: ' .. errmsg .. '\n' .. statement)
 
         cache.lastError = errmsg
       end

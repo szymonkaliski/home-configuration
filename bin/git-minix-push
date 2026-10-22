@@ -7,7 +7,7 @@ name="${1:-$(basename "$(git rev-parse --show-toplevel)")}"
 # shellcheck disable=SC2029
 ssh minix "test -d ~/Git/${name}.git || git init --bare ~/Git/${name}.git"
 
-if ! git remote get-url minix &>/dev/null; then
+if ! git remote get-url minix &> /dev/null; then
   git remote add minix "szymon@minix:Git/${name}.git"
 fi
 

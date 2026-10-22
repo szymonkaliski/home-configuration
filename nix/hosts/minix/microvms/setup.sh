@@ -19,12 +19,12 @@ fi
 # the setup-token has inference-only scope, so claude code can't fetch the
 # plan tier and would gate fable behind usage credits (claude-code#79360);
 # CLAUDE_CODE_SUBSCRIPTION_TYPE tells it the plan directly
-subscription_type="$(cat /home/szymon/.claude/subscription-type 2>/dev/null || true)"
+subscription_type="$(cat /home/szymon/.claude/subscription-type 2> /dev/null || true)"
 if [ -n "$subscription_type" ]; then
   echo "export CLAUDE_CODE_SUBSCRIPTION_TYPE=\"$subscription_type\"" >> /home/szymon/.bash_profile
 fi
 
-anthropic_model="$(cat /home/szymon/.claude/anthropic-model 2>/dev/null || true)"
+anthropic_model="$(cat /home/szymon/.claude/anthropic-model 2> /dev/null || true)"
 if [ -n "$anthropic_model" ]; then
   echo "export ANTHROPIC_MODEL=\"$anthropic_model\"" >> /home/szymon/.bash_profile
 fi
@@ -46,7 +46,7 @@ fi
 # with each harness's path symlinked at it, mirroring how the host symlinks
 # dotfiles/agents/AGENTS.md
 vm_name="$(uname -n)"
-ts_suffix="$(cat /mnt/host/ts-magicdns-suffix 2>/dev/null || true)"
+ts_suffix="$(cat /mnt/host/ts-magicdns-suffix 2> /dev/null || true)"
 
 vm_context="You are running inside an ephemeral, sandboxed NixOS microVM named '${vm_name}'. /workspace is a private copy-on-write instance of the project: nothing you change there reaches the host checkout until you commit and push it."
 if [ -n "$ts_suffix" ]; then

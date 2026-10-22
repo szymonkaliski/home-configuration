@@ -11,21 +11,21 @@ module.init = function()
 
     hs.fnutils.each(hs.window.allWindows(), function(win)
       local title, meta = windowMetadata(win)
-      local app         = win:application()
-      local axWin       = hs.axuielement.windowElement(win)
+      local app = win:application()
+      local axWin = hs.axuielement.windowElement(win)
 
       table.insert(windowList, {
-        id               = win:id(),
-        appName          = app:name(),
-        bundleId         = app:bundleID(),
-        role             = win:role(),
-        subrole          = win:subrole(),
-        frame            = win:frame().string,
-        buttonZoom       = axWin:attributeValue('AXZoomButton') and 'exists' or 'doesn\'t exist',
-        buttonFullScreen = axWin:attributeValue('AXFullScreenButton') and 'exists' or 'doesn\'t exist',
-        isResizable      = axWin:isAttributeSettable('AXSize'),
-        title            = title,
-        meta             = meta,
+        id = win:id(),
+        appName = app:name(),
+        bundleId = app:bundleID(),
+        role = win:role(),
+        subrole = win:subrole(),
+        frame = win:frame().string,
+        buttonZoom = axWin:attributeValue('AXZoomButton') and 'exists' or "doesn't exist",
+        buttonFullScreen = axWin:attributeValue('AXFullScreenButton') and 'exists' or "doesn't exist",
+        isResizable = axWin:isAttributeSettable('AXSize'),
+        title = title,
+        meta = meta,
       })
     end)
 
@@ -40,22 +40,22 @@ module.init = function()
 
   timestamp = function(date)
     date = date or hs.timer.secondsSinceEpoch()
-    return os.date("%F %T" .. ((tostring(date):match("(%.%d+)$")) or ""), math.floor(date))
+    return os.date('%F %T' .. ((tostring(date):match('(%.%d+)$')) or ''), math.floor(date))
   end
 
   -- console styling
   local grayColor = {
-    red   = 24 * 4 / 255,
+    red = 24 * 4 / 255,
     green = 24 * 4 / 255,
-    blue  = 24 * 4 / 255,
-    alpha = 1
+    blue = 24 * 4 / 255,
+    alpha = 1,
   }
 
   local blackColor = {
-    red   = 24 / 255,
+    red = 24 / 255,
     green = 24 / 255,
-    blue  = 24 / 255,
-    alpha = 1
+    blue = 24 / 255,
+    alpha = 1,
   }
 
   hs.console.consoleCommandColor(blackColor)

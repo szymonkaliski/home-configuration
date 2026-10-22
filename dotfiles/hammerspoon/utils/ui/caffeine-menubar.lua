@@ -1,4 +1,4 @@
-local cache  = {}
+local cache = {}
 local module = { cache = cache }
 
 local ICON_PATH = os.getenv('HOME') .. '/.hammerspoon/assets/caffeine-on.png'
@@ -13,7 +13,7 @@ local createGreyedIcon = function(img, alpha)
   canvas[1] = {
     type = 'image',
     image = img,
-    imageAlpha = alpha
+    imageAlpha = alpha,
   }
 
   return canvas:imageFromCanvas()
@@ -26,34 +26,34 @@ end
 
 local generateMenu = function()
   local displayIdle = hs.caffeinate.get('displayIdle')
-  local systemIdle  = hs.caffeinate.get('systemIdle')
+  local systemIdle = hs.caffeinate.get('systemIdle')
 
   return {
     {
-      title    = 'Display Sleep: ' .. (displayIdle and 'Disabled' or 'Enabled'),
-      disabled = true
+      title = 'Display Sleep: ' .. (displayIdle and 'Disabled' or 'Enabled'),
+      disabled = true,
     },
     {
       title = displayIdle and 'Enable Display Sleep' or 'Disable Display Sleep',
-      fn    = function()
+      fn = function()
         cache.displayIdle = not hs.caffeinate.get('displayIdle')
         applyDisplayIdle()
-      end
+      end,
     },
     { title = '-' },
     {
-      title    = 'System Sleep: ' .. (systemIdle and 'Disabled' or 'Enabled'),
-      disabled = true
+      title = 'System Sleep: ' .. (systemIdle and 'Disabled' or 'Enabled'),
+      disabled = true,
     },
     { title = '-' },
     {
       title = 'Sleep Now',
-      fn    = function()
+      fn = function()
         cache.displayIdle = false
         applyDisplayIdle()
         hs.caffeinate.systemSleep()
-      end
-    }
+      end,
+    },
   }
 end
 
@@ -72,11 +72,11 @@ end
 
 module.start = function()
   local BASE_ICON = hs.image.imageFromPath(ICON_PATH):setSize({ w = 24, h = 20 })
-  ICON_ON  = BASE_ICON
+  ICON_ON = BASE_ICON
   ICON_OFF = createGreyedIcon(BASE_ICON, 0.5)
 
   cache.displayIdle = hs.settings.get('displayIdle') or false
-  cache.menuItem    = hs.menubar.new(true, 'caffeine-menubar')
+  cache.menuItem = hs.menubar.new(true, 'caffeine-menubar')
 
   cache.menuItem:setMenu(function()
     local mods = hs.eventtap.checkKeyboardModifiers()

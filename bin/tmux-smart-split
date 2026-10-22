@@ -19,7 +19,7 @@ height=$(tmux display-message -p '#{pane_height}')
 
 # terminal characters are roughly 1:2 aspect ratio, a ratio of 2.8 means the
 # pane is significantly wider than it is tall
-if [ $(( width * 10 )) -gt $(( height * 28 )) ]; then
+if [ $((width * 10)) -gt $((height * 28)) ]; then
   # Split left/right
   tmux split-window -h "${args[@]}"
 else

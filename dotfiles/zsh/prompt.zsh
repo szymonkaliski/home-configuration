@@ -46,7 +46,7 @@ git_prompt_status() {
 setup_git_prompt_status() {
   git_prompt_status
 
-  add-zsh-hook precmd  git_prompt_status
+  add-zsh-hook precmd git_prompt_status
   add-zsh-hook preexec git_prompt_status
 }
 
@@ -54,4 +54,3 @@ setup_git_prompt_status() {
 PROMPT='$(prompt_pwd)$ZSH_MAIN_PROMPT'
 PROMPT2='%{$fg[yellow]%}%_%{$reset_color%} > '
 SPROMPT="correct "%R" to "%r' ? ([Y]es/[N]o/[E]dit/[A]bort) '
-

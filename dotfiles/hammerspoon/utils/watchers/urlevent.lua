@@ -1,5 +1,5 @@
 local template = require('ext.template')
-local module   = {}
+local module = {}
 
 -- watch for http and https events and open in currently running browser
 -- click with 'cmd' to open in background, otherwise opens with focus
@@ -7,9 +7,9 @@ module.start = function()
   hs.urlevent.setDefaultHandler('http')
 
   hs.urlevent.httpCallback = function(_, _, _, fullURL)
-    local modifiers          = hs.eventtap.checkKeyboardModifiers()
+    local modifiers = hs.eventtap.checkKeyboardModifiers()
     local shouldFocusBrowser = not modifiers['cmd']
-    local currentApp         = hs.application.frontmostApplication()
+    local currentApp = hs.application.frontmostApplication()
 
     -- browsers running anywhere
     local runningBrowser = hs.fnutils.find(config.apps.browsers, function(browserName)
@@ -29,7 +29,7 @@ module.start = function()
 
     local hasBrowserWindows = #spaceBrowsers > 0
     local hasRunningBrowser = runningBrowser ~= nil
-    local browserName = ""
+    local browserName = ''
 
     if hasBrowserWindows then
       browserName = spaceBrowsers[1]
@@ -39,14 +39,14 @@ module.start = function()
       browserName = config.apps.browsers[1]
     end
 
-    if browserName == "Google Chrome" then
+    if browserName == 'Google Chrome' then
       -- for whatever reason Google Chrome is not liking applescript anymore, too lazy to debug
       -- luckily Chrome behaves correctly when opening tabs (is not jumping to some other space),
       -- so this can stay for now:
-      hs.urlevent.openURLWithBundle(fullURL, "com.google.Chrome")
+      hs.urlevent.openURLWithBundle(fullURL, 'com.google.Chrome')
     else
-      local newDocument = ""
-      local newTab      = ""
+      local newDocument = ''
+      local newTab = ''
 
       if hasBrowserWindows then
         -- if we have browser windows, open the url in new tab of the first window we can find
@@ -64,18 +64,21 @@ module.start = function()
         ]]
       end
 
-      local script = template([[
+      local script = template(
+        [[
         tell application "{BROWSER_NAME}"
           {ACTIVATE}
           {NEW_DOCUMENT}
           {NEW_TAB}
         end tell
-      ]], {
-        ACTIVATE     = shouldFocusBrowser and 'activate' or '',
-        BROWSER_NAME = browserName,
-        NEW_DOCUMENT = newDocument,
-        NEW_TAB      = newTab,
-      })
+      ]],
+        {
+          ACTIVATE = shouldFocusBrowser and 'activate' or '',
+          BROWSER_NAME = browserName,
+          NEW_DOCUMENT = newDocument,
+          NEW_TAB = newTab,
+        }
+      )
 
       hs.applescript.applescript(script)
 

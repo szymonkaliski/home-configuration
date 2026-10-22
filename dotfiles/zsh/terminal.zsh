@@ -7,9 +7,9 @@ case $TERM in
     preexec() {
       print -nP "\033]0;%m: $1\007"
     }
-  ;;
+    ;;
 
-  *screen*|*tmux*)
+  *screen* | *tmux*)
     precmd() {
       print -nP "\ek%3~\e\\"
       print -nP "\e]0;%3~\a"
@@ -26,7 +26,7 @@ case $TERM in
       # print -nP "\033]0;${(C)$(tmux display-message -p '#S')}: $1\007"
       print -nP "\033]0;$(tmux display-message -p '#S'): $1\007"
     }
-  ;;
+    ;;
 esac
 
 # change cursor depending on mode
@@ -60,14 +60,14 @@ esac
 
 # https://github.com/kovidgoyal/kitty/issues/715
 # if [ "$TERM_PROGRAM" = "kitty" -o "$TERM_PROGRAM" = "tmux" ]; then
-  function zle-keymap-select zle-line-init zle-line-finish {
-    case $KEYMAP in
-      vicmd)      print -n '\033[1 q';;
-      viins|main) print -n '\033[5 q';;
-    esac
-  }
+function zle-keymap-select zle-line-init zle-line-finish {
+  case $KEYMAP in
+    vicmd) print -n '\033[1 q' ;;
+    viins | main) print -n '\033[5 q' ;;
+  esac
+}
 
-  zle -N zle-line-init
-  zle -N zle-line-finish
-  zle -N zle-keymap-select
+zle -N zle-line-init
+zle -N zle-line-finish
+zle -N zle-keymap-select
 # fi

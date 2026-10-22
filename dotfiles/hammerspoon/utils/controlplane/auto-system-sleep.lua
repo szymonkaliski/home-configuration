@@ -1,11 +1,13 @@
 local notify = require('utils.controlplane.notify')
-local log    = hs.logger.new('auto-system-sleep', 'debug')
+local log = hs.logger.new('auto-system-sleep', 'debug')
 
-local cache  = {}
+local cache = {}
 local module = { cache = cache }
 
 local studioDisplayWatcher = function(_, _, _, prev, isConnected)
-  if prev == isConnected then return end
+  if prev == isConnected then
+    return
+  end
 
   hs.caffeinate.set('systemIdle', isConnected)
 

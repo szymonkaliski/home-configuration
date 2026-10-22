@@ -9,7 +9,6 @@ module.start = function()
   hs.hotkey.bind({ 'cmd', 'alt' }, 'h', noop)
 end
 
-module.stop = function()
-end
+module.stop = function() end
 
 return module

@@ -51,9 +51,8 @@ for file in $files; do
 done
 
 # ssh/mosh dynamic motd
-if (( $+commands[motd] )); then
-  if [[ -n "$SSH_TTY" && "$(tty)" = "$SSH_TTY" ]] || [[ "$(ps -o comm= -p $PPID 2>/dev/null)" = *mosh-server* ]]; then
+if (($+commands[motd])); then
+  if [[ -n "$SSH_TTY" && "$(tty)" = "$SSH_TTY" ]] || [[ "$(ps -o comm= -p $PPID 2> /dev/null)" = *mosh-server* ]]; then
     motd
   fi
 fi
-

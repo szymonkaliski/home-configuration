@@ -59,4 +59,3 @@ alias -g HL="| hl"
 #   ./qwe/rty/foobar.py
 #   $ git log ^
 alias -g ^='$(fc -e - 2> /dev/null)'
-

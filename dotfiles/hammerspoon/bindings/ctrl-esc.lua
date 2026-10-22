@@ -1,8 +1,8 @@
 -- adapted from https://github.com/jasonrudolph/ControlEscape.spoon
 
-local cache  = {}
+local cache = {}
 local module = { cache = cache }
-local log    = hs.logger.new('ctrl-esc', 'debug')
+local log = hs.logger.new('ctrl-esc', 'debug')
 
 local CANCEL_DELAY_SECONDS = 0.15
 

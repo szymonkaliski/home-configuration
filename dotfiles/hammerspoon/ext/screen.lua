@@ -16,17 +16,19 @@ end
 module.quietFocusScreen = function(screen)
   screen = screen or hs.mouse.getCurrentScreen()
 
-  local frame         = screen:frame()
+  local frame = screen:frame()
   local mousePosition = hs.mouse.absolutePosition()
 
   -- if mouse is already on the given screen we can safely return
-  if hs.geometry(mousePosition):inside(frame) then return false end
+  if hs.geometry(mousePosition):inside(frame) then
+    return false
+  end
 
   -- "hide" cursor in the lower right side of screen
   -- it's invisible while we are changing spaces
   local newMousePosition = {
     x = frame.x + frame.w - 1,
-    y = frame.y + frame.h - 1
+    y = frame.y + frame.h - 1,
   }
 
   hs.mouse.absolutePosition(newMousePosition)
@@ -41,7 +43,7 @@ module.focusScreen = function(screen)
 
   local mousePosition = {
     x = frame.x + frame.w / 2,
-    y = frame.y + frame.h / 2
+    y = frame.y + frame.h / 2,
   }
 
   -- click center of the screen to bring focus to desktop

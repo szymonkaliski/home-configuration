@@ -96,7 +96,98 @@
       ];
     in
     {
-      formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt);
+      formatter = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          shfmtFiltered = pkgs.writeShellScriptBin "shfmt-filtered" ''
+            files=()
+            check=()
+            for f in "$@"; do
+              case "$f" in
+                *.sh | *.zsh | */zshrc | */zprofile | zshrc | zprofile) files+=("$f") ;;
+                *) check+=("$f") ;;
+              esac
+            done
+            if (( ''${#check[@]} > 0 )); then
+              while IFS= read -r f; do
+                [[ -n "$f" ]] && files+=("$f")
+              done < <(${pkgs.shfmt}/bin/shfmt -f "''${check[@]}")
+            fi
+            if (( ''${#files[@]} > 0 )); then
+              exec ${pkgs.shfmt}/bin/shfmt -i 2 -ci -sr -w "''${files[@]}"
+            fi
+          '';
+        in
+        pkgs.treefmt.withConfig {
+          runtimeInputs = [
+            pkgs.nixfmt
+            pkgs.prettier
+            pkgs.stylua
+            shfmtFiltered
+          ];
+
+          settings = {
+            tree-root-file = "flake.nix";
+            excludes = [ "nix/secrets/**" ];
+
+            formatter = {
+              nixfmt = {
+                command = "nixfmt";
+                includes = [ "*.nix" ];
+              };
+              prettier = {
+                command = "prettier";
+                options = [
+                  "--ignore-unknown"
+                  "--write"
+                ];
+                includes = [
+                  "*.cjs"
+                  "*.css"
+                  "*.html"
+                  "*.js"
+                  "*.json"
+                  "*.jsx"
+                  "*.md"
+                  "*.mjs"
+                  "*.ts"
+                  "*.tsx"
+                  "*.yaml"
+                  "*.yml"
+                  "bin/*"
+                  "dotfiles/agents/skills/*/*"
+                ];
+                priority = 1;
+              };
+              shfmt = {
+                command = "shfmt-filtered";
+                includes = [
+                  "*.sh"
+                  "*.zsh"
+                  "dotfiles/zshrc"
+                  "dotfiles/zprofile"
+                  "bin/*"
+                  "dotfiles/agents/skills/*/*"
+                ];
+                priority = 2;
+              };
+              stylua = {
+                command = "stylua";
+                options = [
+                  "--indent-type"
+                  "Spaces"
+                  "--indent-width"
+                  "2"
+                  "--quote-style"
+                  "AutoPreferSingle"
+                ];
+                includes = [ "*.lua" ];
+              };
+            };
+          };
+        }
+      );
 
       # written to an sd card for Raspberry Pi
       packages.aarch64-linux.berry-sd-image = self.nixosConfigurations.berry.config.system.build.sdImage;

@@ -64,9 +64,12 @@ in
     pkgs.nnn
     pkgs.nodejs_22
     pkgs.parallel
+    pkgs.prettier
     pkgs.ripgrep
     pkgs.rsync
+    pkgs.shfmt
     pkgs.sops
+    pkgs.stylua
     pkgs.timg
     pkgs.tmux
     pkgs.tree

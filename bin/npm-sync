@@ -25,7 +25,6 @@ const GLOBAL = [
   "@opencode/cli",
   "neovim",
   "npm-check-updates",
-  "prettier",
 ];
 
 const LOCAL = [

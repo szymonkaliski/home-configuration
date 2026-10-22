@@ -1164,10 +1164,10 @@ export default Plugin.define({
         );
         const candidate = found?.name ?? sel.modelID ?? "";
         const rightWithModel =
-          (actStr ? actStr.length + 3 : 0) +
           spinCols +
           agentStr.length +
           (candidate ? 1 + candidate.length : 0) +
+          (actStr ? 3 + actStr.length : 0) +
           (pctStr ? 3 + pctStr.length : 0);
         if (w - rightWithModel - 3 >= 20) {
           modelStr = candidate;
@@ -1178,8 +1178,8 @@ export default Plugin.define({
         spinCols + agentStr.length + (modelStr ? 1 + modelStr.length : 0);
 
       const segments = [];
-      if (actStr) segments.push(actStr.length);
       if (agentModelCols > 0) segments.push(agentModelCols);
+      if (actStr) segments.push(actStr.length);
       if (pctStr) segments.push(pctStr.length);
 
       const totalRightCols =
@@ -1457,30 +1457,6 @@ export default Plugin.define({
             flexShrink={0}
             gap={1}
           >
-            <Show when={metrics().actStr}>
-              <text
-                wrapMode="none"
-                flexShrink={0}
-                fg={subHovered() ? baseFg() : mutedFg()}
-                onMouseOver={() => setSubHovered(true)}
-                onMouseOut={() => setSubHovered(false)}
-                onMouseUp={() => context.keymap.dispatch("session.child.first")}
-              >
-                {metrics().actStr}
-              </text>
-            </Show>
-
-            <Show
-              when={
-                metrics().actStr &&
-                (metrics().showAgent || metrics().running || metrics().pctStr)
-              }
-            >
-              <text wrapMode="none" flexShrink={0} fg={mutedFg()}>
-                {"/"}
-              </text>
-            </Show>
-
             <Show when={metrics().showAgent || metrics().running}>
               <box
                 flexDirection="row"
@@ -1509,7 +1485,33 @@ export default Plugin.define({
 
             <Show
               when={
-                (metrics().showAgent || metrics().running) && metrics().pctStr
+                (metrics().showAgent || metrics().running) && metrics().actStr
+              }
+            >
+              <text wrapMode="none" flexShrink={0} fg={mutedFg()}>
+                {"/"}
+              </text>
+            </Show>
+
+            <Show when={metrics().actStr}>
+              <text
+                wrapMode="none"
+                flexShrink={0}
+                fg={subHovered() ? baseFg() : mutedFg()}
+                onMouseOver={() => setSubHovered(true)}
+                onMouseOut={() => setSubHovered(false)}
+                onMouseUp={() => context.keymap.dispatch("session.child.first")}
+              >
+                {metrics().actStr}
+              </text>
+            </Show>
+
+            <Show
+              when={
+                (metrics().showAgent ||
+                  metrics().running ||
+                  metrics().actStr) &&
+                metrics().pctStr
               }
             >
               <text wrapMode="none" flexShrink={0} fg={mutedFg()}>

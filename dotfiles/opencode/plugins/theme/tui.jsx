@@ -323,6 +323,11 @@ function truncateLeft(str, maxLen) {
   return `...${str.slice(-(maxLen - 3))}`;
 }
 
+function isBoxNode(node) {
+  const proto = node?.constructor?.prototype;
+  return Boolean(proto && Object.hasOwn(proto, "initializeBorder"));
+}
+
 function readTextRenderable(node) {
   if (!node) return "";
   if (typeof node === "string") return node;
@@ -607,9 +612,7 @@ export default Plugin.define({
             ["paddingLeft", "paddingRight", "paddingTop", "paddingBottom"],
             0,
           );
-          const ueChildren = (ueBox.getChildren?.() ?? []).filter(
-            (c) => c.constructor?.name === "Ni",
-          );
+          const ueChildren = (ueBox.getChildren?.() ?? []).filter(isBoxNode);
           const scrollWrap = ueChildren[0];
           composerWrap = ueChildren[ueChildren.length - 1];
           if (scrollWrap) {
@@ -868,11 +871,11 @@ export default Plugin.define({
       const promptRoot =
         footerBox?.parent?.parent ??
         (composerWrap?.getChildren?.() ?? []).find(
-          (c) => c.constructor?.name === "Ni" && c.visible !== false,
+          (c) => isBoxNode(c) && c.visible !== false,
         );
       if (promptRoot && !promptRoot.isDestroyed) {
         const promptChildren = (promptRoot.getChildren?.() ?? []).filter(
-          (c) => c.constructor?.name === "Ni",
+          isBoxNode,
         );
         const borderBox = promptChildren[0];
         const bottomEdgeBox = promptChildren[1];
@@ -888,13 +891,11 @@ export default Plugin.define({
             }
             lockStyle(innerPrompt, ["paddingTop", "paddingBottom"], 1);
             const innerBoxes = (innerPrompt.getChildren?.() ?? []).filter(
-              (c) => c.constructor?.name === "Ni",
+              isBoxNode,
             );
             const modelRow = innerBoxes[innerBoxes.length - 1];
             if (modelRow && !modelRow.isDestroyed) {
-              const ksBox = (modelRow.getChildren?.() ?? []).find(
-                (c) => c.constructor?.name === "Ni",
-              );
+              const ksBox = (modelRow.getChildren?.() ?? []).find(isBoxNode);
               const firstText = (ksBox?.getChildren?.() ?? []).find(
                 (c) => "textNode" in c,
               );

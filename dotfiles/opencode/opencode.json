@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "google/gemini-4-argon",
+  "model": "google-vertex/gemini-4-argon",
   "mcp": {
     "servers": {
       "chrome-devtools": {

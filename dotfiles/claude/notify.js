@@ -278,7 +278,7 @@ function agentLastActivity(filePath, agentId, launchTs) {
   }
 }
 
-// A `context: fork` skill (/git-review, /code-review) runs as a detached
+// A `context: fork` skill (/code-review) runs as a detached
 // background agent: the session goes idle the moment it launches and fires no
 // Stop until the agent reports back, so the 60s idle_prompt timer announces
 // "waiting for your input" while the agent is still working. The launch is a

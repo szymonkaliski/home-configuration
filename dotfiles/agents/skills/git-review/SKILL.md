@@ -1,61 +1,67 @@
 ---
 name: git-review
-description: Review uncommitted changes. Use after finishing a substantial change, before committing, or when the user asks to check the work.
-allowed-tools: Bash(git *), Read, Glob, Grep
-context: fork
+description: Review uncommitted changes, a branch, or a pull request. Use after a substantial change, before committing, or when asked to review the work.
+allowed-tools: Bash(git *), Bash(gh pr *), Bash(mkdir *), Read, Edit, Write, Glob, Grep, Agent, Task
 ---
 
-Review the git diff and identify:
+Review changes through two opposing lenses: **Saboteur** (bugs, blast radius, missed items) and **Minimalist** (simplification, conventions, cleanup).
 
-1. **Missed items**: Incomplete implementations, forgotten edge cases, TODOs
-2. **Issues**: Bugs, security concerns, inconsistencies with existing patterns
-3. **Improvements**: Performance, robustness, error handling
-4. **Simplification**: Logic an existing export already covers, a simpler equivalent with identical behavior, a concept expressed in two places, code that does not read like its neighbors
-5. **Cleanup**: Debug code, commented-out code, unnecessary changes
+## 1. Scope the target
 
-## Changes
+Pick the target in this order:
 
-!`git status --short`
+1. **Named target** (branch, ref, commit range, or PR from the user): `git diff --no-ext-diff <base>...<head>` (or `<range>`) or `gh pr diff <pr>`.
+2. **Uncommitted changes** (`git status --short` has output): `git diff --no-ext-diff HEAD` plus untracked files (`git ls-files --others --exclude-standard`).
+3. **Feature branch** (clean working tree ahead of the default branch): `git diff --no-ext-diff <default-branch>...HEAD`.
 
-!`git diff --no-ext-diff`
+When the diff is empty and no untracked files exist, tell the user and stop.
 
-!`git diff --cached --no-ext-diff`
+A **small diff** is ≤ 20 changed lines in 1 file with 0 untracked files. For a **larger diff**, write the diff to `./tmp/git-review.diff` (`mkdir -p ./tmp`). The step is complete when every changed and untracked path is listed and `./tmp/git-review.diff` exists for a larger diff.
 
-If the lines above show raw commands instead of their output, run each command yourself exactly as written.
+## 2. Run the review
 
-## Instructions
+- **Small diff**: review inline across both lenses below, applying `Verification`. Judge the diff as written.
+- **Larger diff**: spawn 2 read-only subagents in parallel in one message, one per lens. For a _cold start_, pass each subagent only `./tmp/git-review.diff`, the list of changed and untracked paths, its lens brief below, and `Verification` pasted in full. Each subagent reviews directly with `Read`, `Grep`, and `Glob`.
 
-Before flagging an issue, **read the relevant surrounding code** to verify it's actually a problem. Specifically:
+## 3. Judge and handoff
 
-- If a change removes dedup/caching logic, check whether the receiver already handles duplicates before calling it out.
-- If a change uses a variable or prop not shown in the diff, read the file to understand its type, source, and nullability before
-  speculating.
-- If a change modifies a condition or filter, check the call sites and data flow to confirm whether the new behavior is correct.
-- If something looks like it could break, check for guards, fallbacks, or reconciliation logic elsewhere before reporting.
-- Untracked new files (`??` in the status above) are in neither diff; read them in full and review them like any other change. A whole new file escaping review is the most likely gap.
+When subagents ran, read the cited `file:line` for each finding and check it against the code and the decisions from this session. Keep only findings that hold up.
 
-**Do not flag something as an issue if the existing codebase already handles it.**
+Split surviving findings into **fixes** and **decisions**:
 
-Each finding cites `file:line` and the code you read that proves it: the caller, guard, or data flow. Label it **CONFIRMED** when you traced the problem through the code, or **PLAUSIBLE** when the code points to it but you could not trace it end to end. A finding without that evidence does not get reported.
+- A **fix** is `CONFIRMED`, mechanical, and unambiguous (leftover debug code, a confirmed bug with an obvious correction, a missed rename, dead code, swapping in an existing export, collapsing a concept expressed twice).
+- A **decision** involves intent, a tradeoff, or uncertainty (`PLAUSIBLE` findings, or anything that shifts behavior, error paths, design, or scope).
 
-The review is done when every path in the status list has been read and judged.
+When the target is checked out, apply all fixes immediately without waiting for confirmation, report what you changed, and ask the user the decisions. When the target is not checked out, report both fixes and decisions without editing the working tree. When no findings survive, say that everything looks good and nothing needs to happen.
 
-## Simplification
+## Lenses
 
-"Idiomatic" means consistent with this repo, not with your taste. A simplification is a finding only when you can point at what the code should look like instead:
+### Saboteur (bugs, blast radius, missed items)
 
-- **Cite the comparison**: name the existing export, the neighboring file, or the convention file (CLAUDE.md, a lint or style config) the change diverges from. Search for the helper before claiming one exists.
-- **Preference is not a finding**: formatting, arrangement, synonym-level renames, and "I would have written it differently" do not get reported. A name that contradicts what the value holds is a finding; a name you merely like less is not. If you cannot ground it in the codebase, drop it.
+Assume the change is broken or incomplete. Hunt for:
 
-## Handoff
+1. **Missed items**: Incomplete implementations, forgotten edge cases, TODOs, and call sites, sibling modules, types, schemas, tests, or docs that needed a matching update.
+2. **Defects**: Logic bugs, broken assumptions, null or empty inputs, ordering or race conditions, partial failure states, swallowed errors, performance traps, and security or trust-boundary gaps.
 
-Split the findings: a **fix** is mechanical and unambiguous (leftover debug code, a confirmed bug with an obvious correction, a missed rename, dead code) - include the exact change to make; a **decision** involves intent or a tradeoff (behavior changes, design questions, scope concerns). A behavior-preserving simplification (swapping in an existing export, collapsing a concept expressed twice) is a fix; anything that shifts behavior, error paths, or design is a decision. Only a CONFIRMED finding can be a fix; a PLAUSIBLE one is a decision.
+### Minimalist (simplification, conventions, cleanup)
 
-What happens next depends on who reads your report:
+Assume the change fights the codebase or adds weight it does not need. Hunt for:
 
-- **Another assistant** (you run as a forked or delegated reviewer): end the report by telling the assistant that invoked you to apply the fixes immediately, without waiting for confirmation, and to surface the decisions to the user as questions.
-- **The user** (you run inline in their conversation): apply the fixes immediately, without waiting for confirmation, then report what you changed and surface the decisions to the user as questions.
+1. **Simplification**: Logic an existing export already covers, a simpler equivalent with identical behavior, a concept expressed in two places, dead code, or speculative abstractions. Search for a helper before claiming one exists.
+2. **Conventions and cleanup**: Code that diverges from neighboring files, `AGENTS.md`, `CLAUDE.md`, or a lint/style config, names that contradict what a value holds, leftover debug code, commented-out code, and unnecessary edits.
 
-If you wrote the change earlier in this conversation, you are reviewing your own work: judge the diff as written, not what you meant it to do.
+Ground every simplification or convention finding in the codebase by citing the existing export, the neighboring file, or the rule in `AGENTS.md`, `CLAUDE.md`, or a lint/style config. Also report any confirmed bug you spot while reading a file.
 
-If there are no findings, say everything looks good and that nothing needs to happen.
+## Verification
+
+Read the surrounding code before flagging an issue:
+
+- Removed dedup or caching logic: check whether the receiver already handles duplicates.
+- Variable or prop outside the diff: read the file for its type, source, and nullability.
+- Modified condition or filter: trace the call sites and data flow to confirm the new behavior fails.
+- Apparent failure path: check for guards, fallbacks, or reconciliation logic elsewhere.
+- Untracked files (`??`): read them in full and review them like any other change. A whole new file escaping review is the most likely gap.
+
+Report only issues that the existing codebase does not already handle. Each finding cites `file:line` and the proving code (caller, guard, helper, or data flow), labeled **CONFIRMED** when traced end to end or **PLAUSIBLE** when the code points to it without an end-to-end trace.
+
+The review pass is complete when every changed and untracked path has been read and judged.

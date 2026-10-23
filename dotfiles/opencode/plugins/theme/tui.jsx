@@ -217,8 +217,19 @@ function applyBase16Surface(theme, b16) {
       }
     }
   }
+  if (Array.isArray(theme.categorical)) {
+    for (const scale of theme.categorical) {
+      if (!scale || typeof scale !== "object") continue;
+      for (const step of [100, 200, 300, 400, 500, 600, 700, 800, 900]) {
+        overwriteRgbaHex(scale[step], b16.base0D);
+      }
+    }
+  }
   overwriteRgbaHex(theme.text?.base, b16.base05);
   overwriteRgbaHex(theme.text?.muted, b16.base04);
+  overwriteRgbaHex(theme.text?.action?.primary?.focused, b16.base00);
+  overwriteRgbaHex(theme.text?.action?.primary?.selected, b16.base0D);
+  overwriteRgbaHex(theme.background?.action?.primary?.focused, b16.base0D);
   overwriteRgbaHex(theme.border?.base, b16.base03);
   overwriteRgbaHex(theme.scrollbar?.base, b16.base03);
   overwriteRgbaHex(theme.text?.feedback?.error?.base, b16.base08);
@@ -257,16 +268,16 @@ function applyBase16Surface(theme, b16) {
       theme.markdown.text = fromHex(b16.base05);
       theme.markdown.heading = fromHex(b16.base0D);
       theme.markdown.link = fromHex(b16.base0D);
-      theme.markdown.linkText = fromHex(b16.base0C);
+      theme.markdown.linkText = fromHex(b16.base0D);
       theme.markdown.code = fromHex(b16.base0D);
-      theme.markdown.blockQuote = fromHex(b16.base0A);
-      theme.markdown.emphasis = fromHex(b16.base0E);
-      theme.markdown.strong = fromHex(b16.base0A);
+      theme.markdown.blockQuote = fromHex(b16.base04);
+      theme.markdown.emphasis = fromHex(b16.base04);
+      theme.markdown.strong = fromHex(b16.base0D);
       theme.markdown.horizontalRule = fromHex(b16.base03);
       theme.markdown.listItem = fromHex(b16.base0D);
-      theme.markdown.listEnumeration = fromHex(b16.base0C);
+      theme.markdown.listEnumeration = fromHex(b16.base0D);
       theme.markdown.image = fromHex(b16.base0D);
-      theme.markdown.imageText = fromHex(b16.base0C);
+      theme.markdown.imageText = fromHex(b16.base0D);
       theme.markdown.codeBlock = fromHex(b16.base05);
     }
     if (clone) {
@@ -467,6 +478,7 @@ export default Plugin.define({
   setup(context) {
     const [gitByDir, setGitByDir] = createSignal({});
     const [liveAgentName, setLiveAgentName] = createSignal("");
+    const [promptFooterMounted, setPromptFooterMounted] = createSignal(false);
     const [spinnerIdx, setSpinnerIdx] = createSignal(0);
     const [themeVer, setThemeVer] = createSignal(0);
     const [termWidth, setTermWidth] = createSignal(
@@ -594,6 +606,136 @@ export default Plugin.define({
       const raisedHigh = context.theme.background?.raised?.high ?? raisedBase;
       const buildBorderColor = buildColor;
       const planBorderColor = planColor;
+
+      function patchSyntaxStyle(syn, n) {
+        if (!syn || typeof syn.registerStyle !== "function") return;
+        let synRecord = patchedNodes.get(syn);
+        if (
+          !synRecord ||
+          !synRecord.get("blue")?.equals?.(buildColor) ||
+          !synRecord.get("muted")?.equals?.(mutedColor)
+        ) {
+          const savedBlue =
+            typeof buildColor?.constructor?.clone === "function"
+              ? buildColor.constructor.clone(buildColor)
+              : buildColor;
+          const savedMuted =
+            typeof mutedColor?.constructor?.clone === "function"
+              ? mutedColor.constructor.clone(mutedColor)
+              : mutedColor;
+          synRecord = new Map([
+            ["blue", savedBlue],
+            ["muted", savedMuted],
+          ]);
+          patchedNodes.set(syn, synRecord);
+          queueMicrotask(() => {
+            try {
+              const synComment = context.theme.syntax?.comment ?? borderBase;
+              const synNumber =
+                context.theme.syntax?.number ?? themeYellow(context.theme);
+              const synType =
+                context.theme.syntax?.type ?? themeYellow(context.theme);
+              const synVar =
+                context.theme.syntax?.variable ?? themeRed(context.theme);
+              syn.registerStyle("comment", {
+                fg: synComment,
+                italic: true,
+              });
+              syn.registerStyle("comment.documentation", {
+                fg: synComment,
+                italic: true,
+              });
+              syn.registerStyle("number", { fg: synNumber });
+              syn.registerStyle("boolean", { fg: synNumber });
+              syn.registerStyle("constant", { fg: synNumber });
+              syn.registerStyle("float", { fg: synNumber });
+              syn.registerStyle("type", { fg: synType });
+              syn.registerStyle("variable", { fg: synVar });
+              syn.registerStyle("extmark.skill", {
+                fg: buildColor,
+                bold: true,
+              });
+              syn.registerStyle("extmark.agent", {
+                fg: buildColor,
+                bold: true,
+              });
+              syn.registerStyle("extmark.file", {
+                fg: buildColor,
+                bold: true,
+              });
+              syn.registerStyle("markup.quote", {
+                fg: mutedColor,
+                italic: true,
+              });
+              syn.registerStyle("markup.italic", {
+                fg: mutedColor,
+                italic: true,
+              });
+              syn.registerStyle("markup.bold", {
+                fg: buildColor,
+                bold: true,
+              });
+              syn.registerStyle("markup.strong", {
+                fg: buildColor,
+                bold: true,
+              });
+              syn.registerStyle("markup.link.label", {
+                fg: buildColor,
+                underline: true,
+              });
+              syn.registerStyle("label", { fg: buildColor });
+              syn.registerStyle("markup.raw", { fg: buildColor });
+              syn.registerStyle("markup.raw.block", { fg: buildColor });
+              syn.registerStyle("markup.raw.inline", {
+                fg: buildColor,
+                bg: bgBase,
+              });
+              syn.registerStyle("diff.plus", {
+                fg: themeGreen(context.theme),
+                bg: raisedBase,
+              });
+              syn.registerStyle("diff.minus", {
+                fg: themeRed(context.theme),
+                bg: raisedBase,
+              });
+              syn.registerStyle("diff.delta", {
+                fg: mutedColor,
+                bg: raisedBase,
+              });
+            } catch {}
+          });
+        }
+        if (n) {
+          let nodeRecord = patchedNodes.get(n);
+          if (
+            !nodeRecord ||
+            !nodeRecord.get("blue")?.equals?.(buildColor) ||
+            !nodeRecord.get("muted")?.equals?.(mutedColor)
+          ) {
+            const savedBlue =
+              typeof buildColor?.constructor?.clone === "function"
+                ? buildColor.constructor.clone(buildColor)
+                : buildColor;
+            const savedMuted =
+              typeof mutedColor?.constructor?.clone === "function"
+                ? mutedColor.constructor.clone(mutedColor)
+                : mutedColor;
+            nodeRecord = new Map([
+              ["blue", savedBlue],
+              ["muted", savedMuted],
+            ]);
+            patchedNodes.set(n, nodeRecord);
+            queueMicrotask(() => {
+              try {
+                if (!n.isDestroyed) {
+                  n.clearCache?.();
+                  n.refreshStyles?.();
+                }
+              } catch {}
+            });
+          }
+        }
+      }
 
       const sessionPane = root.findDescendantById?.("session-pane");
       let composerWrap;
@@ -757,103 +899,17 @@ export default Plugin.define({
                 const col = label === "plan" ? planColor : buildColor;
                 firstSpan.fg = col;
                 n.requestRender?.();
+              } else if (
+                label.startsWith("↳ ") &&
+                firstSpan.fg !== mutedColor
+              ) {
+                firstSpan.fg = mutedColor;
+                n.requestRender?.();
               }
             }
             const syn = n.syntaxStyle ?? n._syntaxStyle;
-            if (syn && typeof syn.registerStyle === "function") {
-              let synRecord = patchedNodes.get(syn);
-              if (
-                !synRecord ||
-                !synRecord.get("blue")?.equals?.(buildColor) ||
-                !synRecord.get("muted")?.equals?.(mutedColor)
-              ) {
-                const savedBlue =
-                  typeof buildColor?.constructor?.clone === "function"
-                    ? buildColor.constructor.clone(buildColor)
-                    : buildColor;
-                const savedMuted =
-                  typeof mutedColor?.constructor?.clone === "function"
-                    ? mutedColor.constructor.clone(mutedColor)
-                    : mutedColor;
-                synRecord = new Map([
-                  ["blue", savedBlue],
-                  ["muted", savedMuted],
-                ]);
-                patchedNodes.set(syn, synRecord);
-                queueMicrotask(() => {
-                  try {
-                    const synComment =
-                      context.theme.syntax?.comment ?? borderBase;
-                    const synNumber =
-                      context.theme.syntax?.number ??
-                      themeYellow(context.theme);
-                    const synType =
-                      context.theme.syntax?.type ?? themeYellow(context.theme);
-                    const synVar =
-                      context.theme.syntax?.variable ?? themeRed(context.theme);
-                    syn.registerStyle("comment", {
-                      fg: synComment,
-                      italic: true,
-                    });
-                    syn.registerStyle("comment.documentation", {
-                      fg: synComment,
-                      italic: true,
-                    });
-                    syn.registerStyle("number", { fg: synNumber });
-                    syn.registerStyle("boolean", { fg: synNumber });
-                    syn.registerStyle("constant", { fg: synNumber });
-                    syn.registerStyle("float", { fg: synNumber });
-                    syn.registerStyle("type", { fg: synType });
-                    syn.registerStyle("variable", { fg: synVar });
-                    syn.registerStyle("markup.raw", { fg: buildColor });
-                    syn.registerStyle("markup.raw.block", { fg: buildColor });
-                    syn.registerStyle("markup.raw.inline", {
-                      fg: buildColor,
-                      bg: bgBase,
-                    });
-                    syn.registerStyle("diff.plus", {
-                      fg: themeGreen(context.theme),
-                      bg: raisedBase,
-                    });
-                    syn.registerStyle("diff.minus", {
-                      fg: themeRed(context.theme),
-                      bg: raisedBase,
-                    });
-                    syn.registerStyle("diff.delta", {
-                      fg: mutedColor,
-                      bg: raisedBase,
-                    });
-                  } catch {}
-                });
-              }
-              let nodeRecord = patchedNodes.get(n);
-              if (
-                !nodeRecord ||
-                !nodeRecord.get("blue")?.equals?.(buildColor) ||
-                !nodeRecord.get("muted")?.equals?.(mutedColor)
-              ) {
-                const savedBlue =
-                  typeof buildColor?.constructor?.clone === "function"
-                    ? buildColor.constructor.clone(buildColor)
-                    : buildColor;
-                const savedMuted =
-                  typeof mutedColor?.constructor?.clone === "function"
-                    ? mutedColor.constructor.clone(mutedColor)
-                    : mutedColor;
-                nodeRecord = new Map([
-                  ["blue", savedBlue],
-                  ["muted", savedMuted],
-                ]);
-                patchedNodes.set(n, nodeRecord);
-                queueMicrotask(() => {
-                  try {
-                    if (!n.isDestroyed) {
-                      n.clearCache?.();
-                      n.refreshStyles?.();
-                    }
-                  } catch {}
-                });
-              }
+            if (syn) {
+              patchSyntaxStyle(syn, n);
             }
             for (const ch of n.getChildren?.() ?? []) {
               styleTranscriptNode(ch, rowAgent);
@@ -869,10 +925,9 @@ export default Plugin.define({
       }
 
       const promptRoot =
-        footerBox?.parent?.parent ??
-        (composerWrap?.getChildren?.() ?? []).find(
-          (c) => isBoxNode(c) && c.visible !== false,
-        );
+        footerBox?.parent?.id !== "theme.drawer.footer"
+          ? footerBox?.parent?.parent
+          : undefined;
       if (promptRoot && !promptRoot.isDestroyed) {
         const promptChildren = (promptRoot.getChildren?.() ?? []).filter(
           isBoxNode,
@@ -890,6 +945,10 @@ export default Plugin.define({
               lockStyle(borderBox, ["backgroundColor"], boxBg);
             }
             lockStyle(innerPrompt, ["paddingTop", "paddingBottom"], 1);
+            for (const ch of innerPrompt.getChildren?.() ?? []) {
+              const syn = ch.syntaxStyle ?? ch._syntaxStyle;
+              if (syn) patchSyntaxStyle(syn, ch);
+            }
             const innerBoxes = (innerPrompt.getChildren?.() ?? []).filter(
               isBoxNode,
             );
@@ -930,6 +989,51 @@ export default Plugin.define({
         }
       }
 
+      if (composerWrap && !composerWrap.isDestroyed) {
+        const composerChildren = (composerWrap.getChildren?.() ?? []).filter(
+          isBoxNode,
+        );
+        const drawerOuter = composerChildren.find(
+          (c) =>
+            c !== promptRoot &&
+            c.id !== "theme.drawer.footer" &&
+            c.visible !== false,
+        );
+        lockStyle(
+          composerWrap,
+          ["flexDirection"],
+          !promptRoot && drawerOuter ? "column-reverse" : "column",
+        );
+        const drawerBox =
+          drawerOuter &&
+          Array.isArray(drawerOuter.border) &&
+          drawerOuter.border.includes("left")
+            ? drawerOuter
+            : drawerOuter?.getChildren?.()[0];
+        if (
+          drawerBox &&
+          !drawerBox.isDestroyed &&
+          Array.isArray(drawerBox.border) &&
+          drawerBox.border.includes("left")
+        ) {
+          lockStyle(drawerBox, ["customBorderChars"], HEAVY_BORDER_CHARS);
+          if (raisedHigh) {
+            lockStyle(drawerBox, ["backgroundColor"], raisedHigh);
+          }
+          const targetColor = agentThemeColor(
+            liveAgentName() || "Build",
+            context.theme,
+          );
+          if (targetColor) {
+            lockStyle(
+              drawerBox,
+              ["borderColor", "focusedBorderColor"],
+              targetColor,
+            );
+          }
+        }
+      }
+
       const appBox = root.getChildren?.()[0];
       const mainRow = appBox?.getChildren?.()[0];
       const mainCol = mainRow
@@ -953,7 +1057,7 @@ export default Plugin.define({
       }
 
       const footerRow = footerBox?.parent;
-      if (footerRow) {
+      if (footerRow && footerRow.id !== "theme.drawer.footer") {
         for (
           let anc = footerRow;
           anc && anc !== root && !anc.isDestroyed;
@@ -1308,6 +1412,9 @@ export default Plugin.define({
             leftBoxRef = undefined;
           }
         }
+        if (props.inPrompt) {
+          setPromptFooterMounted(false);
+        }
       });
 
       return (
@@ -1316,6 +1423,9 @@ export default Plugin.define({
           ref={(el) => {
             ownEl = el;
             leftBoxRef = el;
+            if (props.inPrompt) {
+              setPromptFooterMounted(true);
+            }
             registerLifecycleNode(el);
           }}
           flexDirection="row"
@@ -1533,13 +1643,35 @@ export default Plugin.define({
       context.ui.slot({
         prepend: "prompt.footer.status",
         render: (input) => (
-          <LeftStatus sessionID={input.sessionID} mode={input.mode} />
+          <LeftStatus
+            sessionID={input.sessionID}
+            mode={input.mode}
+            inPrompt={true}
+          />
         ),
       }),
       context.ui.slot({
         append: "prompt.footer",
         render: (input) => (
           <RightStatus sessionID={input.sessionID} mode={input.mode} />
+        ),
+      }),
+      context.ui.slot({
+        append: "session.composer.top",
+        render: (input) => (
+          <Show when={!promptFooterMounted()}>
+            <box
+              id="theme.drawer.footer"
+              width="100%"
+              flexDirection="row"
+              justifyContent="space-between"
+              gap={1}
+              marginTop={1}
+            >
+              <LeftStatus sessionID={input.sessionID} mode="normal" />
+              <RightStatus sessionID={input.sessionID} mode="normal" />
+            </box>
+          </Show>
         ),
       }),
     ];

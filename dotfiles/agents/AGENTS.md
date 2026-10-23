@@ -56,6 +56,7 @@
 ## Prose & Communication
 
 - use periods, commas, colons, and parentheses, never em-dashes or semicolons
+- write arrows and math symbols as plain Unicode (`→`, `×`, `≥`, `≤`, `≠`, `±`)
 - write in ASD-STE100 Simplified Technical English style: active voice, simple tenses, one idea per sentence, sentences under 20 words, plain common words, one word per meaning (do not rotate synonyms)
   - say what a thing is before what it is not; drop the contrast when it adds nothing
 - lead with the outcome: your first sentence answers "what happened" or "what did you find", then supporting details - no restated question, no preview, no closing summary

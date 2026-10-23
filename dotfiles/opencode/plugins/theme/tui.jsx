@@ -229,9 +229,19 @@ function applyBase16Surface(theme, b16) {
   overwriteRgbaHex(theme.text?.muted, b16.base04);
   overwriteRgbaHex(theme.text?.action?.primary?.focused, b16.base00);
   overwriteRgbaHex(theme.text?.action?.primary?.selected, b16.base0D);
+  overwriteRgbaHex(theme.text?.action?.secondary?.focused, b16.base0D);
+  overwriteRgbaHex(theme.text?.formfield?.base, b16.base05);
+  overwriteRgbaHex(theme.text?.formfield?.hovered, b16.base0D);
+  overwriteRgbaHex(theme.text?.formfield?.focused, b16.base0D);
+  overwriteRgbaHex(theme.text?.formfield?.pressed, b16.base0D);
+  overwriteRgbaHex(theme.text?.formfield?.selected, b16.base0D);
   overwriteRgbaHex(theme.background?.action?.primary?.focused, b16.base0D);
+  overwriteRgbaHex(theme.background?.action?.primary?.hovered, b16.base01);
+  overwriteRgbaHex(theme.background?.formfield?.base, b16.base00);
+  overwriteRgbaHex(theme.background?.formfield?.focused, b16.base00);
   overwriteRgbaHex(theme.border?.base, b16.base03);
   overwriteRgbaHex(theme.scrollbar?.base, b16.base03);
+  overwriteRgbaHex(theme.text?.faint, b16.base03);
   overwriteRgbaHex(theme.text?.feedback?.error?.base, b16.base08);
   overwriteRgbaHex(theme.text?.feedback?.warning?.base, b16.base0A);
   overwriteRgbaHex(theme.text?.feedback?.success?.base, b16.base0B);
@@ -250,6 +260,49 @@ function applyBase16Surface(theme, b16) {
   overwriteRgbaHex(theme.diff?.highlight?.added, b16.base0B);
   overwriteRgbaHex(theme.diff?.highlight?.removed, b16.base08);
   if (fromHex) {
+    if (theme.text) {
+      const mutedCol = fromHex(b16.base04);
+      const faintCol = fromHex(b16.base03);
+      theme.text.muted = mutedCol;
+      theme.text.faint = faintCol;
+      if (theme.text.action?.secondary) {
+        theme.text.action.secondary.base = mutedCol;
+      }
+      if (theme.text.action?.primary) {
+        theme.text.action.primary.disabled = mutedCol;
+      }
+      if (theme.text.formfield) {
+        theme.text.formfield.disabled = mutedCol;
+      }
+    }
+    if (theme.border) {
+      theme.border.base = fromHex(b16.base03);
+    }
+    if (theme.scrollbar) {
+      theme.scrollbar.base = fromHex(b16.base03);
+    }
+    if (theme.background?.action?.primary) {
+      theme.background.action.primary.focused = fromHex(b16.base0D);
+      theme.background.action.primary.hovered = fromHex(b16.base01);
+    }
+    if (theme.text?.action?.primary) {
+      theme.text.action.primary.focused = fromHex(b16.base00);
+      theme.text.action.primary.selected = fromHex(b16.base0D);
+    }
+    if (theme.text?.action?.secondary) {
+      theme.text.action.secondary.focused = fromHex(b16.base0D);
+    }
+    if (theme.text?.formfield) {
+      theme.text.formfield.base = fromHex(b16.base05);
+      theme.text.formfield.hovered = fromHex(b16.base0D);
+      theme.text.formfield.focused = fromHex(b16.base0D);
+      theme.text.formfield.pressed = fromHex(b16.base0D);
+      theme.text.formfield.selected = fromHex(b16.base0D);
+    }
+    if (theme.background?.formfield) {
+      theme.background.formfield.base = fromHex(b16.base00);
+      theme.background.formfield.focused = fromHex(b16.base00);
+    }
     if (theme.syntax) {
       theme.syntax.comment = fromHex(b16.base03);
       theme.syntax.variable = fromHex(b16.base08);
@@ -489,6 +542,9 @@ export default Plugin.define({
     const patchedProps = [];
     const patchedNodes = new WeakMap();
     const lifecycleNodes = new Set();
+    let leftBoxRef;
+    let rightBoxRef;
+    let layoutQueued = false;
     let lastBase16Target = readBase16Target();
     let cachedBase16 = parseBase16File(BASE16_SYMLINK);
     if (!cachedBase16) {
@@ -498,14 +554,21 @@ export default Plugin.define({
           const parsed = paletteToBase16(p);
           if (parsed) {
             cachedBase16 = parsed;
+            applyBase16ToTheme(context.theme, cachedBase16);
             setThemeVer((v) => v + 1);
             scheduleApplyLayout();
           }
         })
         ?.catch?.(() => {});
     }
-    let leftBoxRef;
-    let rightBoxRef;
+    createEffect(() => {
+      const th = context.theme;
+      if (th && cachedBase16) {
+        applyBase16ToTheme(th, cachedBase16);
+        setThemeVer((v) => v + 1);
+        scheduleApplyLayout();
+      }
+    });
 
     function syncWidth(footerBox = leftBoxRef) {
       const footerRow = footerBox?.parent;
@@ -599,6 +662,7 @@ export default Plugin.define({
 
       const buildColor = agentThemeColor("build", context.theme);
       const planColor = agentThemeColor("plan", context.theme);
+      const cyanColor = themeCyan(context.theme);
       const mutedColor = context.theme.text.muted;
       const borderBase = context.theme.border?.base ?? mutedColor;
       const bgBase = context.theme.background?.base;
@@ -987,15 +1051,64 @@ export default Plugin.define({
         ) {
           bottomEdgeBox.visible = false;
         }
+
+        const promptContainer = promptRoot.parent;
+        if (promptContainer && !promptContainer.isDestroyed) {
+          for (const sib of promptContainer.getChildren?.() ?? []) {
+            if (sib === promptRoot || !isBoxNode(sib)) continue;
+            if (Array.isArray(sib.border) && sib.border.includes("left")) {
+              const targetColor = agentThemeColor(
+                liveAgentName() || "Build",
+                context.theme,
+              );
+              lockStyle(sib, ["border"], ["left"]);
+              lockStyle(sib, ["customBorderChars"], HEAVY_BORDER_CHARS);
+              if (targetColor) {
+                lockStyle(
+                  sib,
+                  ["borderColor", "focusedBorderColor"],
+                  targetColor,
+                );
+              }
+              if (raisedHigh) {
+                lockStyle(sib, ["backgroundColor"], raisedHigh);
+              }
+              for (const sc of sib.getChildren?.() ?? []) {
+                if (raisedHigh && (sc._backgroundColor?.a ?? 0) > 0) {
+                  lockStyle(sc, ["backgroundColor"], raisedHigh);
+                }
+                const rows =
+                  sc.content?.getChildren?.() ?? sc.getChildren?.() ?? [];
+                for (const row of rows) {
+                  if (row && !row.isDestroyed) {
+                    lockStyle(row, ["paddingLeft"], 2);
+                    const rowBg = row._backgroundColor;
+                    if (
+                      rowBg &&
+                      (rowBg.a ?? 0) > 0 &&
+                      buildColor &&
+                      cyanColor &&
+                      rowBg.equals?.(cyanColor)
+                    ) {
+                      row.backgroundColor = buildColor;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
 
       if (composerWrap && !composerWrap.isDestroyed) {
+        const promptContainer = promptRoot?.parent;
         const composerChildren = (composerWrap.getChildren?.() ?? []).filter(
           isBoxNode,
         );
         const drawerOuter = composerChildren.find(
           (c) =>
             c !== promptRoot &&
+            c !== promptContainer &&
             c.id !== "theme.drawer.footer" &&
             c.visible !== false,
         );
@@ -1054,6 +1167,29 @@ export default Plugin.define({
             0,
           );
         }
+      }
+
+      function refreshDialogNode(n) {
+        if (!n || n.isDestroyed) return;
+        const bg = n._backgroundColor;
+        if (
+          bg &&
+          (bg.a ?? 0) > 0 &&
+          buildColor &&
+          cyanColor &&
+          bg.equals?.(cyanColor)
+        ) {
+          n.backgroundColor = buildColor;
+        }
+        const syn = n.syntaxStyle ?? n._syntaxStyle;
+        if (syn) patchSyntaxStyle(syn, n);
+        for (const ch of n.getChildren?.() ?? []) {
+          refreshDialogNode(ch);
+        }
+      }
+      for (const topChild of root.getChildren?.() ?? []) {
+        if (topChild === appBox) continue;
+        refreshDialogNode(topChild);
       }
 
       const footerRow = footerBox?.parent;
@@ -1151,7 +1287,11 @@ export default Plugin.define({
       if (nextTarget && nextTarget !== lastBase16Target) {
         lastBase16Target = nextTarget;
         cachedBase16 = parseBase16File(BASE16_SYMLINK);
+        if (cachedBase16) {
+          applyBase16ToTheme(context.theme, cachedBase16);
+        }
         setThemeVer((v) => v + 1);
+        scheduleApplyLayout();
         try {
           process.emit("SIGUSR2");
         } catch {}
@@ -1182,7 +1322,6 @@ export default Plugin.define({
       }
     });
 
-    let layoutQueued = false;
     function scheduleApplyLayout(node = leftBoxRef) {
       if (layoutQueued) return;
       layoutQueued = true;

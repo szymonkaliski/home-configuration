@@ -1,6 +1,44 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "google-vertex/gemini-4-argon",
+  "model": "google-vertex/gemini-4-argon#high",
+  "providers": {
+    "google": {
+      "models": {
+        "gemini-4-argon": {
+          "settings": {
+            "thinkingConfig": {
+              "includeThoughts": true,
+              "thinkingLevel": "high"
+            }
+          },
+          "capabilities": {
+            "reasoning": {
+              "supported": true,
+              "effort": ["high"]
+            }
+          }
+        }
+      }
+    },
+    "google-vertex": {
+      "models": {
+        "gemini-4-argon": {
+          "settings": {
+            "thinkingConfig": {
+              "includeThoughts": true,
+              "thinkingLevel": "high"
+            }
+          },
+          "capabilities": {
+            "reasoning": {
+              "supported": true,
+              "effort": ["high"]
+            }
+          }
+        }
+      }
+    }
+  },
   "mcp": {
     "servers": {
       "chrome-devtools": {

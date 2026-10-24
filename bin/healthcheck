@@ -201,6 +201,19 @@ check "telegraphist-serves-https" bash -c '
   fi
 '
 
+check "searxng-search" bash -c '
+  resp=$(/home/szymon/.npm/bin/opencode api post /api/websearch \
+    --data "{\"query\":\"nixos flake\"}" 2>&1) || {
+    echo "$resp"
+    exit 1
+  }
+  count=$(echo "$resp" | jq -r ".data.results | length // 0" 2>/dev/null)
+  if (( count == 0 )); then
+    echo "searxng returned 0 results"
+    exit 1
+  fi
+'
+
 check "tailscale-online" bash -c '
   online=$(tailscale status --self --json | jq -r ".Self.Online // empty" 2>/dev/null)
   if [[ "$online" != "true" ]]; then

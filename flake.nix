@@ -67,6 +67,13 @@
             (import nixpkgs-unstable { inherit (prev.stdenv.hostPlatform) system; }).blocky;
       };
 
+      searxngOverlay = final: prev: {
+        searxng =
+          prev.lib.warnIf (prev.lib.versionAtLeast prev.searxng.version "0-unstable-2026-10-13")
+            "searxng in the pinned nixpkgs includes curl-impersonate and updated engine parsers; drop searxngOverlay from flake.nix"
+            (import nixpkgs-unstable { inherit (prev.stdenv.hostPlatform) system; }).searxng;
+      };
+
       # home-manager re-imports nixpkgs from the module-level nixpkgs.* options,
       # so overlays and allowUnfree are set there, not on a pkgs instance
       mkHome =
@@ -233,6 +240,7 @@
             nixpkgs.overlays = [
               antigravityOverlay
               blockyOverlay
+              searxngOverlay
             ];
           }
           ./nix/hosts/minix/system.nix

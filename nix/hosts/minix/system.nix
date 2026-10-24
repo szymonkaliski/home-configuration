@@ -385,18 +385,54 @@ in
     };
   };
 
-  services.searx = {
-    enable = true;
-    environmentFile = config.sops.templates."searx-environment".path;
-    settings = {
-      server = {
-        bind_address = "0.0.0.0";
-        port = ports.searx;
-        secret_key = "$SEARXNG_SECRET";
+  services.searx =
+    let
+      engines = [
+        "bing"
+        "duckduckgo"
+        "google cse"
+        "wikipedia"
+        "yahoo"
+        "yep"
+      ];
+    in
+    {
+      enable = true;
+      environmentFile = config.sops.templates."searx-environment".path;
+      settings = {
+        use_default_settings.engines.keep_only = engines;
+        engines = map (name: {
+          inherit name;
+          disabled = false;
+        }) engines;
+        server = {
+          bind_address = "0.0.0.0";
+          port = ports.searx;
+          secret_key = "$SEARXNG_SECRET";
+        };
+        search = {
+          autocomplete = "duckduckgo";
+          default_lang = "en-US";
+          formats = [
+            "html"
+            "json"
+          ];
+        };
+        ui.default_locale = "en";
       };
-      search.autocomplete = "duckduckgo";
-      ui.default_locale = "en";
     };
+
+  systemd.services.searx = {
+    after = [
+      "network-online.target"
+      "blocky.service"
+    ];
+    wants = [
+      "network-online.target"
+      "blocky.service"
+    ];
+    environment.TMPDIR = "/var/cache/searx";
+    serviceConfig.CacheDirectory = "searx";
   };
 
   services.darkhttpd = {

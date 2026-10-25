@@ -1,11 +1,8 @@
 {
   "mcpServers": {
-    "playwright": {
+    "chrome-devtools": {
       "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest", "--isolated"],
-      "env": {
-        "PLAYWRIGHT_BROWSERS_PATH": ""
-      }
+      "args": ["-y", "chrome-devtools-mcp@latest", "--isolated"]
     }
   }
 }

@@ -175,7 +175,6 @@ in
   };
 
   home.packages = [
-    pkgs.chromium
     pkgs.dnsutils
     pkgs.lm_sensors
     pkgs.trash-cli

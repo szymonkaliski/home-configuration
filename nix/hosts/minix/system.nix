@@ -291,6 +291,7 @@ in
     "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
   ];
   environment.systemPackages = with pkgs; [
+    chromium # for playwright MCP
     vim
     git
     restic
@@ -312,6 +313,38 @@ in
       esac
     '')
   ];
+
+  # minix is headless: disable chrome-devtools MCP and point playwright MCP at
+  # the system chromium
+  environment.etc."opencode/opencode.json".text = builtins.toJSON {
+    mcp.servers = {
+      chrome-devtools = {
+        type = "local";
+        command = [
+          "npx"
+          "-y"
+          "chrome-devtools-mcp@latest"
+          "--isolated"
+        ];
+        disabled = true;
+      };
+      playwright = {
+        type = "local";
+        command = [
+          "npx"
+          "-y"
+          "@playwright/mcp@latest"
+          "--isolated"
+          "--executable-path"
+          "/run/current-system/sw/bin/chromium"
+        ];
+        environment = {
+          PLAYWRIGHT_BROWSERS_PATH = "";
+        };
+        disabled = false;
+      };
+    };
+  };
 
   services.mosquitto = {
     enable = true;

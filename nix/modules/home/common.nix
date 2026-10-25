@@ -177,7 +177,27 @@ in
     ".claude/notify-lib.cjs".source = link "${dotfileDir}/agents/notify-lib.cjs";
     ".claude/statusline-command.sh".source = link "${dotfileDir}/claude/statusline-command.sh";
     ".gemini/config/AGENTS.md".source = link "${dotfileDir}/agents/AGENTS.md";
-    ".gemini/config/mcp_config.json".source = link "${dotfileDir}/agy/mcp_config.json";
+    ".gemini/config/mcp_config.json" =
+      if pkgs.stdenv.isDarwin then
+        { source = link "${dotfileDir}/agy/mcp_config.json"; }
+      else
+        {
+          text = builtins.toJSON {
+            mcpServers.playwright = {
+              command = "npx";
+              args = [
+                "-y"
+                "@playwright/mcp@latest"
+                "--isolated"
+                "--executable-path"
+                "/run/current-system/sw/bin/chromium"
+              ];
+              env = {
+                PLAYWRIGHT_BROWSERS_PATH = "";
+              };
+            };
+          };
+        };
     ".gemini/config/hooks.json".source = link "${dotfileDir}/agy/hooks.json";
     ".gemini/config/notify.js".source = link "${dotfileDir}/agy/notify.js";
     ".gemini/config/notify-lib.cjs".source = link "${dotfileDir}/agents/notify-lib.cjs";
@@ -226,4 +246,60 @@ in
           run rm "$cliConfig"
         fi
       '';
+
+  # Claude Code keeps user MCP servers inside its mutable ~/.claude.json state
+  # file; reconcile the browser MCP entry per platform on activation.
+  home.activation.syncClaudeMcpConfig =
+    let
+      claudeBrowserMcp =
+        if pkgs.stdenv.isDarwin then
+          {
+            setKey = "chrome-devtools";
+            dropKey = "playwright";
+            server = {
+              type = "stdio";
+              command = "npx";
+              args = [
+                "-y"
+                "chrome-devtools-mcp@latest"
+                "--isolated"
+              ];
+            };
+          }
+        else
+          {
+            setKey = "playwright";
+            dropKey = "chrome-devtools";
+            server = {
+              type = "stdio";
+              command = "npx";
+              args = [
+                "-y"
+                "@playwright/mcp@latest"
+                "--isolated"
+                "--executable-path"
+                "/run/current-system/sw/bin/chromium"
+              ];
+              env = {
+                PLAYWRIGHT_BROWSERS_PATH = "";
+              };
+            };
+          };
+      jqExpr = ".mcpServers = ((.mcpServers // {}) | del(.[$drop]) | .[$set] = $server)";
+    in
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      claudeConfig="$HOME/.claude.json"
+      if [[ -f "$claudeConfig" ]]; then
+        tmp="$(mktemp "$claudeConfig.XXXXXX")"
+        if ${pkgs.jq}/bin/jq \
+          --arg set ${lib.escapeShellArg claudeBrowserMcp.setKey} \
+          --arg drop ${lib.escapeShellArg claudeBrowserMcp.dropKey} \
+          --argjson server ${lib.escapeShellArg (builtins.toJSON claudeBrowserMcp.server)} \
+          ${lib.escapeShellArg jqExpr} "$claudeConfig" > "$tmp"; then
+          run mv "$tmp" "$claudeConfig"
+        else
+          rm -f "$tmp"
+        fi
+      fi
+    '';
 }

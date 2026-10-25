@@ -73,14 +73,26 @@ node << 'EOF'
 const fs = require("fs");
 
 const vmChromium = "/run/current-system/sw/bin/chromium";
+const playwrightArgs = [
+  "-y",
+  "@playwright/mcp@latest",
+  "--isolated",
+  "--executable-path",
+  vmChromium,
+];
 
-// patch Claude Code
+// patch Claude Code: set playwright MCP and accept /workspace trust
 const claudePath = "/home/szymon/.claude.json";
 if (fs.existsSync(claudePath)) {
-  let raw = fs.readFileSync(claudePath, "utf8");
-  raw = raw.replaceAll("/home/szymon/.nix-profile/bin/chromium", vmChromium);
-
-  const config = JSON.parse(raw);
+  const config = JSON.parse(fs.readFileSync(claudePath, "utf8"));
+  config.mcpServers = config.mcpServers || {};
+  delete config.mcpServers["chrome-devtools"];
+  config.mcpServers.playwright = {
+    type: "stdio",
+    command: "npx",
+    args: [...playwrightArgs],
+    env: { PLAYWRIGHT_BROWSERS_PATH: "" },
+  };
   config.projects = config.projects || {};
   config.projects["/workspace"] = config.projects["/workspace"] || {};
   config.projects["/workspace"].hasTrustDialogAccepted = true;
@@ -88,31 +100,37 @@ if (fs.existsSync(claudePath)) {
   fs.writeFileSync(claudePath, JSON.stringify(config, null, 2));
 }
 
-// patch opencode: allow all permissions and inject VM chromium path for playwright mcp
+// patch opencode: allow all permissions, drop orchid-only chrome-devtools,
+// and configure playwright MCP with VM chromium
 const opencodePath = "/home/szymon/.config/opencode/opencode.json";
 if (fs.existsSync(opencodePath)) {
-  let raw = fs.readFileSync(opencodePath, "utf8");
-  raw = raw.replaceAll("/home/szymon/.nix-profile/bin/chromium", vmChromium);
-
-  const config = JSON.parse(raw);
+  const config = JSON.parse(fs.readFileSync(opencodePath, "utf8"));
+  config.mcp = config.mcp || {};
+  const servers = config.mcp.servers || {};
+  delete servers["chrome-devtools"];
+  servers.playwright = {
+    type: "local",
+    command: ["npx", ...playwrightArgs],
+    environment: { PLAYWRIGHT_BROWSERS_PATH: "" },
+    disabled: false,
+  };
+  config.mcp.servers = servers;
   config.permissions = [{ action: "*", resource: "*", effect: "allow" }];
   fs.writeFileSync(opencodePath, JSON.stringify(config, null, 2));
 }
 
-// patch agy: point the playwright mcp at the VM chromium (the shared
-// dotfile carries no --executable-path, so inject it by server name)
+// patch agy: drop orchid-only chrome-devtools and configure playwright MCP
 const agyMcpPath = "/home/szymon/.gemini/config/mcp_config.json";
 if (fs.existsSync(agyMcpPath)) {
   const config = JSON.parse(fs.readFileSync(agyMcpPath, "utf8"));
-  const playwright = (config.mcpServers || {}).playwright;
-  if (playwright) {
-    const args = playwright.args || [];
-    const i = args.indexOf("--executable-path");
-    if (i !== -1) args[i + 1] = vmChromium;
-    else args.push("--executable-path", vmChromium);
-    playwright.args = args;
-    fs.writeFileSync(agyMcpPath, JSON.stringify(config, null, 2));
-  }
+  config.mcpServers = config.mcpServers || {};
+  delete config.mcpServers["chrome-devtools"];
+  config.mcpServers.playwright = {
+    command: "npx",
+    args: [...playwrightArgs],
+    env: { PLAYWRIGHT_BROWSERS_PATH: "" },
+  };
+  fs.writeFileSync(agyMcpPath, JSON.stringify(config, null, 2));
 }
 EOF
 
@@ -138,7 +156,7 @@ chmod +x /home/szymon/.bin/fable
 cat << 'EOF' > /home/szymon/.bin/opencode
 #!/bin/sh
 export PATH="/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
-exec npx -y --package=@opencode/cli@latest opencode --auto "$@"
+exec npx -y @opencode/cli@latest --auto "$@"
 EOF
 chmod +x /home/szymon/.bin/opencode
 cat << 'EOF' > /home/szymon/.bin/agy

@@ -10,6 +10,7 @@ let
   link = config.lib.file.mkOutOfStoreSymlink;
 
   tnotify = pkgs.callPackage ../../pkgs/tnotify.nix { };
+  keys = import ../../keys.nix;
 in
 {
   imports = [
@@ -18,6 +19,21 @@ in
   ];
 
   home.homeDirectory = "/Users/szymon";
+
+  # minix reaches orchid over ssh, and macOS sshd reads ~/.ssh/authorized_keys.
+  # It must be a real 0600 file: a home.file symlink into /nix/store fails
+  # sshd's StrictModes check on the group-writable store directory
+  home.activation.authorizedKeys = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    f="$HOME/.ssh/authorized_keys"
+    run mkdir -p "$HOME/.ssh"
+    run chmod 700 "$HOME/.ssh"
+    run touch "$f"
+    run chmod 600 "$f"
+    if ! grep -qxF "${keys.minix}" "$f"; then
+      [ -s "$f" ] && [ -n "$(tail -c1 "$f")" ] && run sh -c "echo >> $f"
+      run sh -c "echo ${keys.minix} >> $f"
+    fi
+  '';
 
   targets.darwin.copyApps.enable = false;
   targets.darwin.linkApps.enable = true;

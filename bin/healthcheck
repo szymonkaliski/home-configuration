@@ -201,6 +201,14 @@ check "telegraphist-serves-https" bash -c '
   fi
 '
 
+check "orchestrator-serves-https" bash -c '
+  status=$(curl -so /dev/null -w "%{http_code}" --max-time 10 https://minix.golden-minor.ts.net:10018/)
+  if [[ "$status" != "200" ]]; then
+    echo "got HTTP $status"
+    exit 1
+  fi
+'
+
 check "searxng-search" bash -c '
   resp=$(/home/szymon/.npm/bin/opencode api post /api/websearch \
     --data "{\"query\":\"nixos flake\"}" 2>&1) || {

@@ -493,6 +493,21 @@ in
     };
   };
 
+  systemd.user.services.orchestrator = mkProjectService {
+    dir = "orchestrator";
+    description = "Orchestrator agent control center";
+    extraUnits = [ "tmux.service" ];
+    needsInternet = true;
+    build = "npm run build";
+    command = "${pkgs.bash}/bin/bash -c 'SHELL=${pkgs.zsh}/bin/zsh PATH=%h/.bin:${pkgs.zsh}/bin:${pkgs.openssh}/bin:${pkgs.tmux}/bin:$PATH exec node dist/server/hub.js'";
+    environment = "PORT=${toString ports.orchestrator}";
+    extraService = {
+      # https:// through tailscale serve
+      ExecStartPost = "${pkgs.tailscale}/bin/tailscale serve --bg --https=${toString ports.orchestrator} ${toString ports.orchestrator}";
+      ExecStopPost = "${pkgs.tailscale}/bin/tailscale serve --https=${toString ports.orchestrator} off";
+    };
+  };
+
   systemd.user.services.healthcheck = {
     Unit = {
       Description = "System healthcheck";

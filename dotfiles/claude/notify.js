@@ -52,16 +52,21 @@ function clearPending(sid) {
   try {
     fs.unlinkSync(permissionOpenFile(sid));
   } catch {}
+  try {
+    fs.unlinkSync(backgroundFile(sid));
+  } catch {}
   // sweep records orphaned by killed/crashed sessions so the dir can't grow
   try {
     const now = Date.now();
     for (const f of fs.readdirSync(PENDING_DIR)) {
       const p = `${PENDING_DIR}/${f}`;
       try {
-        // a prompt can stay open for hours; its marker lives a day, not 10 min
-        const limit = f.endsWith("__perm.json")
-          ? 24 * 60 * 60 * 1000
-          : PENDING_FRESH_MS;
+        // a prompt can stay open and a subagent can run for hours; their
+        // markers live a day, not 10 min
+        const limit =
+          f.endsWith("__perm.json") || f.endsWith("__bg.json")
+            ? 24 * 60 * 60 * 1000
+            : PENDING_FRESH_MS;
         if (now - fs.statSync(p).mtimeMs > limit) fs.unlinkSync(p);
       } catch {}
     }
@@ -107,10 +112,28 @@ const KIND = {
   "Notification/idle_prompt": "waiting",
   UserPromptSubmit: "working",
 };
+// A turn that ends while subagents still work in the background has not
+// finished the session's work: Claude takes up their reports in a new turn,
+// and that turn's Stop decides. Shells and monitors (dev servers, log
+// watchers) can run for the whole session, so they do not count.
+const AGENT_TASKS = new Set([
+  "subagent",
+  "workflow",
+  "teammate",
+  "cloud session",
+]);
+const agentsInFlight =
+  event === "Stop"
+    ? (input.background_tasks ?? []).filter((t) => AGENT_TASKS.has(t.type))
+    : [];
+const backgroundFile = (sid) => pendingFile(`${sid}__bg`);
+
 const kind =
-  KIND[
-    event === "Notification" ? `${event}/${input.notification_type}` : event
-  ];
+  agentsInFlight.length > 0
+    ? "working"
+    : KIND[
+        event === "Notification" ? `${event}/${input.notification_type}` : event
+      ];
 
 // a permission prompt stays open until a tool runs or the turn ends; the marker
 // lets PostToolUse log the moment it was answered
@@ -146,11 +169,24 @@ if (event === "PostToolUse" || event === "PostToolUseFailure") {
   process.exit(0);
 }
 
+// the idle reminder while subagents work says nothing new about the session
+if (
+  event === "Notification" &&
+  input.notification_type === "idle_prompt" &&
+  fs.existsSync(backgroundFile(sessionId))
+) {
+  logLine({ phase: "skipped", reason: "background-agents", event });
+  process.exit(0);
+}
+
 logLine({
   phase: "fire",
   event,
   notification_type: input.notification_type,
   tool_name: input.tool_name,
+  background: agentsInFlight.length
+    ? agentsInFlight.map((t) => t.agent_type ?? t.type)
+    : undefined,
 });
 
 // UserPromptSubmit is hooked only for the fire line above: nothing is
@@ -175,8 +211,22 @@ if (
     );
   } catch {}
 }
-// a turn's end closes any prompt, whether or not the alert below is suppressed
-if (event === "Stop") clearPending(sessionId);
+// a turn's end closes any prompt, whether or not the alert below is suppressed.
+// nothing is delivered while subagents work: the turn after their reports sends
+// the alert
+if (event === "Stop") {
+  clearPending(sessionId);
+  if (agentsInFlight.length > 0) {
+    try {
+      fs.mkdirSync(PENDING_DIR, { recursive: true });
+      fs.writeFileSync(
+        backgroundFile(sessionId),
+        JSON.stringify({ ts: Date.now() }),
+      );
+    } catch {}
+    process.exit(0);
+  }
+}
 
 // Only Stop, PermissionRequest, Notification, UserPromptSubmit, and PostToolUse*
 // are hooked, but sessions started before a settings change keep their old

@@ -15,6 +15,26 @@ REPO_SETUP_SH="$PROJECTS_PATH/home-configuration/nix/hosts/minix/microvms/setup.
 REPO_AGENTS_MD="$PROJECTS_PATH/home-configuration/dotfiles/agents/AGENTS.md"
 REPO_BIN_DIR="$PROJECTS_PATH/home-configuration/bin"
 
+# while the ssh runs, the tmux pane this shell runs in fronts the VM: anything
+# that lists panes (the orchestrator control center) reads #{@vm} to know which,
+# and #{@vm_since} to ignore log lines a previous occupant of that VM number
+# wrote. REMOTE_CMD, when set, runs in the VM through a login shell instead of
+# an interactive one (`microvm start … -- opencode`).
+REMOTE_CMD=()
+vm_ssh() {
+  local vm="$1"
+  shift
+  if [ -n "${TMUX_PANE:-}" ]; then
+    trap 'tmux set -pu -t "$TMUX_PANE" @vm \; set -pu -t "$TMUX_PANE" @vm_since || true' EXIT
+    tmux set -p -t "$TMUX_PANE" @vm "vm-${vm}" \; set -p -t "$TMUX_PANE" @vm_since "$(date +%s)" || true
+  fi
+  if [ "${#REMOTE_CMD[@]}" -gt 0 ]; then
+    ssh "$@" "szymon@10.100.0.${vm}" "bash -lc $(printf '%q' "$(printf '%q ' "${REMOTE_CMD[@]}")")"
+  else
+    ssh "$@" "szymon@10.100.0.${vm}"
+  fi
+}
+
 sync_host_config() {
   mkdir -p "$HOST_DIR"
 
@@ -51,8 +71,10 @@ stage_vm_home() {
     jq -r '.model // empty' "$HOME/.claude/settings.json" 2> /dev/null > "$home/.claude/anthropic-model" || true
     command cp -L "$HOME/.gemini/antigravity-cli/antigravity-oauth-token" "$home/.gemini/antigravity-cli/antigravity-oauth-token" 2> /dev/null || true
 
-    # refresh the host's skills and agent configs; guest-only files stay
+    # refresh the host's skills and agent configs; guest-only files stay. The
+    # claude notifier and its hook registrations travel too
     rsync -aL "$HOME/.claude/skills/" "$home/.claude/skills/" 2> /dev/null || true
+    command cp -L "$HOME/.claude/notify.js" "$HOME/.claude/notify-lib.cjs" "$HOME/.claude/settings.json" "$home/.claude/" 2> /dev/null || true
     rsync -aL --exclude=/notify.log --exclude=/AGENTS.md "$HOME/.config/opencode/" "$home/.config/opencode/" 2> /dev/null || true
     rsync -aL --exclude=/notify.log --exclude=/notify-pending --exclude=/AGENTS.md "$HOME/.gemini/config/" "$home/.gemini/config/" 2> /dev/null || true
   else
@@ -136,6 +158,11 @@ cmd_start() {
         PROJECT="$2"
         shift 2
         ;;
+      --)
+        shift
+        REMOTE_CMD=("$@")
+        break
+        ;;
       *)
         VM="$1"
         shift
@@ -199,7 +226,7 @@ cmd_start() {
     echo " ready (${elapsed}s)"
   fi
   notify-pushover "vm-${VM} ready (${elapsed}s) ${PROJECT##*/}" 2> /dev/null || true
-  exec ssh -t -o ConnectionAttempts=5 "${SSH_OPTS[@]}" "szymon@10.100.0.${VM}"
+  vm_ssh "${VM}" -t -o ConnectionAttempts=5 "${SSH_OPTS[@]}"
 }
 
 stop_vm() {
@@ -223,12 +250,15 @@ cmd_stop() {
 }
 
 cmd_ssh() {
-  [ $# -lt 1 ] && echo "usage: microvm ssh <N>" && exit 1
-  if ! systemctl is-active "microvm@vm-${1}" &> /dev/null; then
-    echo "error: vm-${1} is not running" >&2
+  [ $# -lt 1 ] && echo "usage: microvm ssh <N> [-- CMD...]" && exit 1
+  local VM="$1"
+  shift
+  [ "${1:-}" = "--" ] && shift && REMOTE_CMD=("$@")
+  if ! systemctl is-active "microvm@vm-${VM}" &> /dev/null; then
+    echo "error: vm-${VM} is not running" >&2
     exit 1
   fi
-  ssh -t "${SSH_OPTS[@]}" "szymon@10.100.0.${1}"
+  vm_ssh "${VM}" -t "${SSH_OPTS[@]}"
 }
 
 cmd_list() {
@@ -369,9 +399,11 @@ usage: microvm <command> [args]
 
   list, ls                  show all VMs
 
-  start [N] [--dir PATH]    start VM on an overlay of PATH (default cwd);
-                            N auto-picked if omitted
-  ssh N                     ssh into running VM
+  start [N] [--dir PATH] [-- CMD...]
+                            start VM on an overlay of PATH (default cwd);
+                            N auto-picked if omitted; CMD runs in the VM
+                            through a login shell instead of a prompt
+  ssh N [-- CMD...]         ssh into running VM (or run CMD there)
   diff N                    files the VM changed (A/M/D)
   stop N                    stop VM
   restart N                 restart VM (preserves workspace)

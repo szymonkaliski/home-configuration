@@ -66,8 +66,13 @@ function pruneLog(logPath, now) {
 
 // Several sessions interleave in one log, and a pushover `sent` line lands a few
 // hundred ms after its `fire` line, so `base` carries whatever identifier ties a
-// line back to the session that produced it.
+// line back to the session that produced it. Every line also carries where it
+// came from (host, tmux pane, cwd), so a reader can join it to a tmux pane
+// without knowing the harness's own session bookkeeping.
 function createLogger(logPath, base = {}) {
+  // the short name: macOS reports "orchid.local", the config keys are short
+  const origin = { host: os.hostname().split(".")[0], cwd: process.cwd() };
+  if (process.env.TMUX_PANE) origin.pane = process.env.TMUX_PANE;
   return function log(data) {
     const now = Date.now();
     try {
@@ -75,6 +80,7 @@ function createLogger(logPath, base = {}) {
         logPath,
         JSON.stringify({
           ts: new Date(now).toISOString(),
+          ...origin,
           ...base,
           ...data,
         }) + "\n",
@@ -84,7 +90,9 @@ function createLogger(logPath, base = {}) {
   };
 }
 
-// an alert is noise when the user is already watching the pane it came from
+// an alert is noise when the user is already watching the pane it came from.
+// A control-mode client (the orchestrator feed) is attached and focused on its
+// session's active pane too, but nobody looks through it.
 function isFocusedPane() {
   if (!process.env.TMUX || !process.env.TMUX_PANE) return false;
   try {
@@ -98,9 +106,10 @@ function isFocusedPane() {
 
     for (const row of clients) {
       const [flags, activePane] = row.split("\t");
+      const set = flags ? flags.split(",") : [];
       if (
-        flags &&
-        flags.split(",").includes("focused") &&
+        set.includes("focused") &&
+        !set.includes("control-mode") &&
         activePane === myPane
       ) {
         return true;

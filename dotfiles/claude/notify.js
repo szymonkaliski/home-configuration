@@ -49,13 +49,20 @@ function clearPending(sid) {
   try {
     fs.unlinkSync(pendingFile(sid));
   } catch {}
+  try {
+    fs.unlinkSync(permissionOpenFile(sid));
+  } catch {}
   // sweep records orphaned by killed/crashed sessions so the dir can't grow
   try {
     const now = Date.now();
     for (const f of fs.readdirSync(PENDING_DIR)) {
       const p = `${PENDING_DIR}/${f}`;
       try {
-        if (now - fs.statSync(p).mtimeMs > PENDING_FRESH_MS) fs.unlinkSync(p);
+        // a prompt can stay open for hours; its marker lives a day, not 10 min
+        const limit = f.endsWith("__perm.json")
+          ? 24 * 60 * 60 * 1000
+          : PENDING_FRESH_MS;
+        if (now - fs.statSync(p).mtimeMs > limit) fs.unlinkSync(p);
       } catch {}
     }
   } catch {}
@@ -89,9 +96,55 @@ function wasIdleNotified(sid, body) {
   }
 }
 
+// what the event means to a reader of the log, independent of the harness:
+// permission = a prompt blocks the agent until the user answers (a tool
+// permission or a question), waiting = the turn ended, working = a turn runs
+const KIND = {
+  PermissionRequest: "permission",
+  "Notification/permission_prompt": "permission",
+  "Notification/agent_needs_input": "permission",
+  Stop: "waiting",
+  "Notification/idle_prompt": "waiting",
+  UserPromptSubmit: "working",
+};
+const kind =
+  KIND[
+    event === "Notification" ? `${event}/${input.notification_type}` : event
+  ];
+
+// a permission prompt stays open until a tool runs or the turn ends; the marker
+// lets PostToolUse log the moment it was answered
+const permissionOpenFile = (sid) => pendingFile(`${sid}__perm`);
+
 const logLine = createLogger(`${os.homedir()}/.claude/notify.log`, {
+  harness: "claude",
   session: sessionId,
+  kind,
 });
+
+// PostToolUse and PostToolUseFailure are hooked only to log "working" once,
+// when the tool that asked for permission finishes or fails (the marker below
+// names the agent and tool, since a background agent's tool calls carry the
+// same session id); any other tool call logs nothing. The settings.json command
+// only starts node when a marker exists.
+if (event === "PostToolUse" || event === "PostToolUseFailure") {
+  try {
+    const rec = JSON.parse(
+      fs.readFileSync(permissionOpenFile(sessionId), "utf8"),
+    );
+    const sameAgent = (rec.agent ?? null) === (input.agent_id ?? null);
+    const sameTool = rec.tool == null || rec.tool === input.tool_name;
+    if (sameAgent && sameTool) {
+      fs.unlinkSync(permissionOpenFile(sessionId));
+      logLine({
+        phase: "fire",
+        kind: "working",
+        reason: "permission-answered",
+      });
+    }
+  } catch {}
+  process.exit(0);
+}
 
 logLine({
   phase: "fire",
@@ -100,10 +153,36 @@ logLine({
   tool_name: input.tool_name,
 });
 
-// Only Stop, PermissionRequest, and Notification are hooked, but sessions
-// started before a settings change keep their old hook registrations and can
-// invoke us for since-removed events (PreToolUse, SubagentStop); ignore those
-// instead of letting them fall through to the generic-Notification branch.
+// UserPromptSubmit is hooked only for the fire line above: nothing is
+// delivered, and nothing is printed, since this hook's stdout would be added
+// to the prompt as context.
+if (event === "UserPromptSubmit") {
+  clearPending(sessionId);
+  process.exit(0);
+}
+if (
+  event === "PermissionRequest" ||
+  (kind === "permission" && !fs.existsSync(permissionOpenFile(sessionId)))
+) {
+  try {
+    fs.mkdirSync(PENDING_DIR, { recursive: true });
+    fs.writeFileSync(
+      permissionOpenFile(sessionId),
+      JSON.stringify({
+        agent: input.agent_id ?? null,
+        tool: input.tool_name ?? null,
+      }),
+    );
+  } catch {}
+}
+// a turn's end closes any prompt, whether or not the alert below is suppressed
+if (event === "Stop") clearPending(sessionId);
+
+// Only Stop, PermissionRequest, Notification, UserPromptSubmit, and PostToolUse*
+// are hooked, but sessions started before a settings change keep their old
+// hook registrations and can invoke us for since-removed events (PreToolUse,
+// SubagentStop); ignore those instead of letting them fall through to the
+// generic-Notification branch.
 if (!["Stop", "PermissionRequest", "Notification"].includes(event)) {
   logLine({ phase: "skipped", reason: "unhooked-event", event });
   process.exit(0);
@@ -366,7 +445,6 @@ function formatToolUse(toolUse) {
 let body;
 
 if (event === "Stop") {
-  clearPending(sessionId); // turn ended; any pending-tool record is now stale
   // a Stop re-fired by a blocking stop hook's continuation, not a turn end
   if (input.stop_hook_active) {
     logLine({ phase: "skipped", reason: "stop-hook-active", event });
@@ -447,7 +525,7 @@ if (event === "Stop") {
         phase: "skipped",
         reason:
           state.kind === "text" ? "stale-assistant-text" : "no-assistant-text",
-        kind: state.kind,
+        assistant_state: state.kind,
       });
       process.exit(0);
     }

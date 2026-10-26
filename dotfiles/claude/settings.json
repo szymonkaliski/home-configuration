@@ -86,6 +86,14 @@
             "command": "if [ -x ~/.claude/tcc-heal.js ]; then ~/.claude/tcc-heal.js; fi"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ls ~/.claude/notify-pending/*__perm.json > /dev/null 2>&1 && ~/.claude/notify.js || true"
+          }
+        ]
       }
     ],
     "PostToolUseFailure": [
@@ -95,6 +103,24 @@
           {
             "type": "command",
             "command": "if [ -x ~/.claude/tcc-heal.js ]; then ~/.claude/tcc-heal.js; fi"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ls ~/.claude/notify-pending/*__perm.json > /dev/null 2>&1 && ~/.claude/notify.js || true"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/notify.js"
           }
         ]
       }

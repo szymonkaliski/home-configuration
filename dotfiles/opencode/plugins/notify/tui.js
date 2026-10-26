@@ -80,23 +80,35 @@ export default Plugin.define({
       return false;
     }
 
-    async function notifyIdle(sessionID, eventLocation) {
+    // one line, no delivery: the state transitions the log carries for readers.
+    // A subagent shares its parent's pane, so its turn lifecycle says nothing
+    // about the pane, while its prompt does block and unblock the pane.
+    async function logKind(sessionID, event, kind) {
       const session = await resolveSession(sessionID);
       if (!isLocalSession(sessionID, session)) return;
+      if (event.startsWith("session.") && session?.parentID) return;
+      createLogger(LOG_PATH, {
+        harness: "opencode",
+        event,
+        kind,
+        session: sessionID,
+      })({ phase: "fire" });
+    }
+
+    async function notifyIdle(sessionID, eventLocation) {
+      const session = await resolveSession(sessionID);
+      if (!isLocalSession(sessionID, session) || session?.parentID) return;
 
       const log = createLogger(LOG_PATH, {
+        harness: "opencode",
         event: "session.execution.succeeded",
+        kind: "waiting",
         session: sessionID,
       });
       log({ phase: "fire" });
 
       if (isFocusedPane()) {
         log({ phase: "suppressed", reason: "focused-pane" });
-        return;
-      }
-
-      if (session?.parentID) {
-        log({ phase: "suppressed", reason: "subagent-session" });
         return;
       }
 
@@ -136,7 +148,9 @@ export default Plugin.define({
       if (!isLocalSession(perm?.sessionID, session)) return;
 
       const log = createLogger(LOG_PATH, {
+        harness: "opencode",
         event: "permission.asked",
+        kind: "permission",
         session: perm?.sessionID,
       });
       log({ phase: "fire", perm });
@@ -171,7 +185,9 @@ export default Plugin.define({
       if (!isLocalSession(form?.sessionID, session)) return;
 
       const log = createLogger(LOG_PATH, {
+        harness: "opencode",
         event: "form.created",
+        kind: "permission",
         session: form?.sessionID,
       });
       log({ phase: "fire" });
@@ -191,6 +207,46 @@ export default Plugin.define({
     }
 
     const dispose = [
+      context.data.on("session.execution.started", (event) => {
+        void logKind(
+          event.data.sessionID,
+          "session.execution.started",
+          "working",
+        );
+      }),
+      // an aborted or failed turn ends like a finished one, without an alert
+      context.data.on("session.execution.interrupted", (event) => {
+        void logKind(
+          event.data.sessionID,
+          "session.execution.interrupted",
+          "waiting",
+        );
+      }),
+      context.data.on("session.execution.failed", (event) => {
+        void logKind(
+          event.data.sessionID,
+          "session.execution.failed",
+          "waiting",
+        );
+      }),
+      // an answered prompt puts the agent back to work
+      context.data.on("permission.replied", (event) => {
+        void logKind(event.data.sessionID, "permission.replied", "working");
+      }),
+      context.data.on("form.replied", (event) => {
+        void logKind(
+          event.data.form?.sessionID ?? event.data.sessionID,
+          "form.replied",
+          "working",
+        );
+      }),
+      context.data.on("form.cancelled", (event) => {
+        void logKind(
+          event.data.form?.sessionID ?? event.data.sessionID,
+          "form.cancelled",
+          "working",
+        );
+      }),
       context.data.on("session.execution.succeeded", (event) => {
         void notifyIdle(event.data.sessionID, event.location);
       }),

@@ -20,6 +20,7 @@ in
 {
   imports = [
     ../../modules/home/common.nix
+    ../../modules/home/rmapi.nix
     ../../modules/home/timav.nix
     ../../modules/home/boot-notify.nix
     ./home/getmail.nix

@@ -1,4 +1,4 @@
-export PATH="/usr/local/bin:/usr/bin:/bin/:/usr/local/sbin:/usr/sbin:/sbin"
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
 
 # nixos paths
 if [ -d /run/current-system/sw/bin ]; then
@@ -8,10 +8,12 @@ if [ -d /run/wrappers/bin ]; then
   export PATH="/run/wrappers/bin:$PATH"
 fi
 
-# nix stuff, bin/ with slash at the end so the path gets cleaned up - nix sets its own too
-if [ -d $HOME/.nix-profile/bin ]; then
-  export PATH="$HOME/.nix-profile/bin/:$PATH"
-fi
+# nix-daemon.sh (sourced from /etc/zshrc on macOS) prepends these two as well, but returns early in nested shells
+for dir in /nix/var/nix/profiles/default/bin $HOME/.nix-profile/bin; do
+  if [ -d $dir ]; then
+    export PATH="$dir:$PATH"
+  fi
+done
 
 if [ -d $HOME/.npm/bin ]; then
   export PATH="$HOME/.npm/bin:$PATH"

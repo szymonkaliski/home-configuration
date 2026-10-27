@@ -9,11 +9,12 @@ if [ -d /run/wrappers/bin ]; then
 fi
 
 # nix-daemon.sh (sourced from /etc/zshrc on macOS) prepends these two as well, but returns early in nested shells
-for dir in /nix/var/nix/profiles/default/bin $HOME/.nix-profile/bin; do
-  if [ -d $dir ]; then
-    export PATH="$dir:$PATH"
-  fi
-done
+if [ -d /nix/var/nix/profiles/default/bin ]; then
+  export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+fi
+if [ -d $HOME/.nix-profile/bin ]; then
+  export PATH="$HOME/.nix-profile/bin:$PATH"
+fi
 
 if [ -d $HOME/.npm/bin ]; then
   export PATH="$HOME/.npm/bin:$PATH"

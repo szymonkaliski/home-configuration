@@ -57,7 +57,7 @@ watchers.enabled = { 'theme', 'urlevent' }
 ui.enabled = { 'caffeine-menubar' }
 
 -- controlplane
-controlplane.enabled = { 'auto-system-sleep' }
+controlplane.enabled = { 'auto-system-sleep', 'restart-dock-on-spaces-change' }
 
 -- bindings & modules
 local modules = { bindings, logger, watchers, ui, controlplane, watchables }

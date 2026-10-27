@@ -26,10 +26,6 @@ let
             url = "https://minix.golden-minor.ts.net:${toString ports.orchestrator}";
           }
           {
-            name = "telegraphist";
-            url = "https://minix.golden-minor.ts.net:${toString ports.telegraphist}";
-          }
-          {
             name = "property search";
             url = "http://minix:${toString ports.propertySearch}";
           }

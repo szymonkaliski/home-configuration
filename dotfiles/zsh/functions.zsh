@@ -265,7 +265,7 @@ watchexec() {
 
 timg() {
   # timg auto-detects the wrong graphics protocol inside tmux, so force it: sixel
-  # when the attached client advertises it (telegraphist's xterm.js does), else kitty.
+  # when the attached client advertises it (orchestrator's xterm.js does), else kitty.
   local proto=kitty
   if [[ -n "$TMUX" ]] &&
     tmux list-clients -t "$(tmux display -p '#{session_name}')" \

@@ -224,8 +224,7 @@ in
   # steps finish before the start job completes, so units ordered After= see
   # the session. ExecStart blocks until the session is closed; Restart=always
   # then re-runs both to recreate it, so closing the home session (not just
-  # killing the whole server) brings it back. telegraphist relies on home
-  # always existing and never creates it itself.
+  # killing the whole server) brings it back.
   #
   # the tmux server daemonizes into this unit's cgroup, so the default
   # KillMode=control-group would SIGKILL the whole server (every session) on each
@@ -478,22 +477,7 @@ in
   };
 
   # tmux.service owns creating the "home" session; start after it so home
-  # exists before telegraphist attaches
-  systemd.user.services.telegraphist = mkProjectService {
-    dir = "telegraphist";
-    description = "Telegraphist terminal";
-    extraUnits = [ "tmux.service" ];
-    needsInternet = true;
-    build = "npm run build";
-    command = "${pkgs.bash}/bin/bash -c 'SHELL=${pkgs.zsh}/bin/zsh PATH=%h/.bin:${pkgs.tmux}/bin:$PATH exec node dist/server/server.js'";
-    environment = "PORT=${toString ports.telegraphist}";
-    extraService = {
-      # https:// through tailscale serve
-      ExecStartPost = "${pkgs.tailscale}/bin/tailscale serve --bg --https=${toString ports.telegraphist} ${toString ports.telegraphist}";
-      ExecStopPost = "${pkgs.tailscale}/bin/tailscale serve --https=${toString ports.telegraphist} off";
-    };
-  };
-
+  # exists before orchestrator attaches
   systemd.user.services.orchestrator = mkProjectService {
     dir = "orchestrator";
     description = "Orchestrator agent control center";

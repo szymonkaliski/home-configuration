@@ -193,14 +193,6 @@ check "blind-controller-errors" bash -c '
     | /home/szymon/Projects/diy-blind-roller/bin/debug-edges --check
 '
 
-check "telegraphist-serves-https" bash -c '
-  status=$(curl -so /dev/null -w "%{http_code}" --max-time 10 https://minix.golden-minor.ts.net:10006/)
-  if [[ "$status" != "200" ]]; then
-    echo "got HTTP $status"
-    exit 1
-  fi
-'
-
 check "orchestrator-serves-https" bash -c '
   status=$(curl -so /dev/null -w "%{http_code}" --max-time 10 https://minix.golden-minor.ts.net:10018/)
   if [[ "$status" != "200" ]]; then

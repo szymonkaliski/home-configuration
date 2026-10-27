@@ -16,6 +16,15 @@ function gitUpdate {
 
 HOSTNAME=$(hostname -s)
 
+# cache sudo up front and keep it alive across the nix build
+sudo -v || exit 1
+while sleep 60; do
+  sudo -n true
+  kill -0 "$$" 2> /dev/null || exit
+done &
+SUDO_KEEPALIVE_PID=$!
+trap 'pkill -P "$SUDO_KEEPALIVE_PID" 2> /dev/null; kill "$SUDO_KEEPALIVE_PID" 2> /dev/null' EXIT
+
 # pull the home-configuration repo first (resolve symlink to find repo root)
 REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
 REPO_DIR="$(dirname "$(dirname "$REAL_SCRIPT")")"

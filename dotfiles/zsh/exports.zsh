@@ -26,6 +26,12 @@ elif [ -d "$HOME/Projects" ]; then
   export PROJECTS_PATH="$HOME/Projects"
 fi
 
+if [ -d "$HOME/Documents/Work" ]; then
+  export WORK_PATH="$HOME/Documents/Work"
+elif [ -d "$HOME/Work" ]; then
+  export WORK_PATH="$HOME/Work"
+fi
+
 if [ -d "$HOME/Library/CloudStorage/Dropbox" ]; then
   export DROPBOX_PATH="$HOME/Library/CloudStorage/Dropbox"
 elif [ -d "$HOME/Dropbox" ]; then

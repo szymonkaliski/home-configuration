@@ -28,10 +28,11 @@ function loadCjs(filePath) {
   return mod.exports;
 }
 
-const { truncate, formatToolUse, createLogger, isFocusedPane, deliver } =
-  loadCjs(`${os.homedir()}/.config/opencode/notify-lib.cjs`);
+const { truncate, formatToolUse, createLogger, isFocusedPane } = loadCjs(
+  `${os.homedir()}/.config/opencode/status-lib.cjs`,
+);
 
-const LOG_PATH = `${os.homedir()}/.config/opencode/notify.log`;
+const LOG_PATH = `${os.homedir()}/.config/opencode/status.log`;
 
 // A background subagent's report reaches its parent as a synthetic input, and
 // that input starts a new parent execution as soon as the subagent's execution
@@ -40,14 +41,14 @@ const LOG_PATH = `${os.homedir()}/.config/opencode/notify.log`;
 const RESUME_GRACE_MS = 5000;
 
 export default Plugin.define({
-  id: "notify",
+  id: "status",
   setup(context) {
     // every session with an execution in flight (a root or a subagent) and its
     // session info lookup, kept in event order
     const running = new Map();
     // roots whose turn ended while subagents still ran: their idle path waits
-    // for the last subagent, with the succeeded event's location
-    const deferred = new Map();
+    // for the last subagent
+    const deferred = new Set();
     // open permission or form prompt per session, with its root session and body
     const prompting = new Map();
     // roots whose last turn was interrupted or failed, so winding-down subagents
@@ -56,10 +57,6 @@ export default Plugin.define({
     // tool call id → tool name, from session.tool.input.started
     const toolNames = new Map();
     let settleTimer;
-
-    const location = () => context.location ?? context.data.location.default();
-    const titleFor = (dir) =>
-      `OpenCode (${os.hostname()} - ${path.basename(dir || location()?.directory || process.cwd())})`;
 
     async function resolveSession(sessionID) {
       if (!sessionID) return undefined;
@@ -112,7 +109,7 @@ export default Plugin.define({
       return false;
     };
 
-    // one line, no delivery: the state transitions the log carries for readers.
+    // one line: the state transitions the log carries for orchestrator.
     // A subagent shares its parent's pane, so its turn lifecycle says nothing
     // about the pane, while its prompt does block and unblock the pane.
     async function logKind(sessionID, event, kind, keepPromptBody = false) {
@@ -203,14 +200,14 @@ export default Plugin.define({
     // a deferred root that started a new execution logs its own lines; one
     // whose subagents all ended without resuming it goes idle
     async function settle() {
-      for (const [rootID, entry] of [...deferred]) {
+      for (const rootID of [...deferred]) {
         if (running.has(rootID)) continue;
         if ((await runningChildren(rootID)).length > 0) continue;
-        if (deferred.get(rootID) !== entry || running.has(rootID)) continue;
+        if (!deferred.has(rootID) || running.has(rootID)) continue;
         deferred.delete(rootID);
         const session = await resolveSession(rootID);
         if (running.has(rootID) || !isLocalSession(rootID, session)) continue;
-        await deliverIdle(rootID, session, entry.location);
+        await recordIdle(rootID);
       }
     }
 
@@ -230,12 +227,12 @@ export default Plugin.define({
       if (deferred.size > 0) settleLater();
     }
 
-    async function notifyIdle(sessionID, eventLocation) {
+    async function onIdle(sessionID) {
       const session = await resolveSession(sessionID);
       if (!isLocalSession(sessionID, session) || session?.parentID) return;
 
       // the session still works while its subagents run: the turn that takes
-      // up their reports decides, so nothing is delivered
+      // up their reports decides
       const children = await runningChildren(sessionID);
       if (running.has(sessionID)) return;
       if (children.length > 0) {
@@ -245,7 +242,7 @@ export default Plugin.define({
             ? `subagent: ${truncate(children[0].title, 120)}`
             : undefined);
         if (running.has(sessionID)) return;
-        deferred.set(sessionID, { location: eventLocation });
+        deferred.add(sessionID);
         createLogger(LOG_PATH, {
           harness: "opencode",
           event: "session.execution.succeeded",
@@ -260,10 +257,10 @@ export default Plugin.define({
         return;
       }
 
-      await deliverIdle(sessionID, session, eventLocation);
+      await recordIdle(sessionID);
     }
 
-    async function deliverIdle(sessionID, session, eventLocation) {
+    async function recordIdle(sessionID) {
       const log = createLogger(LOG_PATH, {
         harness: "opencode",
         event: "session.execution.succeeded",
@@ -280,12 +277,10 @@ export default Plugin.define({
       }
 
       const body = text ?? "OpenCode is waiting for your input";
-      const sessionDir =
-        eventLocation?.directory ?? session?.location?.directory;
-      await deliver({ title: titleFor(sessionDir), body, log });
+      log({ phase: "deliver", body });
     }
 
-    async function notifyPermission(event) {
+    async function onPermission(event) {
       const perm = event.data;
       const session = await resolveSession(perm?.sessionID);
       if (!isLocalSession(perm?.sessionID, session)) return;
@@ -322,12 +317,10 @@ export default Plugin.define({
         return;
       }
 
-      const sessionDir =
-        event.location?.directory ?? session?.location?.directory;
-      await deliver({ title: titleFor(sessionDir), body, log });
+      log({ phase: "deliver", body });
     }
 
-    async function notifyForm(event) {
+    async function onForm(event) {
       const form = event.data?.form;
       const session = await resolveSession(form?.sessionID);
       if (!isLocalSession(form?.sessionID, session)) return;
@@ -354,9 +347,7 @@ export default Plugin.define({
         return;
       }
 
-      const sessionDir =
-        event.location?.directory ?? session?.location?.directory;
-      await deliver({ title: titleFor(sessionDir), body, log });
+      log({ phase: "deliver", body });
     }
 
     const dispose = [
@@ -368,7 +359,7 @@ export default Plugin.define({
           "working",
         );
       }),
-      // an aborted or failed turn ends like a finished one, without an alert
+      // an aborted or failed turn ends without marking unread
       context.data.on("session.execution.interrupted", (event) => {
         executionEnded(event.data.sessionID);
         void logKind(
@@ -434,13 +425,13 @@ export default Plugin.define({
       }),
       context.data.on("session.execution.succeeded", (event) => {
         executionEnded(event.data.sessionID);
-        void notifyIdle(event.data.sessionID, event.location);
+        void onIdle(event.data.sessionID);
       }),
       context.data.on("permission.asked", (event) => {
-        void notifyPermission(event);
+        void onPermission(event);
       }),
       context.data.on("form.created", (event) => {
-        void notifyForm(event);
+        void onForm(event);
       }),
     ];
 

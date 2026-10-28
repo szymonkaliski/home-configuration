@@ -9,7 +9,6 @@ let
   dotfileDir = "${repoRoot}/dotfiles";
   link = config.lib.file.mkOutOfStoreSymlink;
 
-  tnotify = pkgs.callPackage ../../pkgs/tnotify.nix { };
   keys = import ../../keys.nix;
 in
 {
@@ -40,7 +39,6 @@ in
   targets.darwin.linkApps.enable = true;
 
   home.packages = [
-    tnotify
     pkgs.coreutils
     pkgs.darwin.trash
     pkgs.git

@@ -32,6 +32,7 @@ fi
 # for pushover notifications
 if [ -f /mnt/host/pushoverrc ]; then
   cp /mnt/host/pushoverrc /home/szymon/.pushoverrc
+  chmod 600 /home/szymon/.pushoverrc
 fi
 
 # git over ssh to minix (szymon@minix:Git/<name>.git) and ssh between microvms
@@ -137,14 +138,14 @@ EOF
 # create executable wrappers for the agent CLIs
 mkdir -p /home/szymon/.bin
 
-# git minix-clone/push/ls/rm, synced by bin/microvm
+# git minix-clone/push/ls/rm and notify-pushover, synced by bin/microvm
 if [ -d /mnt/host/bin ]; then
   cp /mnt/host/bin/* /home/szymon/.bin/
 fi
 
 cat << 'EOF' > /home/szymon/.bin/claude
 #!/bin/sh
-export PATH="/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
+export PATH="/home/szymon/.bin:/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
 exec npx -y @anthropic-ai/claude-code@latest --dangerously-skip-permissions --effort ultracode "$@"
 EOF
 chmod +x /home/szymon/.bin/claude
@@ -155,13 +156,13 @@ EOF
 chmod +x /home/szymon/.bin/fable
 cat << 'EOF' > /home/szymon/.bin/opencode
 #!/bin/sh
-export PATH="/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
+export PATH="/home/szymon/.bin:/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
 exec npx -y @opencode/cli@latest --auto "$@"
 EOF
 chmod +x /home/szymon/.bin/opencode
 cat << 'EOF' > /home/szymon/.bin/agy
 #!/bin/sh
-export PATH="/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
+export PATH="/home/szymon/.bin:/run/wrappers/bin:/home/szymon/.npm/bin:/run/current-system/sw/bin:$PATH"
 exec /run/current-system/sw/bin/agy --dangerously-skip-permissions "$@"
 EOF
 chmod +x /home/szymon/.bin/agy

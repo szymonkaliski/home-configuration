@@ -54,7 +54,7 @@ sync_host_config() {
   chmod +x "$HOST_DIR/setup.sh"
 
   mkdir -p "$HOST_DIR/bin"
-  command cp -L "$REPO_BIN_DIR"/git-minix-* "$HOST_DIR/bin/"
+  command cp -L "$REPO_BIN_DIR"/git-minix-* "$REPO_BIN_DIR/notify-pushover" "$HOST_DIR/bin/"
 }
 
 # agent configs are written straight into the VM's home on the data share
@@ -72,21 +72,21 @@ stage_vm_home() {
     command cp -L "$HOME/.gemini/antigravity-cli/antigravity-oauth-token" "$home/.gemini/antigravity-cli/antigravity-oauth-token" 2> /dev/null || true
 
     # refresh the host's skills and agent configs; guest-only files stay. The
-    # claude notifier and its hook registrations travel too
+    # claude status hook and its registrations travel too
     rsync -aL "$HOME/.claude/skills/" "$home/.claude/skills/" 2> /dev/null || true
-    command cp -L "$HOME/.claude/notify.js" "$HOME/.claude/notify-lib.cjs" "$HOME/.claude/settings.json" "$home/.claude/" 2> /dev/null || true
-    rsync -aL --exclude=/notify.log --exclude=/AGENTS.md "$HOME/.config/opencode/" "$home/.config/opencode/" 2> /dev/null || true
-    rsync -aL --exclude=/notify.log --exclude=/notify-pending --exclude=/AGENTS.md "$HOME/.gemini/config/" "$home/.gemini/config/" 2> /dev/null || true
+    command cp -L "$HOME/.claude/status.js" "$HOME/.claude/status-lib.cjs" "$HOME/.claude/settings.json" "$home/.claude/" 2> /dev/null || true
+    rsync -aL --exclude=/status.log --exclude=/AGENTS.md "$HOME/.config/opencode/" "$home/.config/opencode/" 2> /dev/null || true
+    rsync -aL --exclude=/AGENTS.md "$HOME/.gemini/config/" "$home/.gemini/config/" 2> /dev/null || true
   else
     mkdir -p "$home/.config"
 
     # ~/.claude/projects is host session state keyed by host paths; the VM
     # resolves /workspace to a different project slug and never reads it
-    rsync -aL --exclude=/projects --exclude=/notify.log --exclude=/notify-pending "$HOME/.claude/" "$home/.claude/" 2> /dev/null || true
+    rsync -aL --exclude=/projects --exclude=/status.log --exclude=/status-pending "$HOME/.claude/" "$home/.claude/" 2> /dev/null || true
     command cp -L "$HOME/.claude.json" "$home/.claude.json" 2> /dev/null || true
     command cp -rL "$HOME/.config/gcloud" "$home/.config/gcloud" 2> /dev/null || true
-    rsync -aL --exclude=/notify.log "$HOME/.config/opencode/" "$home/.config/opencode/" 2> /dev/null || true
-    rsync -aL --exclude=/antigravity-cli/brain --exclude=/antigravity-cli/log --exclude=/antigravity-cli/cache --exclude=/notify.log --exclude=/notify-pending "$HOME/.gemini/" "$home/.gemini/" 2> /dev/null || true
+    rsync -aL --exclude=/status.log "$HOME/.config/opencode/" "$home/.config/opencode/" 2> /dev/null || true
+    rsync -aL --exclude=/antigravity-cli/brain --exclude=/antigravity-cli/log --exclude=/antigravity-cli/cache "$HOME/.gemini/" "$home/.gemini/" 2> /dev/null || true
 
     # VMs auth via the long-lived token, not credentials file
     #
@@ -225,7 +225,6 @@ cmd_start() {
   else
     echo " ready (${elapsed}s)"
   fi
-  notify-pushover "vm-${VM} ready (${elapsed}s) ${PROJECT##*/}" 2> /dev/null || true
   vm_ssh "${VM}" -t -o ConnectionAttempts=5 "${SSH_OPTS[@]}"
 }
 

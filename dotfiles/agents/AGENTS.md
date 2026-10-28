@@ -50,6 +50,8 @@
 
 - pass `--no-ext-diff` to `git diff` - git config may route it through an external diff tool that does not print a unified diff
 
+- when asked to ping or notify the user, run `notify-pushover "<repo>: <short message>"` - only when explicitly asked in the conversation
+
 - in `chrome-devtools` MCP, open the first URL in `pageId: 1` with `navigate_page`
   - for extra tabs, call `new_page` with `background: true` and omit `isolatedContext` (the server already runs `--isolated`, and `isolatedContext` opens a new window)
 

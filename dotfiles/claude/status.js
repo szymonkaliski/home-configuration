@@ -2,19 +2,13 @@
 
 const fs = require("fs");
 const os = require("os");
-const path = require("path");
 
 // loaded by absolute path: this file is a symlink into the dotfiles repo on a
 // host and a plain copy inside a microVM, so a relative specifier would resolve
 // to two different places
-const {
-  truncate,
-  formatToolUse,
-  readTail,
-  createLogger,
-  isFocusedPane,
-  deliver,
-} = require(`${os.homedir()}/.claude/notify-lib.cjs`);
+const { truncate, formatToolUse, createLogger, isFocusedPane } = require(
+  `${os.homedir()}/.claude/status-lib.cjs`,
+);
 
 const input = JSON.parse(fs.readFileSync(0, "utf8"));
 const event = input.hook_event_name;
@@ -22,12 +16,12 @@ const transcriptPath = input.transcript_path;
 const sessionId = input.session_id;
 
 // PermissionRequest fires the instant a real permission dialog appears (carrying
-// the tool input) and we notify from it directly. A redundant generic
+// the tool input) and records the unread mark directly. A redundant generic
 // `permission_prompt` Notification then fires ~6s later; to drop that duplicate
-// we drop a per-session "already notified" marker here when we deliver a
-// blocking-prompt notification, and the later Notification dedups against it.
+// we write a per-session marker here when we record a blocking-prompt
+// transition, and the later Notification dedups against it.
 // (Verified: PermissionRequest +51ms with command; Notification +6s generic.)
-const PENDING_DIR = `${os.homedir()}/.claude/notify-pending`;
+const PENDING_DIR = `${os.homedir()}/.claude/status-pending`;
 const PENDING_FRESH_MS = 10 * 60 * 1000;
 
 function pendingFile(sid) {
@@ -78,12 +72,10 @@ function clearPending(sid) {
   } catch {}
 }
 
-// idle-state marker: records the body delivered for this idle period (by Stop or
+// idle-state marker: records the body logged for this idle period (by Stop or
 // a previous idle_prompt). The ~60s idle_prompt Notification is suppressed only
 // when it would repeat that same body, so it still backstops turns that fire no
-// Stop. Keying on the body (not just freshness) matters because background Task
-// agents finish after the turn's Stop, and a time-only marker would let the same
-// text re-deliver.
+// Stop without re-marking a clicked pane as unread.
 function markIdle(sid, body) {
   if (!sid) return;
   try {
@@ -153,11 +145,28 @@ function readPermissionOpen(sid) {
   }
 }
 
-const logLine = createLogger(`${os.homedir()}/.claude/notify.log`, {
+const logLine = createLogger(`${os.homedir()}/.claude/status.log`, {
   harness: "claude",
   session: sessionId,
   kind,
 });
+
+function readTail(filePath, maxBytes = 65536) {
+  const fd = fs.openSync(filePath, "r");
+  try {
+    const stat = fs.fstatSync(fd);
+    const readSize = Math.min(stat.size, maxBytes);
+    const buf = Buffer.alloc(readSize);
+    fs.readSync(fd, buf, 0, readSize, stat.size - readSize);
+    const chunk = buf.toString("utf8");
+    // a window smaller than the file starts mid-entry, so drop that first line
+    const body =
+      readSize < stat.size ? chunk.slice(chunk.indexOf("\n") + 1) : chunk;
+    return body.split("\n").filter(Boolean);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
 
 // Scan backward for the most recent assistant message, skipping non-conversational
 // entries (ai-title, last-prompt, permission-mode, mode, queue-operation,
@@ -228,14 +237,14 @@ function resolveTranscriptPath(input) {
   return null;
 }
 
-// What started the turn that is now ending decides whether its end is worth an
-// alert. A human prompt, or a forked skill the user invoked reporting back, ends
-// with Claude handing control back and nothing moving until the user acts, so it
-// alerts. A machine event does not: Monitor events re-fire on a schedule (and
+// What started the turn that is now ending decides whether its end marks the
+// session unread. A human prompt, or a forked skill the user invoked reporting
+// back, ends with Claude handing control back and nothing moving until the user
+// acts. A machine event does not: Monitor events re-fire on a schedule (and
 // Opus sometimes echoes them back as assistant text, producing nonsense bodies),
 // and background commands complete mid-workflow while Claude carries on. Those
-// defer to the 60s idle_prompt backstop, which delivers only if Claude really
-// did stay idle afterwards.
+// defer to the 60s idle_prompt backstop, which marks unread only if Claude
+// really did stay idle afterwards.
 //   { kind: "user" }    a human prompt, or mid-turn tool results
 //   { kind: "monitor" } recurring Monitor event: the only shape with no <status>
 //   { kind: "agent" }   a forked skill or Task agent finished or failed
@@ -324,7 +333,7 @@ if (
 }
 
 // Reopening an old session appends metadata lines (ai-title, mode, last-prompt)
-// after the final assistant text and can fire Stop, which would re-deliver
+// after the final assistant text and can fire Stop, which would re-record
 // hours-old text as if the turn just ended. Legit final text lands seconds
 // before Stop (or up to ~15s after, for the thinking case), so a transcript
 // whose newest assistant text is older than the staleness window means a
@@ -391,8 +400,8 @@ logLine({
   body: fireBody,
 });
 
-// UserPromptSubmit is hooked only for the fire line above: nothing is
-// delivered, and nothing is printed, since this hook's stdout would be added
+// UserPromptSubmit is hooked only for the fire line above: nothing else is
+// logged, and nothing is printed, since this hook's stdout would be added
 // to the prompt as context.
 if (event === "UserPromptSubmit") {
   clearPending(sessionId);
@@ -414,9 +423,8 @@ if (
     );
   } catch {}
 }
-// a turn's end closes any prompt, whether or not the alert below is suppressed.
-// nothing is delivered while subagents work: the turn after their reports sends
-// the alert
+// a turn's end closes any prompt, whether or not the unread mark below is
+// suppressed; nothing is marked unread while subagents work
 if (event === "Stop") {
   clearPending(sessionId);
   if (agentsInFlight.length > 0) {
@@ -440,7 +448,7 @@ if (!["Stop", "PermissionRequest", "Notification"].includes(event)) {
   process.exit(0);
 }
 
-// skip the notification when the user is actively looking at this pane
+// skip marking unread when the user is actively looking at this pane
 if (isFocusedPane()) {
   logLine({ phase: "suppressed", reason: "focused-pane", event });
   process.exit(0);
@@ -448,7 +456,7 @@ if (isFocusedPane()) {
 
 // A killed or interrupted agent never sends its completion notification: the CLI
 // suppresses that notification for a stopped outcome, so nothing marks the death.
-// Its launch would otherwise stay pending and mute the session's idle alerts, and
+// Its launch would otherwise stay pending and mute the session's idle marks, and
 // the agent's own transcript is the way out - it is appended to throughout a run
 // and stops the moment the agent does, so silence is the death signal. The
 // threshold only has to clear the longest pause a working agent takes between
@@ -468,14 +476,14 @@ function agentLastActivity(filePath, agentId, launchTs) {
 
 // A `context: fork` skill (/code-review) runs as a detached
 // background agent: the session goes idle the moment it launches and fires no
-// Stop until the agent reports back, so the 60s idle_prompt timer announces
-// "waiting for your input" while the agent is still working. The launch is a
-// system/local_command entry carrying <forked-skill-launch>{"agentId":...}, and
-// the agent reports back as a task-notification user turn whose <task-id> is
-// that same agentId, so a launch with no matching task-id yet means Claude is
-// waiting on the agent rather than on the user. Scans the whole transcript
-// because the launch scrolls out of the tail window once the user keeps working
-// alongside a long review.
+// Stop until the agent reports back, so the 60s idle_prompt timer fires while
+// the agent is still working. The launch is a system/local_command entry
+// carrying <forked-skill-launch>{"agentId":...}, and the agent reports back as
+// a task-notification user turn whose <task-id> is that same agentId, so a
+// launch with no matching task-id yet means Claude is waiting on the agent
+// rather than on the user. Scans the whole transcript because the launch
+// scrolls out of the tail window once the user keeps working alongside a long
+// review.
 function pendingForkedSkills(filePath) {
   const pending = new Map();
 
@@ -604,20 +612,20 @@ if (event === "Stop") {
 } else if (event === "PermissionRequest") {
   // Fires the instant a real permission dialog appears (never for auto-approved
   // calls) and carries the tool input - so we name exactly what's awaited,
-  // immediately. This is the primary blocking-prompt notification, and it covers
-  // AskUserQuestion too: the chooser goes through the permission dialog path.
+  // immediately. This covers AskUserQuestion too: the chooser goes through the
+  // permission dialog path.
   body = fireBody;
 } else {
-  // agent_needs_input also lands here and delivers as-is: its message already
-  // reads "<agent> needs your input: …". It is the only alert a forked skill
-  // blocked on a prompt can produce, because a blocked agent stops writing its
-  // transcript and so reads as pending to the suppression above.
+  // agent_needs_input also lands here and records as-is: its message already
+  // reads "<agent> needs your input: …". It is the only transition a forked
+  // skill blocked on a prompt can produce, because a blocked agent stops
+  // writing its transcript and so reads as pending to the suppression above.
   body = permOpen?.body || input.message || "Notification";
 
   // The generic permission_prompt Notification fires ~6s later as a backstop. If
-  // PermissionRequest already notified this prompt (marker set on delivery), it's
-  // a duplicate - drop it. It still fires when PermissionRequest was suppressed
-  // because the pane was focused and the user has since looked away (a re-alert).
+  // PermissionRequest already recorded this prompt (marker set below), it's a
+  // duplicate - drop it. It still fires when PermissionRequest was suppressed
+  // because the pane was focused and the user has since looked away.
   if (
     input.notification_type === "permission_prompt" &&
     wasNotified(sessionId)
@@ -634,16 +642,16 @@ if (event === "Stop") {
   // messageIdleNotifThresholdMs, default 60000), so it says nothing about whether
   // Claude is actually blocked on the user. Drop it while a forked skill is still
   // running, then replace the contextless generic body ("Claude is waiting for
-  // your input") with the last thing Claude actually said, so the alert names the
-  // session + topic the way a Stop notification does. Keeps the generic message
-  // when the turn ended on a tool call (no assistant text) or the transcript
-  // can't be resolved. Then dedup on that resolved body: if this idle period
-  // already delivered the same text (via Stop or an earlier idle_prompt), drop it.
+  // your input") with the last thing Claude actually said. Keeps the generic
+  // message when the turn ended on a tool call (no assistant text) or the
+  // transcript can't be resolved. Then dedup on that resolved body: if this
+  // idle period already logged the same text (via Stop or an earlier
+  // idle_prompt), drop it.
   if (input.notification_type === "idle_prompt") {
     const tp = resolveTranscriptPath(input);
     // "machine" is deliberately allowed through here: this backstop is what
     // catches a background command that left Claude genuinely idle, the case the
-    // Stop above declines to alert on because Claude usually keeps working.
+    // Stop above declines to mark unread because Claude usually keeps working.
     if (tp && classifyLastUserTurn(tp).kind === "monitor") {
       logLine({ phase: "skipped", reason: "machine-turn:monitor", event });
       process.exit(0);
@@ -669,9 +677,6 @@ if (event === "Stop") {
   }
 }
 
-// remember we delivered a blocking-prompt notification (we are past the
-// focused-pane suppression here), so the redundant ~6s permission_prompt - or a
-// re-fire - dedups against it; cleared on Stop.
 if (
   event === "PermissionRequest" ||
   (event === "Notification" && input.notification_type === "permission_prompt")
@@ -679,8 +684,6 @@ if (
   markNotified(sessionId);
 }
 
-// record what this idle period delivered so the ~60s idle_prompt backstop dedups
-// against the instant Stop notification (or against itself if it re-fires).
 if (
   event === "Stop" ||
   (event === "Notification" && input.notification_type === "idle_prompt")
@@ -688,8 +691,4 @@ if (
   markIdle(sessionId, body);
 }
 
-const title = `Claude Code (${os.hostname()} - ${path.basename(process.cwd())})`;
-
-deliver({ title, body, log: (data) => logLine({ event, ...data }) }).finally(
-  () => process.exit(0),
-);
+logLine({ phase: "deliver", event, body });

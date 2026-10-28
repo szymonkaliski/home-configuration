@@ -29,6 +29,7 @@
       "Bash(uname *)",
       "Bash(which *)",
       "Bash(trash:*)",
+      "Bash(notify-pushover *)",
       "mcp__chrome-devtools__*",
       "mcp__playwright__*"
     ],
@@ -42,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/notify.js"
+            "command": "~/.claude/status.js"
           }
         ]
       }
@@ -52,7 +53,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/notify.js"
+            "command": "~/.claude/status.js"
           }
         ]
       }
@@ -62,7 +63,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/notify.js"
+            "command": "~/.claude/status.js"
           }
         ]
       }
@@ -82,7 +83,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/notify.js"
+            "command": "~/.claude/status.js"
           }
         ]
       }
@@ -101,7 +102,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "ls ~/.claude/notify-pending/*__perm.json > /dev/null 2>&1 && ~/.claude/notify.js || true"
+            "command": "ls ~/.claude/status-pending/*__perm.json > /dev/null 2>&1 && ~/.claude/status.js || true"
           }
         ]
       }
@@ -120,7 +121,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "ls ~/.claude/notify-pending/*__perm.json > /dev/null 2>&1 && ~/.claude/notify.js || true"
+            "command": "ls ~/.claude/status-pending/*__perm.json > /dev/null 2>&1 && ~/.claude/status.js || true"
           }
         ]
       }
@@ -130,7 +131,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/notify.js"
+            "command": "~/.claude/status.js"
           }
         ]
       }

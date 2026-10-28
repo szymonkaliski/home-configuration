@@ -173,8 +173,8 @@ in
     ".bin".source = link "${repoRoot}/bin";
     ".claude/CLAUDE.md".source = link "${dotfileDir}/agents/AGENTS.md";
     ".claude/settings.json".source = link "${dotfileDir}/claude/settings.json";
-    ".claude/notify.js".source = link "${dotfileDir}/claude/notify.js";
-    ".claude/notify-lib.cjs".source = link "${dotfileDir}/agents/notify-lib.cjs";
+    ".claude/status.js".source = link "${dotfileDir}/claude/status.js";
+    ".claude/status-lib.cjs".source = link "${dotfileDir}/agents/status-lib.cjs";
     ".claude/statusline-command.sh".source = link "${dotfileDir}/claude/statusline-command.sh";
     ".gemini/config/AGENTS.md".source = link "${dotfileDir}/agents/AGENTS.md";
     ".gemini/config/mcp_config.json" =
@@ -198,9 +198,6 @@ in
             };
           };
         };
-    ".gemini/config/hooks.json".source = link "${dotfileDir}/agy/hooks.json";
-    ".gemini/config/notify.js".source = link "${dotfileDir}/agy/notify.js";
-    ".gemini/config/notify-lib.cjs".source = link "${dotfileDir}/agents/notify-lib.cjs";
   }
   # skills linked one-by-one so the destination dirs stay real directories;
   # machine-local additions can then sit alongside without living in this repo
@@ -228,7 +225,7 @@ in
     };
     "opencode/AGENTS.md".source = link "${dotfileDir}/agents/AGENTS.md";
     "opencode/plugins".source = link "${dotfileDir}/opencode/plugins";
-    "opencode/notify-lib.cjs".source = link "${dotfileDir}/agents/notify-lib.cjs";
+    "opencode/status-lib.cjs".source = link "${dotfileDir}/agents/status-lib.cjs";
   };
 
   # OpenCode writes cli.json via temp-file rename, replacing the symlink with a

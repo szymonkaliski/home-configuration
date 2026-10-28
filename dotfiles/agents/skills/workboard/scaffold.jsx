@@ -5,13 +5,6 @@ const DEMOS = {};
 const DIFFS = {};
 
 export default function Workboard() {
-  const [activity, setActivity] = useMorph({
-    state: "idle",
-    summary: "Board ready.",
-    sectionId: null,
-    updatedAt: null,
-  });
-
   const [entries, setEntries] = useMorph({
     "step-overview": {
       id: "step-overview",
@@ -41,8 +34,6 @@ export default function Workboard() {
 
   return (
     <WorkboardShell
-      activity={activity}
-      setActivity={setActivity}
       entries={entries}
       setEntries={setEntries}
       threads={threads}
@@ -58,7 +49,6 @@ export default function Workboard() {
 /* ========================================================================== */
 
 function WorkboardShell({
-  activity,
   entries,
   setEntries,
   threads,
@@ -105,6 +95,7 @@ function WorkboardShell({
   };
 
   useEffect(() => {
+    if (navSeq === 0) return;
     const targetBlockId = scrollTargetRef.current;
     scrollTargetRef.current = null;
     if (targetBlockId) {
@@ -201,12 +192,6 @@ function WorkboardShell({
           html, body { background: #09090b; color: #f4f4f5; }
         }
       `}</style>
-
-      <ActivityBanner
-        activity={activity}
-        entryList={entryList}
-        onSelectEntry={(id) => handleNavigate(id, null)}
-      />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
         <MobileTopBar
@@ -531,74 +516,6 @@ function nextTaskStatus(status) {
 
 function isOverviewEntry(entry) {
   return Boolean(entry && entry.id === "step-overview");
-}
-
-function ActivityBanner({ activity, entryList, onSelectEntry }) {
-  if (!activity || (!activity.summary && !activity.state)) return null;
-  const state = activity.state || "idle";
-  const targetEntry = activity.sectionId
-    ? (entryList || []).find((e) => e.id === activity.sectionId)
-    : null;
-
-  const tone =
-    state === "working"
-      ? "border-blue-200 bg-blue-50/80 text-blue-900 dark:border-blue-900/70 dark:bg-blue-950/50 dark:text-blue-200"
-      : state === "waiting"
-        ? "border-amber-200 bg-amber-50/80 text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/50 dark:text-amber-200"
-        : "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300";
-
-  const dot =
-    state === "working"
-      ? "bg-blue-500 animate-pulse"
-      : state === "waiting"
-        ? "bg-amber-500"
-        : "bg-emerald-500";
-
-  const label =
-    state === "working"
-      ? "Agent Working"
-      : state === "waiting"
-        ? "Waiting on You"
-        : "Agent Idle";
-
-  return (
-    <div
-      className={`flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-3.5 py-1.5 text-xs ${tone}`}
-    >
-      <div className="flex min-w-0 items-center gap-2">
-        <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />
-        <span className="shrink-0 font-mono text-[11px] font-semibold uppercase tracking-wider">
-          {label}
-        </span>
-        {activity.summary ? (
-          <span className="truncate font-medium">{activity.summary}</span>
-        ) : null}
-      </div>
-
-      <div className="flex shrink-0 items-center gap-2.5">
-        {targetEntry ? (
-          <button
-            type="button"
-            onClick={() => onSelectEntry(targetEntry.id)}
-            className="inline-flex cursor-pointer items-center gap-1 rounded border border-current/20 bg-white/60 px-2 py-0.5 font-mono text-[11px] font-semibold hover:bg-white dark:bg-zinc-900/60 dark:hover:bg-zinc-900"
-          >
-            <span>
-              {targetEntry.code
-                ? `${targetEntry.code} ${targetEntry.title}`
-                : targetEntry.title}
-            </span>
-            <ArrowUpRight className="h-3 w-3" />
-          </button>
-        ) : null}
-        {activity.updatedAt ? (
-          <span className="inline-flex items-center gap-1 font-mono text-[11px] opacity-70">
-            <Clock className="h-3 w-3" />
-            {formatShortTime(activity.updatedAt)}
-          </span>
-        ) : null}
-      </div>
-    </div>
-  );
 }
 
 function StatusBadge({ status }) {

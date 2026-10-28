@@ -16,8 +16,7 @@ The workboard template lives in `${CLAUDE_SKILL_DIR}/scaffold.jsx`. Its data and
 1. **Create or open the board file.** For a new board, `mkdir -p ./tmp` and copy `${CLAUDE_SKILL_DIR}/scaffold.jsx` to `./tmp/YYYY-MM-DD-<slug>.morph.jsx`. For an existing board, edit `./tmp/<board>.morph.jsx` in place so reader mutations stay intact.
 2. **Populate top-level data and state.** Edit only the section above the `UI TOOLKIT` banner:
    - `DEMOS`: optional live React components keyed by `demoKey`.
-   - `DIFFS`: unified git diffs (`git diff --no-ext-diff`) keyed by `diffKey`, stored as `String.raw` template literals.
-   - `activity`: `{ state: "idle", summary, sectionId: null, updatedAt }` in `useMorph`.
+   - `DIFFS`: unified git diffs (`git diff --no-ext-diff`) keyed by `diffKey`, stored as JSON string literals.
    - `entries`: section map in `useMorph` (Section 4), always including `"step-overview"`.
    - `threads`: comment thread map `{}` in `useMorph` on a new board.
 3. **Serve and monitor.** Start `morph ./tmp` in the background if not already running, and arm the persistent `Monitor` on the server output as specified in the `morph` skill.
@@ -32,11 +31,10 @@ On every `mutate` notification from the `Monitor`, and before any edit or report
 
 Run this step first whenever a user comment, task toggle, or decision click needs a command, test, subagent, or code edit:
 
-1. Set `activity` to `{ state: "working", summary: "<what you are checking or changing>", sectionId: "<entryId>", updatedAt: "<ISO-8601>" }`.
-2. Set the target section's `status` to `"working"` in `entries`.
-3. Append an `"agent"` reply to `threads[anchorId]` stating what you are checking or changing, and save the board file.
+1. Set the target section's `status` to `"working"` in `entries`.
+2. Append an `"agent"` reply to `threads[anchorId]` stating what you are checking or changing, and save the board file.
 
-Acknowledgment is complete when `activity.state` and the target section show `"working"` and your initial reply is saved in `threads` before legwork begins.
+Acknowledgment is complete when the target section shows `"working"` and your initial reply is saved in `threads` before legwork begins.
 
 ### Step 2b: Synchronize the board on every change
 
@@ -45,7 +43,6 @@ Every finding, code edit, task update, or user decision updates the section abov
 1. Update `DIFFS` with fresh `git diff --no-ext-diff` output when code changed.
 2. Update the section's `blocks`, `tldr`, and `summary` in `entries` to match current state, and update `"step-overview"` when the section list or top-level summary changes.
 3. Set every modified section's `status` to `"to-review"` (including a `"reviewed"` section whose code or content changed) and append the full findings reply to `threads[anchorId]`. Leave untouched `"reviewed"` sections at `"reviewed"`.
-4. Set `activity` to `{ state: "waiting", summary: "<what needs user review or decision>", sectionId: "<entryId>", updatedAt: "<ISO-8601>" }` when open decisions or reviews await the user, or `state: "idle"` when nothing blocks.
 
 Synchronization is complete when `DIFFS` and `entries` match `HEAD`, every user choice is preserved, every user comment in `threads` ends with an `"agent"` reply, and modified sections are `"to-review"`.
 
@@ -75,9 +72,8 @@ Choose section blocks to match the workflow:
 
 ## 4. Data contract
 
-All persistent state lives in four top-level `useMorph` calls inside `export default function Workboard()`:
+All persistent state lives in three top-level `useMorph` calls inside `export default function Workboard()`:
 
-- `Workboard.activity`: `{ state: "idle" | "working" | "waiting", summary: string, sectionId: string | null, updatedAt: string | null }`
 - `Workboard.entries`: `{ [entryId]: Entry }` sorted by `entry.order`. Always include `"step-overview"` (`order: 0`, `code: null`) with a `directory` item.
 - `Workboard.threads`: `{ [anchorId]: ThreadMessage[] }`
 - `Workboard.view`: `{ selectedId: string, stages: { [itemId]: string }, diffOpen: { [fileKey]: boolean } }`

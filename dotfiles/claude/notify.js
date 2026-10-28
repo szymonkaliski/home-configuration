@@ -263,7 +263,21 @@ function classifyLastUserTurn(filePath) {
 }
 
 if (event === "PreToolUse") {
-  if (!fs.existsSync(permissionOpenFile(sessionId))) {
+  const permFile = permissionOpenFile(sessionId);
+  let blockedByOtherAgent = false;
+  if (fs.existsSync(permFile)) {
+    try {
+      const rec = JSON.parse(fs.readFileSync(permFile, "utf8"));
+      if ((rec.agent ?? null) === (input.agent_id ?? null)) {
+        // the asking agent moved on to a new tool call (for example after a
+        // denied prompt), so its permission prompt is no longer open
+        fs.unlinkSync(permFile);
+      } else {
+        blockedByOtherAgent = true;
+      }
+    } catch {}
+  }
+  if (!blockedByOtherAgent) {
     logLine({
       phase: "fire",
       event,

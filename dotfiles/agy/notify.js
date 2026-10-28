@@ -243,21 +243,20 @@ function pretool(input) {
 
 function posttool(input) {
   fs.writeSync(1, "{}");
-  clearMarker(input.conversationId, input.stepIdx);
-  if (input.transcriptPath && fs.existsSync(input.transcriptPath)) {
-    try {
-      const state = lastResponseState(input.transcriptPath);
-      if (state.kind === "text") {
-        log({
-          phase: "fire",
-          kind: "working",
-          event: "posttool",
-          stepIdx: input.stepIdx,
-          body: state.text,
-        });
-      }
-    } catch {}
+  const marker = markerPath(input.conversationId, input.stepIdx);
+  if (fs.existsSync(marker)) {
+    clearMarker(input.conversationId, input.stepIdx);
+    return;
   }
+  // the watcher already fired "permission" and unlinked the marker; completing
+  // the tool puts the session back to working
+  log({
+    phase: "fire",
+    kind: "working",
+    event: "posttool",
+    stepIdx: input.stepIdx,
+    body: formatToolUse(input.toolCall?.name, input.toolCall?.args),
+  });
 }
 
 async function watch(marker) {

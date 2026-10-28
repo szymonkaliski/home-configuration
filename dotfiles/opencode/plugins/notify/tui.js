@@ -50,6 +50,9 @@ export default Plugin.define({
     const deferred = new Map();
     // open permission or form prompt per session, with its root session and body
     const prompting = new Map();
+    // roots whose last turn was interrupted or failed, so winding-down subagents
+    // do not flip the pane back to working
+    const stoppedRoots = new Set();
     // tool call id → tool name, from session.tool.input.started
     const toolNames = new Map();
     let settleTimer;
@@ -118,6 +121,18 @@ export default Plugin.define({
       const body = keepPromptBody ? prompting.get(sessionID)?.body : undefined;
       prompting.delete(sessionID);
       if (event.startsWith("session.") && session?.parentID) return;
+      if (
+        event === "session.execution.interrupted" ||
+        event === "session.execution.failed"
+      ) {
+        stoppedRoots.add(sessionID);
+        for (const [id, p] of prompting) {
+          if (p.rootID === sessionID) prompting.delete(id);
+        }
+      } else if (kind === "working") {
+        const rootID = rootOf(sessionID, session);
+        if (rootID) stoppedRoots.delete(rootID);
+      }
       createLogger(LOG_PATH, {
         harness: "opencode",
         event,
@@ -132,7 +147,7 @@ export default Plugin.define({
       if (!running.has(sessionID) || !isLocalSession(sessionID, session))
         return;
       const rootID = rootOf(sessionID, session);
-      if (!rootID || isPrompting(rootID)) return;
+      if (!rootID || isPrompting(rootID) || stoppedRoots.has(rootID)) return;
       createLogger(LOG_PATH, {
         harness: "opencode",
         event,
@@ -205,6 +220,7 @@ export default Plugin.define({
         resolveSession(sessionID).catch(() => undefined),
       );
       deferred.delete(sessionID);
+      stoppedRoots.delete(sessionID);
     }
 
     function executionEnded(sessionID) {

@@ -28,9 +28,8 @@ function loadCjs(filePath) {
   return mod.exports;
 }
 
-const { truncate, createLogger, isFocusedPane, deliver } = loadCjs(
-  `${os.homedir()}/.config/opencode/notify-lib.cjs`,
-);
+const { truncate, formatToolUse, createLogger, isFocusedPane, deliver } =
+  loadCjs(`${os.homedir()}/.config/opencode/notify-lib.cjs`);
 
 const LOG_PATH = `${os.homedir()}/.config/opencode/notify.log`;
 
@@ -49,6 +48,10 @@ export default Plugin.define({
     // roots whose turn ended while subagents still ran: their idle path waits
     // for the last subagent, with the succeeded event's location
     const deferred = new Map();
+    // open permission or form prompt per session, with its root session and body
+    const prompting = new Map();
+    // tool call id → tool name, from session.tool.input.started
+    const toolNames = new Map();
     let settleTimer;
 
     const location = () => context.location ?? context.data.location.default();
@@ -94,19 +97,75 @@ export default Plugin.define({
       return false;
     }
 
+    const rootOf = (sessionID, session) =>
+      session?.parentID
+        ? context.data.session.root(session.parentID)
+        : sessionID;
+
+    const isPrompting = (rootID) => {
+      for (const p of prompting.values()) {
+        if (p.rootID === rootID) return true;
+      }
+      return false;
+    };
+
     // one line, no delivery: the state transitions the log carries for readers.
     // A subagent shares its parent's pane, so its turn lifecycle says nothing
     // about the pane, while its prompt does block and unblock the pane.
-    async function logKind(sessionID, event, kind) {
+    async function logKind(sessionID, event, kind, keepPromptBody = false) {
       const session = await resolveSession(sessionID);
       if (!isLocalSession(sessionID, session)) return;
+      const body = keepPromptBody ? prompting.get(sessionID)?.body : undefined;
+      prompting.delete(sessionID);
       if (event.startsWith("session.") && session?.parentID) return;
       createLogger(LOG_PATH, {
         harness: "opencode",
         event,
         kind,
         session: sessionID,
-      })({ phase: "fire" });
+      })({ phase: "fire", body });
+    }
+
+    async function logProgress(sessionID, event, body) {
+      if (!sessionID || !body || !running.has(sessionID)) return;
+      const session = await resolveSession(sessionID);
+      if (!running.has(sessionID) || !isLocalSession(sessionID, session))
+        return;
+      const rootID = rootOf(sessionID, session);
+      if (!rootID || isPrompting(rootID)) return;
+      createLogger(LOG_PATH, {
+        harness: "opencode",
+        event,
+        kind: "working",
+        session: sessionID,
+      })({ phase: "fire", body });
+    }
+
+    async function lastAssistantText(sessionID, log) {
+      try {
+        const messages =
+          (await context.client.session.context({ sessionID })) ??
+          context.data.session.message.list(sessionID) ??
+          [];
+        for (let i = messages.length - 1; i >= 0; i--) {
+          const msg = messages[i];
+          if (msg.type === "assistant" && Array.isArray(msg.content)) {
+            const textParts = msg.content.filter(
+              (p) => p.type === "text" && p.text?.trim(),
+            );
+            if (textParts.length > 0) {
+              return truncate(textParts[textParts.length - 1].text.trim(), 200);
+            }
+            break;
+          }
+        }
+      } catch (err) {
+        log?.({
+          phase: "fetch-context-failed",
+          error: String((err && err.message) || err),
+        });
+      }
+      return null;
     }
 
     // the subagents of rootID with an execution in flight, at any depth
@@ -151,6 +210,7 @@ export default Plugin.define({
     function executionEnded(sessionID) {
       running.delete(sessionID);
       deferred.delete(sessionID);
+      prompting.delete(sessionID);
       if (deferred.size > 0) settleLater();
     }
 
@@ -163,6 +223,12 @@ export default Plugin.define({
       const children = await runningChildren(sessionID);
       if (running.has(sessionID)) return;
       if (children.length > 0) {
+        const body =
+          (await lastAssistantText(sessionID)) ??
+          (children[0]?.title
+            ? `subagent: ${truncate(children[0].title, 120)}`
+            : undefined);
+        if (running.has(sessionID)) return;
         deferred.set(sessionID, { location: eventLocation });
         createLogger(LOG_PATH, {
           harness: "opencode",
@@ -172,6 +238,7 @@ export default Plugin.define({
         })({
           phase: "fire",
           background: children.map((child) => child.agent ?? "subagent"),
+          body,
         });
         settleLater();
         return;
@@ -187,40 +254,18 @@ export default Plugin.define({
         kind: "waiting",
         session: sessionID,
       });
-      log({ phase: "fire" });
+      const text = await lastAssistantText(sessionID, log);
+      if (running.has(sessionID)) return;
+      log({ phase: "fire", body: text ?? undefined });
 
       if (isFocusedPane()) {
         log({ phase: "suppressed", reason: "focused-pane" });
         return;
       }
 
-      let body = "OpenCode is waiting for your input";
+      const body = text ?? "OpenCode is waiting for your input";
       const sessionDir =
         eventLocation?.directory ?? session?.location?.directory;
-      try {
-        const messages =
-          (await context.client.session.context({ sessionID })) ??
-          context.data.session.message.list(sessionID) ??
-          [];
-        for (let i = messages.length - 1; i >= 0; i--) {
-          const msg = messages[i];
-          if (msg.type === "assistant" && Array.isArray(msg.content)) {
-            const textParts = msg.content.filter(
-              (p) => p.type === "text" && p.text?.trim(),
-            );
-            if (textParts.length > 0) {
-              body = truncate(textParts[textParts.length - 1].text.trim(), 200);
-            }
-            break;
-          }
-        }
-      } catch (err) {
-        log({
-          phase: "fetch-context-failed",
-          error: String((err && err.message) || err),
-        });
-      }
-
       await deliver({ title: titleFor(sessionDir), body, log });
     }
 
@@ -228,19 +273,6 @@ export default Plugin.define({
       const perm = event.data;
       const session = await resolveSession(perm?.sessionID);
       if (!isLocalSession(perm?.sessionID, session)) return;
-
-      const log = createLogger(LOG_PATH, {
-        harness: "opencode",
-        event: "permission.asked",
-        kind: "permission",
-        session: perm?.sessionID,
-      });
-      log({ phase: "fire", perm });
-
-      if (isFocusedPane()) {
-        log({ phase: "suppressed", reason: "focused-pane" });
-        return;
-      }
 
       const tool = perm?.action || "tool";
       const meta = perm?.metadata || {};
@@ -256,6 +288,24 @@ export default Plugin.define({
         ? `${tool}: ${truncate(String(detail), 140)}`
         : `${tool} permission request`;
 
+      const rootID = rootOf(perm?.sessionID, session);
+      if (perm?.sessionID && rootID) {
+        prompting.set(perm.sessionID, { rootID, body });
+      }
+
+      const log = createLogger(LOG_PATH, {
+        harness: "opencode",
+        event: "permission.asked",
+        kind: "permission",
+        session: perm?.sessionID,
+      });
+      log({ phase: "fire", perm, body });
+
+      if (isFocusedPane()) {
+        log({ phase: "suppressed", reason: "focused-pane" });
+        return;
+      }
+
       const sessionDir =
         event.location?.directory ?? session?.location?.directory;
       await deliver({ title: titleFor(sessionDir), body, log });
@@ -266,22 +316,27 @@ export default Plugin.define({
       const session = await resolveSession(form?.sessionID);
       if (!isLocalSession(form?.sessionID, session)) return;
 
+      const field = form?.fields?.[0];
+      const q = field?.description || field?.title || form?.title;
+      const body = q ? `Question: ${truncate(String(q), 140)}` : "Question";
+
+      const rootID = rootOf(form?.sessionID, session);
+      if (form?.sessionID && rootID) {
+        prompting.set(form.sessionID, { rootID, body });
+      }
+
       const log = createLogger(LOG_PATH, {
         harness: "opencode",
         event: "form.created",
         kind: "permission",
         session: form?.sessionID,
       });
-      log({ phase: "fire" });
+      log({ phase: "fire", body });
 
       if (isFocusedPane()) {
         log({ phase: "suppressed", reason: "focused-pane" });
         return;
       }
-
-      const field = form?.fields?.[0];
-      const q = field?.description || field?.title || form?.title;
-      const body = q ? `Question: ${truncate(String(q), 140)}` : "Question";
 
       const sessionDir =
         event.location?.directory ?? session?.location?.directory;
@@ -316,21 +371,50 @@ export default Plugin.define({
       }),
       // an answered prompt puts the agent back to work
       context.data.on("permission.replied", (event) => {
-        void logKind(event.data.sessionID, "permission.replied", "working");
+        executionStarted(event.data.sessionID);
+        void logKind(
+          event.data.sessionID,
+          "permission.replied",
+          "working",
+          true,
+        );
       }),
       context.data.on("form.replied", (event) => {
-        void logKind(
-          event.data.form?.sessionID ?? event.data.sessionID,
-          "form.replied",
-          "working",
-        );
+        const sessionID = event.data.form?.sessionID ?? event.data.sessionID;
+        executionStarted(sessionID);
+        void logKind(sessionID, "form.replied", "working", true);
       }),
       context.data.on("form.cancelled", (event) => {
-        void logKind(
-          event.data.form?.sessionID ?? event.data.sessionID,
-          "form.cancelled",
-          "working",
+        const sessionID = event.data.form?.sessionID ?? event.data.sessionID;
+        executionStarted(sessionID);
+        void logKind(sessionID, "form.cancelled", "working", true);
+      }),
+      context.data.on("session.tool.input.started", (event) => {
+        const { sessionID, id, name } = event.data ?? {};
+        if (sessionID && !running.has(sessionID)) executionStarted(sessionID);
+        if (id && name) toolNames.set(id, name);
+      }),
+      context.data.on("session.tool.called", (event) => {
+        const { sessionID, id, input } = event.data ?? {};
+        if (sessionID && !running.has(sessionID)) executionStarted(sessionID);
+        const name = (id && toolNames.get(id)) || "tool";
+        if (id) toolNames.delete(id);
+        void logProgress(
+          sessionID,
+          "session.tool.called",
+          formatToolUse(name, input),
         );
+      }),
+      context.data.on("session.text.ended", (event) => {
+        const { sessionID, text } = event.data ?? {};
+        if (typeof text === "string" && text.trim()) {
+          if (sessionID && !running.has(sessionID)) executionStarted(sessionID);
+          void logProgress(
+            sessionID,
+            "session.text.ended",
+            truncate(text.trim(), 200),
+          );
+        }
       }),
       context.data.on("session.execution.succeeded", (event) => {
         executionEnded(event.data.sessionID);

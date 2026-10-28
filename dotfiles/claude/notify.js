@@ -7,9 +7,14 @@ const path = require("path");
 // loaded by absolute path: this file is a symlink into the dotfiles repo on a
 // host and a plain copy inside a microVM, so a relative specifier would resolve
 // to two different places
-const { truncate, createLogger, isFocusedPane, deliver } = require(
-  `${os.homedir()}/.claude/notify-lib.cjs`,
-);
+const {
+  truncate,
+  formatToolUse,
+  readTail,
+  createLogger,
+  isFocusedPane,
+  deliver,
+} = require(`${os.homedir()}/.claude/notify-lib.cjs`);
 
 const input = JSON.parse(fs.readFileSync(0, "utf8"));
 const event = input.hook_event_name;
@@ -111,6 +116,7 @@ const KIND = {
   Stop: "waiting",
   "Notification/idle_prompt": "waiting",
   UserPromptSubmit: "working",
+  PreToolUse: "working",
 };
 // A turn that ends while subagents still work in the background has not
 // finished the session's work: Claude takes up their reports in a new turn,
@@ -138,6 +144,14 @@ const kind =
 // a permission prompt stays open until a tool runs or the turn ends; the marker
 // lets PostToolUse log the moment it was answered
 const permissionOpenFile = (sid) => pendingFile(`${sid}__perm`);
+function readPermissionOpen(sid) {
+  if (!sid) return null;
+  try {
+    return JSON.parse(fs.readFileSync(permissionOpenFile(sid), "utf8"));
+  } catch {
+    return null;
+  }
+}
 
 const logLine = createLogger(`${os.homedir()}/.claude/notify.log`, {
   harness: "claude",
@@ -145,170 +159,52 @@ const logLine = createLogger(`${os.homedir()}/.claude/notify.log`, {
   kind,
 });
 
-// PostToolUse and PostToolUseFailure are hooked only to log "working" once,
-// when the tool that asked for permission finishes or fails (the marker below
-// names the agent and tool, since a background agent's tool calls carry the
-// same session id); any other tool call logs nothing. The settings.json command
-// only starts node when a marker exists.
-if (event === "PostToolUse" || event === "PostToolUseFailure") {
-  try {
-    const rec = JSON.parse(
-      fs.readFileSync(permissionOpenFile(sessionId), "utf8"),
-    );
-    const sameAgent = (rec.agent ?? null) === (input.agent_id ?? null);
-    const sameTool = rec.tool == null || rec.tool === input.tool_name;
-    if (sameAgent && sameTool) {
-      fs.unlinkSync(permissionOpenFile(sessionId));
-      logLine({
-        phase: "fire",
-        kind: "working",
-        reason: "permission-answered",
-      });
-    }
-  } catch {}
-  process.exit(0);
-}
-
-// the idle reminder while subagents work says nothing new about the session
-if (
-  event === "Notification" &&
-  input.notification_type === "idle_prompt" &&
-  fs.existsSync(backgroundFile(sessionId))
-) {
-  logLine({ phase: "skipped", reason: "background-agents", event });
-  process.exit(0);
-}
-
-logLine({
-  phase: "fire",
-  event,
-  notification_type: input.notification_type,
-  tool_name: input.tool_name,
-  background: agentsInFlight.length
-    ? agentsInFlight.map((t) => t.agent_type ?? t.type)
-    : undefined,
-});
-
-// UserPromptSubmit is hooked only for the fire line above: nothing is
-// delivered, and nothing is printed, since this hook's stdout would be added
-// to the prompt as context.
-if (event === "UserPromptSubmit") {
-  clearPending(sessionId);
-  process.exit(0);
-}
-if (
-  event === "PermissionRequest" ||
-  (kind === "permission" && !fs.existsSync(permissionOpenFile(sessionId)))
-) {
-  try {
-    fs.mkdirSync(PENDING_DIR, { recursive: true });
-    fs.writeFileSync(
-      permissionOpenFile(sessionId),
-      JSON.stringify({
-        agent: input.agent_id ?? null,
-        tool: input.tool_name ?? null,
-      }),
-    );
-  } catch {}
-}
-// a turn's end closes any prompt, whether or not the alert below is suppressed.
-// nothing is delivered while subagents work: the turn after their reports sends
-// the alert
-if (event === "Stop") {
-  clearPending(sessionId);
-  if (agentsInFlight.length > 0) {
-    try {
-      fs.mkdirSync(PENDING_DIR, { recursive: true });
-      fs.writeFileSync(
-        backgroundFile(sessionId),
-        JSON.stringify({ ts: Date.now() }),
-      );
-    } catch {}
-    process.exit(0);
-  }
-}
-
-// Only Stop, PermissionRequest, Notification, UserPromptSubmit, and PostToolUse*
-// are hooked, but sessions started before a settings change keep their old
-// hook registrations and can invoke us for since-removed events (PreToolUse,
-// SubagentStop); ignore those instead of letting them fall through to the
-// generic-Notification branch.
-if (!["Stop", "PermissionRequest", "Notification"].includes(event)) {
-  logLine({ phase: "skipped", reason: "unhooked-event", event });
-  process.exit(0);
-}
-
-// skip the notification when the user is actively looking at this pane
-if (isFocusedPane()) {
-  logLine({ phase: "suppressed", reason: "focused-pane", event });
-  process.exit(0);
-}
-
-// Scan backward for the most recent assistant entry, skipping non-conversational
+// Scan backward for the most recent assistant message, skipping non-conversational
 // entries (ai-title, last-prompt, permission-mode, mode, queue-operation,
-// attachment) and mid-turn tool_result user entries that are frequently the last
-// line when the Stop hook fires, so bailing on the first of them would drop the
-// notification. Two cases make callers poll (kind !== "text"): extended thinking
-// streams as two jsonl entries sharing one msg_id (thinking-only first, paired text
-// up to ~15s later) and Stop fires on the first; and the Stop hook can read before
-// the current turn's assistant line lands on disk, leaving a real user prompt as the
-// latest entry - return "awaiting_response" there instead of falling through to the
-// previous turn's now-stale assistant text (the off-by-one).
+// attachment). One assistant API response writes separate jsonl entries for
+// thinking, text, and tool_use sharing one message.id, so scan every entry of
+// the newest message.id before concluding it had no text. Any user entry
+// (a human prompt or a mid-turn tool_result) below the newest assistant text
+// means the reply that follows it has not been flushed yet.
 function readLastAssistantState(filePath) {
-  const fd = fs.openSync(filePath, "r");
-  try {
-    const stat = fs.fstatSync(fd);
-    const readSize = Math.min(stat.size, 65536);
-    const buf = Buffer.alloc(readSize);
-    fs.readSync(fd, buf, 0, readSize, stat.size - readSize);
-    const chunk = buf.toString("utf8");
-
-    const firstNewline = chunk.indexOf("\n");
-    const lines = chunk
-      .slice(firstNewline + 1)
-      .split("\n")
-      .filter(Boolean);
-
-    for (let i = lines.length - 1; i >= 0; i--) {
-      let entry;
-      try {
-        entry = JSON.parse(lines[i]);
-      } catch {
-        continue;
-      }
-
-      // A real user prompt (not a mid-turn tool_result) below the most recent
-      // assistant text means the current turn's reply hasn't been flushed yet.
-      // Stop scanning here so the caller polls, rather than falling through to an
-      // older assistant entry and delivering the previous turn's message.
-      if (entry.type === "user") {
-        const content = entry.message?.content;
-        const isToolResult =
-          Array.isArray(content) &&
-          content.some((c) => c.type === "tool_result");
-        if (!isToolResult) return { kind: "awaiting_response" };
-        continue;
-      }
-
-      if (entry.type !== "assistant") continue;
-      const contents = entry.message?.content;
-      if (!Array.isArray(contents)) return { kind: "assistant_without_text" };
-
-      for (let j = contents.length - 1; j >= 0; j--) {
-        if (contents[j].type === "text" && contents[j].text?.trim()) {
-          return {
-            kind: "text",
-            text: truncate(contents[j].text.trim(), 200),
-            ts: entry.timestamp,
-          };
-        }
-      }
-      return { kind: "assistant_without_text" };
+  const lines = readTail(filePath);
+  let msgId = null;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    let entry;
+    try {
+      entry = JSON.parse(lines[i]);
+    } catch {
+      continue;
     }
-    return { kind: "not_assistant" };
-  } finally {
-    fs.closeSync(fd);
+
+    if (entry.type === "user") {
+      const content = entry.message?.content;
+      const isToolResult =
+        Array.isArray(content) && content.some((c) => c.type === "tool_result");
+      return msgId || isToolResult
+        ? { kind: "assistant_without_text" }
+        : { kind: "awaiting_response" };
+    }
+
+    if (entry.type !== "assistant") continue;
+    const id = entry.message?.id ?? null;
+    if (msgId === null) msgId = id;
+    else if (id !== msgId) return { kind: "assistant_without_text" };
+
+    const contents = entry.message?.content;
+    if (!Array.isArray(contents)) continue;
+
+    for (let j = contents.length - 1; j >= 0; j--) {
+      if (contents[j].type === "text" && contents[j].text?.trim()) {
+        return {
+          kind: "text",
+          text: truncate(contents[j].text.trim(), 200),
+          ts: entry.timestamp,
+        };
+      }
+    }
   }
+  return msgId ? { kind: "assistant_without_text" } : { kind: "not_assistant" };
 }
 
 // Stop/PermissionRequest carry transcript_path, but Notification
@@ -345,46 +241,195 @@ function resolveTranscriptPath(input) {
 //   { kind: "agent" }   a forked skill or Task agent finished or failed
 //   { kind: "machine" } background command, workflow, any other <status>
 function classifyLastUserTurn(filePath) {
-  const fd = fs.openSync(filePath, "r");
-  try {
-    const stat = fs.fstatSync(fd);
-    const readSize = Math.min(stat.size, 65536);
-    const buf = Buffer.alloc(readSize);
-    fs.readSync(fd, buf, 0, readSize, stat.size - readSize);
-    const chunk = buf.toString("utf8");
-
-    const firstNewline = chunk.indexOf("\n");
-    const lines = chunk
-      .slice(firstNewline + 1)
-      .split("\n")
-      .filter(Boolean);
-
-    for (let i = lines.length - 1; i >= 0; i--) {
-      let entry;
-      try {
-        entry = JSON.parse(lines[i]);
-      } catch {
-        continue;
-      }
-      if (entry.type !== "user") continue;
-      const content = entry.message?.content;
-      if (
-        Array.isArray(content) &&
-        content.some((c) => c.type === "tool_result")
-      )
-        continue;
-      if (entry.origin?.kind !== "task-notification") return { kind: "user" };
-      const text = String(content);
-      if (!/<status>/.test(text)) return { kind: "monitor" };
-      const isAgent = /<summary>Agent "[\s\S]*?" (?:finished|failed)/.test(
-        text,
-      );
-      return { kind: isAgent ? "agent" : "machine" };
+  const lines = readTail(filePath);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    let entry;
+    try {
+      entry = JSON.parse(lines[i]);
+    } catch {
+      continue;
     }
-  } finally {
-    fs.closeSync(fd);
+    if (entry.type !== "user") continue;
+    const content = entry.message?.content;
+    if (Array.isArray(content) && content.some((c) => c.type === "tool_result"))
+      continue;
+    if (entry.origin?.kind !== "task-notification") return { kind: "user" };
+    const body = String(content);
+    if (!/<status>/.test(body)) return { kind: "monitor" };
+    const isAgent = /<summary>Agent "[\s\S]*?" (?:finished|failed)/.test(body);
+    return { kind: isAgent ? "agent" : "machine" };
   }
   return { kind: "user" };
+}
+
+if (event === "PreToolUse") {
+  if (!fs.existsSync(permissionOpenFile(sessionId))) {
+    logLine({
+      phase: "fire",
+      event,
+      tool_name: input.tool_name,
+      body: formatToolUse(input.tool_name, input.tool_input),
+    });
+  }
+  process.exit(0);
+}
+
+// PostToolUse and PostToolUseFailure are hooked only to log "working" once,
+// when the tool that asked for permission finishes or fails (the marker below
+// names the agent and tool, since a background agent's tool calls carry the
+// same session id); any other tool call logs nothing. The settings.json command
+// only starts node when a marker exists.
+if (event === "PostToolUse" || event === "PostToolUseFailure") {
+  const rec = readPermissionOpen(sessionId);
+  if (rec) {
+    const sameAgent = (rec.agent ?? null) === (input.agent_id ?? null);
+    const sameTool = rec.tool == null || rec.tool === input.tool_name;
+    if (sameAgent && sameTool) {
+      try {
+        fs.unlinkSync(permissionOpenFile(sessionId));
+      } catch {}
+      logLine({
+        phase: "fire",
+        kind: "working",
+        reason: "permission-answered",
+        body: rec.body || formatToolUse(input.tool_name, input.tool_input),
+      });
+    }
+  }
+  process.exit(0);
+}
+
+// the idle reminder while subagents work says nothing new about the session
+if (
+  event === "Notification" &&
+  input.notification_type === "idle_prompt" &&
+  fs.existsSync(backgroundFile(sessionId))
+) {
+  logLine({ phase: "skipped", reason: "background-agents", event });
+  process.exit(0);
+}
+
+// Reopening an old session appends metadata lines (ai-title, mode, last-prompt)
+// after the final assistant text and can fire Stop, which would re-deliver
+// hours-old text as if the turn just ended. Legit final text lands seconds
+// before Stop (or up to ~15s after, for the thinking case), so a transcript
+// whose newest assistant text is older than the staleness window means a
+// reopen, not a turn end.
+const STALE_MS = 5 * 60 * 1000;
+const hookStart = Date.now();
+const isStaleText = (state) => {
+  if (state.kind !== "text" || !state.ts) return false;
+  const t = Date.parse(state.ts);
+  return Number.isFinite(t) && hookStart - t > STALE_MS;
+};
+
+const payloadText =
+  typeof input.last_assistant_message === "string" &&
+  input.last_assistant_message.trim();
+
+const permOpen =
+  event === "Notification" && input.notification_type === "permission_prompt"
+    ? readPermissionOpen(sessionId)
+    : null;
+
+let stopTurn = null;
+let stopState = null;
+let fireBody;
+if (event === "PermissionRequest") {
+  fireBody = formatToolUse(input.tool_name, input.tool_input);
+} else if (
+  event === "Notification" &&
+  input.notification_type !== "idle_prompt"
+) {
+  fireBody = permOpen?.body || input.message || "Notification";
+} else if (
+  event === "Stop" &&
+  !input.stop_hook_active &&
+  transcriptPath &&
+  fs.existsSync(transcriptPath)
+) {
+  stopTurn = classifyLastUserTurn(transcriptPath);
+  if (stopTurn.kind !== "monitor") {
+    stopState = readLastAssistantState(transcriptPath);
+    if (!isStaleText(stopState)) {
+      fireBody = payloadText
+        ? truncate(payloadText, 200)
+        : stopState.kind === "text"
+          ? stopState.text
+          : undefined;
+    }
+  }
+}
+if (!fireBody && agentsInFlight.length > 0) {
+  const first = agentsInFlight[0];
+  const detail = first.description ?? first.agent_type ?? first.type;
+  fireBody = detail ? `subagent: ${truncate(String(detail), 120)}` : "subagent";
+}
+
+logLine({
+  phase: "fire",
+  event,
+  notification_type: input.notification_type,
+  tool_name: input.tool_name,
+  background: agentsInFlight.length
+    ? agentsInFlight.map((t) => t.agent_type ?? t.type)
+    : undefined,
+  body: fireBody,
+});
+
+// UserPromptSubmit is hooked only for the fire line above: nothing is
+// delivered, and nothing is printed, since this hook's stdout would be added
+// to the prompt as context.
+if (event === "UserPromptSubmit") {
+  clearPending(sessionId);
+  process.exit(0);
+}
+if (
+  event === "PermissionRequest" ||
+  (kind === "permission" && !fs.existsSync(permissionOpenFile(sessionId)))
+) {
+  try {
+    fs.mkdirSync(PENDING_DIR, { recursive: true });
+    fs.writeFileSync(
+      permissionOpenFile(sessionId),
+      JSON.stringify({
+        agent: input.agent_id ?? null,
+        tool: input.tool_name ?? null,
+        body: fireBody ?? null,
+      }),
+    );
+  } catch {}
+}
+// a turn's end closes any prompt, whether or not the alert below is suppressed.
+// nothing is delivered while subagents work: the turn after their reports sends
+// the alert
+if (event === "Stop") {
+  clearPending(sessionId);
+  if (agentsInFlight.length > 0) {
+    try {
+      fs.mkdirSync(PENDING_DIR, { recursive: true });
+      fs.writeFileSync(
+        backgroundFile(sessionId),
+        JSON.stringify({ ts: Date.now() }),
+      );
+    } catch {}
+    process.exit(0);
+  }
+}
+
+// Only Stop, PermissionRequest, Notification, UserPromptSubmit, PreToolUse, and
+// PostToolUse* are hooked, but sessions started before a settings change keep
+// their old hook registrations and can invoke us for since-removed events;
+// ignore those instead of letting them fall through to the Notification branch.
+if (!["Stop", "PermissionRequest", "Notification"].includes(event)) {
+  logLine({ phase: "skipped", reason: "unhooked-event", event });
+  process.exit(0);
+}
+
+// skip the notification when the user is actively looking at this pane
+if (isFocusedPane()) {
+  logLine({ phase: "suppressed", reason: "focused-pane", event });
+  process.exit(0);
 }
 
 // A killed or interrupted agent never sends its completion notification: the CLI
@@ -469,29 +514,6 @@ function pendingForkedSkills(filePath) {
     );
 }
 
-function formatToolUse(toolUse) {
-  const name = toolUse.name;
-  const inp = toolUse.input || {};
-
-  if (name === "Bash") {
-    return `Bash: ${truncate(inp.command || "", 120)}`;
-  }
-  if (name === "Edit") return `Edit: ${inp.file_path || "?"}`;
-  if (name === "Write") return `Write: ${inp.file_path || "?"}`;
-  if (name === "Read") return `Read: ${inp.file_path || "?"}`;
-
-  if (name === "AskUserQuestion") {
-    const q = inp.questions?.[0]?.question;
-    if (q) return `Question: ${truncate(q, 120)}`;
-    return "Question";
-  }
-
-  // generic: tool name + first string-valued input field
-  const firstVal = Object.values(inp).find((v) => typeof v === "string");
-  if (firstVal) return `${name}: ${truncate(firstVal, 100)}`;
-  return name;
-}
-
 let body;
 
 if (event === "Stop") {
@@ -504,7 +526,7 @@ if (event === "Stop") {
     logLine({ phase: "skipped", reason: "no-transcript", event });
     process.exit(0);
   }
-  const lastTurn = classifyLastUserTurn(transcriptPath);
+  const lastTurn = stopTurn ?? classifyLastUserTurn(transcriptPath);
   if (lastTurn.kind === "monitor" || lastTurn.kind === "machine") {
     logLine({
       phase: "skipped",
@@ -527,32 +549,16 @@ if (event === "Stop") {
     process.exit(0);
   }
 
-  // Reopening an old session appends metadata lines (ai-title, mode, last-prompt)
-  // after the final assistant text and can fire Stop, which would re-deliver
-  // hours-old text as if the turn just ended. Legit final text lands seconds
-  // before Stop (or up to ~15s after, for the thinking case), so a transcript
-  // whose newest assistant text is older than the staleness window means a
-  // reopen, not a turn end.
-  const STALE_MS = 5 * 60 * 1000;
-  const hookStart = Date.now();
-  const isStaleText = (state) => {
-    if (state.kind !== "text" || !state.ts) return false;
-    const t = Date.parse(state.ts);
-    return Number.isFinite(t) && hookStart - t > STALE_MS;
-  };
-
-  const payloadText =
-    typeof input.last_assistant_message === "string" &&
-    input.last_assistant_message.trim();
+  const initialState = stopState ?? readLastAssistantState(transcriptPath);
   if (payloadText) {
     // Since v2.1.47 the Stop payload carries the final text directly, ahead of
     // the transcript flush (anthropics/claude-code#74340), so no polling; the
     // transcript is read once, only for the reopen staleness guard.
-    if (isStaleText(readLastAssistantState(transcriptPath))) {
+    if (isStaleText(initialState)) {
       logLine({ phase: "skipped", reason: "stale-assistant-text", event });
       process.exit(0);
     }
-    body = truncate(payloadText, 200);
+    body = fireBody ?? truncate(payloadText, 200);
   } else {
     // Older versions: poll-read the transcript tail until the final text lands.
     // A stale read keeps polling too - mid-turn the last text can be the
@@ -561,7 +567,7 @@ if (event === "Stop") {
     const sab = new SharedArrayBuffer(4);
     const view = new Int32Array(sab);
     const deadline = Date.now() + 30000;
-    let state = readLastAssistantState(transcriptPath);
+    let state = initialState;
     while (
       (state.kind !== "text" || isStaleText(state)) &&
       Date.now() < deadline
@@ -586,16 +592,13 @@ if (event === "Stop") {
   // calls) and carries the tool input - so we name exactly what's awaited,
   // immediately. This is the primary blocking-prompt notification, and it covers
   // AskUserQuestion too: the chooser goes through the permission dialog path.
-  body = formatToolUse({
-    name: input.tool_name,
-    input: input.tool_input || {},
-  });
+  body = fireBody;
 } else {
   // agent_needs_input also lands here and delivers as-is: its message already
   // reads "<agent> needs your input: …". It is the only alert a forked skill
   // blocked on a prompt can produce, because a blocked agent stops writing its
   // transcript and so reads as pending to the suppression above.
-  body = input.message || "Notification";
+  body = permOpen?.body || input.message || "Notification";
 
   // The generic permission_prompt Notification fires ~6s later as a backstop. If
   // PermissionRequest already notified this prompt (marker set on delivery), it's

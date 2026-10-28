@@ -26,6 +26,64 @@ function truncate(str, max) {
   return cut.trimEnd() + "…";
 }
 
+function formatToolUse(name, input) {
+  const tool = name || "tool";
+  const inp = input || {};
+
+  if (tool === "Bash" || tool === "bash" || tool === "shell") {
+    return `${tool}: ${truncate(inp.command || "", 120)}`;
+  }
+  if (
+    tool === "Edit" ||
+    tool === "edit" ||
+    tool === "Write" ||
+    tool === "write" ||
+    tool === "Read" ||
+    tool === "read"
+  ) {
+    return `${tool}: ${inp.file_path || inp.filePath || inp.path || "?"}`;
+  }
+  if (tool === "AskUserQuestion" || tool === "question") {
+    const q = inp.questions?.[0]?.question;
+    return q ? `Question: ${truncate(q, 120)}` : "Question";
+  }
+
+  const detail =
+    inp.command ||
+    inp.CommandLine ||
+    inp.description ||
+    inp.pattern ||
+    inp.file_path ||
+    inp.filePath ||
+    inp.path ||
+    inp.AbsolutePath ||
+    inp.DirectoryPath ||
+    inp.url ||
+    inp.query ||
+    inp.toolSummary ||
+    inp.toolAction ||
+    Object.values(inp).find((v) => typeof v === "string" && v);
+  if (detail) return `${tool}: ${truncate(String(detail), 100)}`;
+  return tool;
+}
+
+function readTail(filePath, maxBytes = 65536) {
+  const fd = fs.openSync(filePath, "r");
+  try {
+    const stat = fs.fstatSync(fd);
+    const readSize = Math.min(stat.size, maxBytes);
+    const buf = Buffer.alloc(readSize);
+    fs.readSync(fd, buf, 0, readSize, stat.size - readSize);
+    const chunk = buf.toString("utf8");
+    // a window smaller than the file starts mid-entry, so drop that first line
+    const body =
+      readSize < stat.size ? chunk.slice(chunk.indexOf("\n") + 1) : chunk;
+    return body.split("\n").filter(Boolean);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
 // Keep ~3 months of entries. The first field of every line is "ts", so peek at
 // the head of the file to find the oldest entry cheaply; only rewrite the whole
 // file once entries spill a slack window past the retention edge, so the full
@@ -218,4 +276,11 @@ async function deliver({ title, body, log }) {
   }
 }
 
-module.exports = { truncate, createLogger, isFocusedPane, deliver };
+module.exports = {
+  truncate,
+  formatToolUse,
+  readTail,
+  createLogger,
+  isFocusedPane,
+  deliver,
+};

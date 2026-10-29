@@ -50,6 +50,5 @@
   },
   "websearch": {
     "provider": "searxng"
-  },
-  "skills": ["~/.config/opencode/skills"]
+  }
 }

@@ -31,7 +31,6 @@ local updateScreen = function()
   status.connectedScreenNames = hs.fnutils.map(screens, function(screen)
     return screen:name()
   end)
-  status.isLaptopScreenConnected = hs.screen.findByName('Color LCD') ~= nil
   status.isStudioDisplayConnected = hs.fnutils.find(screens, function(s)
     return s:getUUID() == STUDIO_DISPLAY_UUID
   end) ~= nil

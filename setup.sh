@@ -163,9 +163,12 @@ if [[ $HOST == "berry" ]] && command -v maestral &> /dev/null; then
 fi
 
 # home-manager wraps every launchd agent in `/bin/sh -c '/bin/wait4path ...'`,
-# and TCC blocks /bin/sh from reading ~/Documents until it has Full Disk Access;
-# probes with a throwaway agent whether /bin/sh can read this repo from launchd
-function shCanReadRepoFromLaunchd() {
+# and com.szymonkaliski.tmux runs under ~/Applications/Tmux.app; TCC blocks
+# both from reading ~/Documents until granted Full Disk Access
+function canReadRepoFromLaunchd() {
+  local BIN="$1"
+  local LAUNCHER=""
+  [[ "$BIN" != "/bin/sh" ]] && LAUNCHER="<string>$BIN</string>"
   PROBE_LABEL="com.szymonkaliski.tcc-probe"
   PROBE_DIR="$(mktemp -d)"
   PROBE_PLIST="$PROBE_DIR/$PROBE_LABEL.plist"
@@ -179,9 +182,10 @@ function shCanReadRepoFromLaunchd() {
         <string>$PROBE_LABEL</string>
         <key>ProgramArguments</key>
         <array>
+            $LAUNCHER
             <string>/bin/sh</string>
             <string>-c</string>
-            <string>cat '$PWD/setup.sh' > /dev/null</string>
+            <string>head -c 1 '/Library/Application Support/com.apple.TCC/TCC.db' > /dev/null</string>
         </array>
         <key>RunAtLoad</key>
         <true/>
@@ -210,20 +214,25 @@ if [[ $HOST == "orchid" ]]; then
   sudo scutil --set HostName orchid
 
   # the Full Disk Access grant is GUI-only
-  if shCanReadRepoFromLaunchd; then
-    echo "/bin/sh can read the repo from launchd (Full Disk Access is granted)"
-  else
-    read -rp "$(tput setaf 3)launchd agents can't read this repo; grant /bin/sh Full Disk Access?$(tput sgr0) (y/N) " RESP
-    if [ "$RESP" == "y" ] || [ "$RESP" == "Y" ]; then
-      echo "In the pane that opens: click +, press Cmd+Shift+G, enter /bin/sh, click Open"
-      open "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+  for ENTRY in "/bin/sh:/bin/sh" "$HOME/Applications/Tmux.app/Contents/MacOS/tmux-launcher:$HOME/Applications/Tmux.app"; do
+    BIN="${ENTRY%%:*}"
+    TARGET="${ENTRY#*:}"
+    [ -x "$BIN" ] || continue
+    if canReadRepoFromLaunchd "$BIN"; then
+      echo "$TARGET can read the repo from launchd (Full Disk Access is granted)"
+    else
+      read -rp "$(tput setaf 3)launchd agents can't read this repo via $TARGET; grant Full Disk Access?$(tput sgr0) (y/N) " RESP
+      if [ "$RESP" == "y" ] || [ "$RESP" == "Y" ]; then
+        echo "In the pane that opens: click +, press Cmd+Shift+G, enter $TARGET, click Open"
+        open "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
 
-      until shCanReadRepoFromLaunchd; do
-        read -rp "$(tput setaf 3)Probe still fails, press enter to retry once granted$(tput sgr0) (or 's' to skip) " RESP
-        [ "$RESP" == "s" ] && break
-      done
+        until canReadRepoFromLaunchd "$BIN"; do
+          read -rp "$(tput setaf 3)Probe still fails, press enter to retry once granted$(tput sgr0) (or 's' to skip) " RESP
+          [ "$RESP" == "s" ] && break
+        done
+      fi
     fi
-  fi
+  done
 
   # disable ECN negotiation - with ECN on, iOS clients could not open TCP
   # connections to this Mac over Tailscale; disabling it fixed that

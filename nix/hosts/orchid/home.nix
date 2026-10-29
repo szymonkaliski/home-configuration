@@ -16,6 +16,7 @@ in
     ../../modules/home/common.nix
     ../../modules/home/rmapi.nix
     ../../modules/home/timav.nix
+    ./apps
   ];
 
   home.homeDirectory = "/Users/szymon";
@@ -115,6 +116,19 @@ in
         StartCalendarInterval = {
           Minute = 0;
         };
+      };
+
+      # keeps the default "home" tmux session alive inside Aqua (gui/501) so
+      # login.keychain-db is unlocked and Tmux.app owns TCC attribution
+      "com.szymonkaliski.tmux" = mkAgent "tmux" {
+        AbandonProcessGroup = true;
+        KeepAlive = true;
+        ProgramArguments = [
+          "${config.home.homeDirectory}/Applications/Tmux.app/Contents/MacOS/tmux-launcher"
+          "/bin/bash"
+          "${scriptsDir}/tmux.sh"
+        ];
+        RunAtLoad = true;
       };
     };
 

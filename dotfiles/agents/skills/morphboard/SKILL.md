@@ -1,17 +1,17 @@
 ---
-name: workboard
+name: morphboard
 description: Interactive morph dashboard for planning, project tracking, design discussions, and diff review.
 argument-hint: [<morph-file-or-slug> | <topic, plan, or git-range>]
 disable-model-invocation: true
 ---
 
-# Workboard
+# Morphboard
 
-A workboard is a single-file `morph` page (`./tmp/YYYY-MM-DD-<slug>.morph.jsx`) for planning complex work, tracking tasks, discussing decisions, and reviewing diffs. Invoke the `morph` skill first for serving (`morph ./tmp`), arming the persistent `Monitor`, and `useMorph` edit rules.
+A morphboard is a single-file `morph` page (`./tmp/YYYY-MM-DD-<slug>.morph.jsx`) for planning complex work, tracking tasks, discussing decisions, and reviewing diffs. Invoke the `morph` skill first for serving (`morph ./tmp`), arming the persistent `Monitor`, and `useMorph` edit rules.
 
 ## 1. Initialize the board
 
-The workboard template lives in `${CLAUDE_SKILL_DIR}/scaffold.jsx`. Its data and `useMorph` hooks sit at the top of the file, above the `UI TOOLKIT` banner.
+The morphboard template lives in `${CLAUDE_SKILL_DIR}/scaffold.jsx`. Its data and `useMorph` hooks sit at the top of the file, above the `UI TOOLKIT` banner.
 
 1. **Create or open the board file.** For a new board, `mkdir -p ./tmp` and copy `${CLAUDE_SKILL_DIR}/scaffold.jsx` to `./tmp/YYYY-MM-DD-<slug>.morph.jsx`. For an existing board, edit `./tmp/<board>.morph.jsx` in place so reader mutations stay intact.
 2. **Populate top-level data and state.** Edit only the section above the `UI TOOLKIT` banner:
@@ -48,7 +48,7 @@ Synchronization is complete when `DIFFS` and `entries` match `HEAD`, every user 
 
 ### Step 2c: Backport UI changes to `scaffold.jsx`
 
-When the user asks to change the workboard UI itself (components or styles below the `UI TOOLKIT` banner), apply the same edit to `${CLAUDE_SKILL_DIR}/scaffold.jsx` so future boards inherit it.
+When the user asks to change the morphboard UI itself (components or styles below the `UI TOOLKIT` banner), apply the same edit to `${CLAUDE_SKILL_DIR}/scaffold.jsx` so future boards inherit it.
 
 ## 3. Section lifecycle and workflows
 
@@ -68,15 +68,15 @@ Choose section blocks to match the workflow:
 - **Plan-first execution:** Start sections at `"planned"` with `prose`, `tasks`, and open `decision` items (`selected: null`). Wait for user choices on blocking decisions, move active sections through `"working"` to `"to-review"`, and attach `diff` and validation results as steps complete.
 - **Branch or diff review (including `/git-review`):** Create one `"to-review"` section per logical change (with `prose` for why and what changed, `comparison` for pre/post walkthrough, `diff` for the unified diff, and `prose` or `tasks` for validation), plus a section for review findings and `decision` cards.
 
-**Show referenced plan sections inline:** Whenever `"step-overview"` or any section mentions a plan file (`plans/*.md`) or its todos, quote or render the relevant plan sections (the plan's goal, the exact todo items with their `verify:` lines, and any referenced `Context` or `Decisions`) directly in the workboard blocks so the reader can inspect them on the board without opening the file.
+**Show referenced plan sections inline:** Whenever `"step-overview"` or any section mentions a plan file (`plans/*.md`) or its todos, quote or render the relevant plan sections (the plan's goal, the exact todo items with their `verify:` lines, and any referenced `Context` or `Decisions`) directly in the morphboard blocks so the reader can inspect them on the board without opening the file.
 
 ## 4. Data contract
 
-All persistent state lives in three top-level `useMorph` calls inside `export default function Workboard()`:
+All persistent state lives in three top-level `useMorph` calls inside `export default function Morphboard()`:
 
-- `Workboard.entries`: `{ [entryId]: Entry }` sorted by `entry.order`. Always include `"step-overview"` (`order: 0`, `code: null`) with a `directory` item.
-- `Workboard.threads`: `{ [anchorId]: ThreadMessage[] }`
-- `Workboard.view`: `{ selectedId: string, stages: { [itemId]: string }, diffOpen: { [fileKey]: boolean } }`
+- `Morphboard.entries`: `{ [entryId]: Entry }` sorted by `entry.order`. Always include `"step-overview"` (`order: 0`, `code: null`) with a `directory` item.
+- `Morphboard.threads`: `{ [anchorId]: ThreadMessage[] }`
+- `Morphboard.view`: `{ selectedId: string, stages: { [itemId]: string }, diffOpen: { [fileKey]: boolean } }`
 
 ### `entries` shape
 

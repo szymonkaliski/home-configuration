@@ -4,7 +4,7 @@ const DEMOS = {};
 // Unified git diffs keyed by `diffKey` or `item.id`.
 const DIFFS = {};
 
-export default function Workboard() {
+export default function Morphboard() {
   const [entries, setEntries] = useMorph({
     "step-overview": {
       id: "step-overview",
@@ -33,7 +33,7 @@ export default function Workboard() {
   });
 
   return (
-    <WorkboardShell
+    <MorphboardShell
       entries={entries}
       setEntries={setEntries}
       threads={threads}
@@ -48,7 +48,7 @@ export default function Workboard() {
 /* UI TOOLKIT (HOISTED)                                                       */
 /* ========================================================================== */
 
-function WorkboardShell({
+function MorphboardShell({
   entries,
   setEntries,
   threads,
@@ -407,7 +407,7 @@ function Clock({ className }) {
   );
 }
 
-const DRAFTS = (window.__WORKBOARD_DRAFTS__ ??= {});
+const DRAFTS = (window.__MORPHBOARD_DRAFTS__ ??= {});
 
 function useDraft(key) {
   const [value, setValue] = useState(() => DRAFTS[key] ?? "");
@@ -2928,7 +2928,7 @@ function CommentableItem({
   );
 }
 
-function WorkboardItemBody({
+function MorphboardItemBody({
   entry,
   block,
   item,
@@ -3089,7 +3089,7 @@ function DossierBlock({
             }
             return (
               <div key={item.id} id={item.id}>
-                <WorkboardItemBody
+                <MorphboardItemBody
                   entry={entry}
                   block={block}
                   item={item}
@@ -3124,7 +3124,7 @@ function DossierBlock({
                 onSelectEntry ? () => onSelectEntry(entry.id, item.id) : null
               }
             >
-              <WorkboardItemBody
+              <MorphboardItemBody
                 entry={entry}
                 block={block}
                 item={item}
@@ -3507,7 +3507,7 @@ function EntryDossier({
         ref={mainRef}
         className="flex-1 overflow-y-auto px-4 py-5 font-mono text-sm text-zinc-500 dark:text-zinc-400"
       >
-        Loading workboard entries...
+        Loading morphboard entries...
       </main>
     );
   }

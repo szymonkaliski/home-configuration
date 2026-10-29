@@ -83,6 +83,11 @@ in
         };
       };
 
+      "com.szymonkaliski.dropbox-watchdog" = mkAgent "dropbox-watchdog" {
+        RunAtLoad = true;
+        StartInterval = 300;
+      };
+
       # truncates the other agents' logs, deliberately logless itself
       "com.szymonkaliski.log-truncate" = {
         enable = true;

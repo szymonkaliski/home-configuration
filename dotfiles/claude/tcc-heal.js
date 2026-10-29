@@ -16,6 +16,13 @@
 // so it stays readable while ~/Documents is blocked. It must not require any
 // file under ~/Documents. common.nix installs it on macOS hosts only.
 //
+// Upstream:
+//   https://github.com/anthropics/claude-code/issues/90227
+//   https://github.com/anthropics/claude-code/issues/96996
+//   https://github.com/anthropics/claude-code/issues/58952
+//   https://github.com/ghostty-org/ghostty/discussions/12947
+//   https://github.com/ghostty-org/ghostty/discussions/2998
+//
 // Usage:
 //   tcc-heal.js --fix          check from this shell, repair, report
 //   tcc-heal.js --check        check only, exit 1 when a folder is blocked
@@ -79,16 +86,18 @@ function probeFolders() {
 }
 
 // The responsible app is what tccd judges. The kernel records it per process
-// (inherited through fork, so the tmux server and its panes carry the terminal
-// that started the server). Asked through the same private API tccd uses, via
-// JXA, which needs no root. Environment variables are the fallback.
+// (inherited through fork, so the tmux server and its panes carry Tmux.app or
+// the terminal that started them). Asked through the same private API tccd
+// uses, via JXA (with ps + Info.plist for background bundles), which needs no
+// root. Environment variables are the fallback.
 function responsibleBundleId() {
   const script =
     "ObjC.import('AppKit');" +
     "ObjC.bindFunction('responsibility_get_pid_responsible_for_pid',['int',['int']]);" +
     "function run(a){const r=$.responsibility_get_pid_responsible_for_pid(+a[0]);" +
+    "if(r<=0)return '';" +
     "const app=$.NSRunningApplication.runningApplicationWithProcessIdentifier(r);" +
-    "return (app&&!app.isNil())?ObjC.unwrap(app.bundleIdentifier):'';}";
+    "return (app&&!app.isNil()&&ObjC.unwrap(app.bundleIdentifier))||String(r);}";
   try {
     const out = execFileSync(
       "osascript",
@@ -99,7 +108,20 @@ function responsibleBundleId() {
         timeout: 5000,
       },
     ).trim();
-    return out || null;
+    if (!out) return null;
+    if (!/^\d+$/.test(out)) return out;
+    const comm = execFileSync("/bin/ps", ["-o", "comm=", "-p", out], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 3000,
+    }).trim();
+    const m = comm.match(/^(.+\.app)\/Contents\/MacOS\//);
+    if (!m) return null;
+    const plist = fs.readFileSync(`${m[1]}/Contents/Info.plist`, "utf8");
+    const id = plist.match(
+      /<key>CFBundleIdentifier<\/key>\s*<string>([^<]+)<\/string>/,
+    );
+    return id ? id[1].trim() : null;
   } catch {
     return null;
   }

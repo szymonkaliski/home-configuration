@@ -219,6 +219,7 @@ in
     "opencode/AGENTS.md".source = link "${dotfileDir}/agents/AGENTS.md";
     "opencode/plugins".source = link "${dotfileDir}/opencode/plugins";
     "opencode/status-lib.cjs".source = link "${dotfileDir}/agents/status-lib.cjs";
+    "orchestrator/config.json".source = link "${dotfileDir}/orchestrator/config.json";
   };
 
   # OpenCode writes cli.json via temp-file rename, replacing the symlink with a

@@ -1,0 +1,40 @@
+{
+  "listen": "127.0.0.1:7377",
+  "web": {
+    "allow": ["minix", "orchid", "orchis", "ipad"]
+  },
+  "hosts": {
+    "minix": {
+      "peer": {
+        "kind": "ssh",
+        "target": "minix",
+        "port": 7377
+      },
+      "dirs": ["~", "$PROJECTS_PATH/*", "$WORK_PATH/*"],
+      "microvm": {
+        "homes": "~/MicroVMs/vm-*/data/home/szymon"
+      }
+    },
+    "orchid": {
+      "peer": {
+        "kind": "ssh",
+        "target": "orchid",
+        "port": 7377
+      },
+      "dirs": ["~", "$PROJECTS_PATH/*", "$WORK_PATH/^Archive/*"]
+    }
+  },
+  "harnesses": {
+    "opencode": {
+      "title": "^(?:OC \\| (.*)|OpenCode)$",
+      "log": "~/.config/opencode/status.log"
+    },
+    "claude": {
+      "title": "^[✳◐◑] (.*)$",
+      "log": "~/.claude/status.log"
+    }
+  },
+  "shells": {
+    "prompt": "^-?zsh$"
+  }
+}

@@ -117,6 +117,16 @@ in
         KeepAlive = true;
       };
 
+      "com.szymonkaliski.orchestrator-server" = mkAgent "orchestrator-server" {
+        KeepAlive = true;
+        ProgramArguments = [
+          launcher
+          "/bin/bash"
+          "${scriptsDir}/orchestrator-server.sh"
+        ];
+        RunAtLoad = true;
+      };
+
       "com.szymonkaliski.tcc-heal" = mkAgent "tcc-heal" {
         RunAtLoad = true;
         KeepAlive = true;

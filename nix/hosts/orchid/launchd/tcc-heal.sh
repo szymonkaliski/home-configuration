@@ -59,6 +59,7 @@ const KNOWN_CLI_PROCS = new Set([
   "nvim",
   "opencode",
   "opencode.exe",
+  "orchestrator-server",
   "rg",
   "sh",
   "tmux",

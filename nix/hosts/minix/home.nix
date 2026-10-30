@@ -477,15 +477,27 @@ in
   };
 
   # tmux.service owns creating the "home" session; start after it so home
-  # exists before orchestrator attaches
-  systemd.user.services.orchestrator = mkProjectService {
+  # exists before orchestrator-server attaches
+  systemd.user.services.orchestrator-server = mkProjectService {
     dir = "orchestrator";
-    description = "Orchestrator agent control center";
+    description = "Orchestrator Server";
     extraUnits = [ "tmux.service" ];
-    needsInternet = true;
-    build = "npm run build";
-    command = "${pkgs.bash}/bin/bash -c 'SHELL=${pkgs.zsh}/bin/zsh PATH=%h/.bin:${pkgs.zsh}/bin:${pkgs.openssh}/bin:${pkgs.tmux}/bin:$PATH exec node dist/server/hub.js'";
-    environment = "PORT=${toString ports.orchestrator}";
+    needsInternet = false;
+    timeoutStart = "10min";
+    build = "cargo build --release --manifest-path server/Cargo.toml --bin orchestrator-server";
+    command = "${pkgs.bash}/bin/bash -c 'SHELL=${pkgs.zsh}/bin/zsh PATH=%h/.bin:${pkgs.zsh}/bin:${pkgs.openssh}/bin:${pkgs.tmux}/bin:$PATH exec ./server/target/release/orchestrator-server'";
+  };
+
+  systemd.user.services.orchestrator-web = mkProjectService {
+    dir = "orchestrator";
+    description = "Orchestrator Web UI";
+    extraUnits = [ "orchestrator-server.service" ];
+    build = "npm --prefix web run build";
+    command = "npm --prefix web run start";
+    environment = [
+      "PORT=${toString ports.orchestrator}"
+      "PATH=${pkgs.tailscale}/bin:/run/current-system/sw/bin:%h/.nix-profile/bin"
+    ];
     extraService = {
       # https:// through tailscale serve
       ExecStartPost = "${pkgs.tailscale}/bin/tailscale serve --bg --https=${toString ports.orchestrator} ${toString ports.orchestrator}";

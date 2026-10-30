@@ -36,9 +36,9 @@ const SERVICE_BY_FOLDER = {
   Downloads: "SystemPolicyDownloadsFolder",
 };
 
-// Only terminal and tmux bundles with Full Disk Access are eligible for reset.
+// Only terminal and launcher bundles with Full Disk Access are eligible for reset.
 const ALLOWED_BUNDLE_IDS = new Set([
-  "com.szymonkaliski.tmux",
+  "com.szymonkaliski.launcher",
   "com.mitchellh.ghostty",
   "com.apple.Terminal",
 ]);
@@ -108,6 +108,7 @@ function resolveResponsible(pid) {
     }
     const [respPid, directId] = out.split("\t");
     if (directId) return { kind: "bundle", id: directId, respPid };
+    if (!isPidAlive(Number(respPid))) return { kind: "gone" };
     const comm = execFileSync("/bin/ps", ["-o", "comm=", "-p", respPid], {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],

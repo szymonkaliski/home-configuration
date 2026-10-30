@@ -59,6 +59,7 @@ in
     let
       scriptsDir = "${repoRoot}/nix/hosts/orchid/launchd";
       logsDir = "${config.home.homeDirectory}/Library/Logs";
+      launcher = "${config.home.homeDirectory}/Applications/Launcher.app/Contents/MacOS/launcher";
 
       mkAgent = name: extra: {
         enable = true;
@@ -129,12 +130,12 @@ in
       };
 
       # keeps the default "home" tmux session alive inside Aqua (gui/501) so
-      # login.keychain-db is unlocked and Tmux.app owns TCC attribution
+      # login.keychain-db is unlocked and Launcher.app owns TCC attribution
       "com.szymonkaliski.tmux" = mkAgent "tmux" {
         AbandonProcessGroup = true;
         KeepAlive = true;
         ProgramArguments = [
-          "${config.home.homeDirectory}/Applications/Tmux.app/Contents/MacOS/tmux-launcher"
+          launcher
           "/bin/bash"
           "${scriptsDir}/tmux.sh"
         ];

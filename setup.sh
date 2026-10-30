@@ -164,8 +164,8 @@ if [[ $HOST == "berry" ]] && command -v maestral &> /dev/null; then
 fi
 
 # home-manager wraps every launchd agent in `/bin/sh -c '/bin/wait4path ...'`,
-# and com.szymonkaliski.tmux runs under ~/Applications/Tmux.app; TCC blocks
-# both from reading ~/Documents until granted Full Disk Access
+# and agents that spawn non-Apple binaries run under ~/Applications/Launcher.app;
+# TCC blocks both from reading ~/Documents until granted Full Disk Access
 function canReadRepoFromLaunchd() {
   local BIN="$1"
   local LAUNCHER=""
@@ -215,7 +215,7 @@ if [[ $HOST == "orchid" ]]; then
   sudo scutil --set HostName orchid
 
   # the Full Disk Access grant is GUI-only
-  for ENTRY in "/bin/sh:/bin/sh" "$HOME/Applications/Tmux.app/Contents/MacOS/tmux-launcher:$HOME/Applications/Tmux.app"; do
+  for ENTRY in "/bin/sh:/bin/sh" "$HOME/Applications/Launcher.app/Contents/MacOS/launcher:$HOME/Applications/Launcher.app"; do
     BIN="${ENTRY%%:*}"
     TARGET="${ENTRY#*:}"
     [ -x "$BIN" ] || continue

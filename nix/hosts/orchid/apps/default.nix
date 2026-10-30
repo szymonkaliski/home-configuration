@@ -16,11 +16,12 @@ in
 {
   # XNU resets TCC responsibility when a launchd shell (/bin/sh, /bin/bash)
   # spawns a non-Apple binary (/nix/store/.../bin/tmux), whereas a Mach-O .app
-  # bundle stays responsible for the whole tmux tree. Built once in place so its
-  # ad-hoc CDHash in TCC.db stays stable across home-manager generations.
+  # bundle stays responsible for the whole process tree. Built once in place so
+  # its ad-hoc CDHash in TCC.db stays stable across home-manager generations.
   home.activation.orchidApps = lib.hm.dag.entryBetween [ "setupLaunchAgents" ] [ "writeBoundary" ] ''
-    app="$HOME/Applications/Tmux.app"
-    bin="$app/Contents/MacOS/tmux-launcher"
+    run rm -rf "$HOME/Applications/Tmux.app"
+    app="$HOME/Applications/Launcher.app"
+    bin="$app/Contents/MacOS/launcher"
     if [[ ! -x "$bin" ]]; then
       run mkdir -p "$app/Contents/MacOS"
       cat > "$app/Contents/Info.plist" << 'EOF'
@@ -29,11 +30,11 @@ in
     <plist version="1.0">
     <dict>
       <key>CFBundleIdentifier</key>
-      <string>com.szymonkaliski.tmux</string>
+      <string>com.szymonkaliski.launcher</string>
       <key>CFBundleName</key>
-      <string>Tmux</string>
+      <string>Launcher</string>
       <key>CFBundleExecutable</key>
-      <string>tmux-launcher</string>
+      <string>launcher</string>
       <key>CFBundlePackageType</key>
       <string>APPL</string>
       <key>LSUIElement</key>
@@ -41,7 +42,7 @@ in
     </dict>
     </plist>
     EOF
-      src="$(/usr/bin/mktemp -t tmux-launcher).c"
+      src="$(/usr/bin/mktemp -t launcher).c"
       cat > "$src" << 'EOF'
     #include <errno.h>
     #include <signal.h>
@@ -70,10 +71,10 @@ in
     EOF
       run /usr/bin/clang -O2 -Wl,-sectcreate,__TEXT,__info_plist,"$app/Contents/Info.plist" "$src" -o "$bin"
       rm -f "$src"
-      run /usr/bin/codesign -f -s - --identifier com.szymonkaliski.tmux "$app"
+      run /usr/bin/codesign -f -s - --identifier com.szymonkaliski.launcher "$app"
     fi
     if [[ ! -e "$app/Icon"$'\r' ]]; then
-      ${setIcon ./tmux.png}
+      ${setIcon ./launcher.png}
     fi
 
     app="$HOME/Applications/Google Chrome Incognito.app"

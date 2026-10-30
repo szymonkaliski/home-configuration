@@ -67,6 +67,7 @@ mkdir -p "$DOTFILE_DIR/agents/skills-vendor"
 pushd "$DOTFILE_DIR/agents/skills-vendor" > /dev/null || exit
 
 gitWrapped clone https://github.com/mattpocock/skills mattpocock-skills
+gitWrapped clone https://github.com/anthropics/skills anthropic-skills
 
 popd > /dev/null || exit
 

@@ -68,16 +68,6 @@
         ]
       }
     ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -x ~/.claude/tcc-heal.js ]; then ~/.claude/tcc-heal.js; fi"
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "hooks": [
@@ -90,15 +80,6 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -x ~/.claude/tcc-heal.js ]; then ~/.claude/tcc-heal.js; fi"
-          }
-        ]
-      },
-      {
         "hooks": [
           {
             "type": "command",
@@ -108,15 +89,6 @@
       }
     ],
     "PostToolUseFailure": [
-      {
-        "matcher": "Bash|Read|Edit|Write|Glob|Grep",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -x ~/.claude/tcc-heal.js ]; then ~/.claude/tcc-heal.js; fi"
-          }
-        ]
-      },
       {
         "hooks": [
           {

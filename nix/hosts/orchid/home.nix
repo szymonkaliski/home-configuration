@@ -116,6 +116,11 @@ in
         KeepAlive = true;
       };
 
+      "com.szymonkaliski.tcc-heal" = mkAgent "tcc-heal" {
+        RunAtLoad = true;
+        KeepAlive = true;
+      };
+
       "com.szymonkaliski.timav-cache" = mkAgent "timav-cache" {
         RunAtLoad = true;
         StartCalendarInterval = {

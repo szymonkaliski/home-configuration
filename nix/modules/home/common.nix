@@ -203,14 +203,7 @@ in
   # machine-local additions can then sit alongside without living in this repo
   // skillLinks ".claude/skills"
   // skillLinks ".config/opencode/skills"
-  // skillLinks ".gemini/config/skills"
-  // lib.optionalAttrs pkgs.stdenv.isDarwin {
-    # copied into the store, not linked: it must stay readable while ~/Documents is blocked
-    ".claude/tcc-heal.js" = {
-      source = ../../../dotfiles/claude/tcc-heal.js;
-      executable = true;
-    };
-  };
+  // skillLinks ".gemini/config/skills";
 
   xdg.configFile = {
     "nvim".source = link "${dotfileDir}/vim";

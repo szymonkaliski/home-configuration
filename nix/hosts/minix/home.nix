@@ -278,7 +278,7 @@ in
 
   systemd.user.services.smartbox2mqtt = mkProjectService {
     dir = "smartbox2mqtt";
-    description = "Smartbox to MQTT bridge for heaters";
+    description = "Smartbox to MQTT bridge";
     extraUnits = [ "sops-nix.service" ];
     needsMqtt = true;
     needsInternet = true;
@@ -391,7 +391,7 @@ in
 
   systemd.user.services.timav-cache = mkProjectService {
     dir = "timav";
-    description = "Timav cache update";
+    description = "Timav Cache Update";
     extraUnits = [ "sops-nix.service" ];
     needsInternet = true;
     command = "./cli.js cache";
@@ -401,7 +401,7 @@ in
   };
 
   systemd.user.timers.timav-cache = mkTimer {
-    description = "Timav cache update timer";
+    description = "Timav Cache Update Timer";
     onCalendar = "hourly";
     randomizedDelay = "5m";
   };
@@ -436,7 +436,7 @@ in
 
   systemd.user.services.archivist-fetch = mkProjectService {
     dir = "archivist";
-    description = "Archivist fetch";
+    description = "Archivist Fetch";
     extraUnits = [ "sops-nix.service" ];
     needsInternet = true;
     command = "node dist/cli/index.js fetch";
@@ -452,7 +452,7 @@ in
 
   systemd.user.services.archivist-web-ui = mkProjectService {
     dir = "archivist";
-    description = "Archivist web UI";
+    description = "Archivist Web UI";
     extraUnits = [ "sops-nix.service" ];
     needsInternet = true;
     build = "npm run build";
@@ -462,7 +462,7 @@ in
 
   systemd.user.services.vitalist = mkProjectService {
     dir = "vitalist";
-    description = "Vitalist sync";
+    description = "Vitalist Sync";
     extraUnits = [ "sops-nix.service" ];
     needsInternet = true;
     command = "node src/index.ts sync";
@@ -545,7 +545,7 @@ in
 
   systemd.user.services.property-search = mkProjectService {
     dir = "property-search";
-    description = "Property Search web UI";
+    description = "Property Search Web UI";
     extraUnits = [ "sops-nix.service" ];
     needsInternet = true;
     build = "npm run build";
@@ -555,7 +555,7 @@ in
 
   systemd.user.services.property-search-scrape = mkProjectService {
     dir = "property-search";
-    description = "Property Search scraper";
+    description = "Property Search Scraper";
     extraUnits = [ "sops-nix.service" ];
     needsInternet = true;
     build = "npm run build";
@@ -565,7 +565,7 @@ in
   };
 
   systemd.user.timers.property-search-scrape = mkTimer {
-    description = "Nightly Property Search scrape";
+    description = "Nightly Property Search Scrape";
     onCalendar = "*-*-* 01:00:00";
   };
 

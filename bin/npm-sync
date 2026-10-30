@@ -35,7 +35,7 @@ const LOCAL = [
   "muninn-get-asset",
   "muninn-make-month",
   "name-pdfs",
-  "timav-cli",
+  "timav",
 ];
 
 // npm's own toolchain: never treat as an extra
